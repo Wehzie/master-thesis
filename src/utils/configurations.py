@@ -50,7 +50,9 @@ def config_pianomidi(IP_indexes):
     
     configs.readout = Struct()
     configs.readout.trainMethod = 'NormalEquations' # train with normal equations (faster)
-    configs.readout.regularizations = 10.0**np.array(range(-4,-1,1))
+    #configs.readout.regularizations = 10.0**np.array(range(-4,-1,1)) # BUG: not used and weird control flow
+                                                                    # called `lb` in deepESN.trainReadout
+                                                                    # called `reg` in main
     
     return configs
 

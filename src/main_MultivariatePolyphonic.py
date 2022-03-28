@@ -1,4 +1,4 @@
-'''
+"""
 This is an example of the application of DeepESN model for multivariate time-series prediction task 
 on Piano-midi.de (see http://www-etud.iro.umontreal.ca/~boulanni/icml2012) dataset.
 The dataset is a polyphonic music task characterized by 88-dimensional sequences representing musical compositions.
@@ -11,52 +11,55 @@ Neurocomputing, 2017, vol. 268, pp. 87-99
 In this Example we consider the hyper-parameters designed in the following paper:
 C. Gallicchio, A. Micheli, L. Pedrelli, "Design of deep echo state networks",
 Neural Networks, 2018, vol. 108, pp. 33-47
+"""
 
-However, for the ease of calculation, in this example
-we consider only Nr = 100 units and Nl = 5 layers instead of Nr = 200 and Nl = 35.
-
-----
-
-This file is a part of the DeepESN Python Library (DeepESNpy)
-
-Luca Pedrelli
-luca.pedrelli@di.unipi.it
-lucapedrelli@gmail.com
-
-Department of Computer Science - University of Pisa (Italy)
-Computational Intelligence & Machine Learning (CIML) Group
-http://www.di.unipi.it/groups/ciml/
-
-----
-'''
 from pathlib import Path
 import time
 
 import numpy as np
-import random
 from DeepESN import DeepESN
 from utils import computeMusicAccuracy, config_pianomidi, load_pianomidi, select_indexes
 class Struct(object): pass
 
 # sistemare indici per IP in config_pianomidi, mettere da un'altra parte
+# translation: set indexes by IP in config_plans, put elsewhere
+# this probably means the confusion of controlling how intrinsic plasticity is used
+
 # sistema selezione indici con transiente messi all'interno della rete
+# index selection system with transient placed inside the network
+# this probably means that the transient component in main is now redundant?
+
 def main():
+    # measure time for this code section
     t0 = time.perf_counter()
     
     # fix a seed for the reproducibility of results
     np.random.seed(7)
    
     # dataset path 
-    path = 'data'
-    dataset, Nu, error_function, optimization_problem, TR_indexes, VL_indexes, TS_indexes = load_pianomidi(path, computeMusicAccuracy)
+    path = Path("data")
+
+    (dataset,
+    Nu, # dimension of a single data point
+        # for example 88 for piano-midi.de
+        # where 88 corresponds the number of keys on a piano
+    error_function,
+    optimization_problem,
+    TR_indexes, # train set indices
+    VL_indexes, # validation set indices
+    TS_indexes # test set indices
+    ) = load_pianomidi(path, computeMusicAccuracy)
 
     # load configuration for pianomidi task
     configs = config_pianomidi(list(TR_indexes) + list(VL_indexes))   
     
     # Be careful with memory usage
-    Nr = 100 # number of recurrent units
+    # TODO: What does careful with memory usage mean?
+    # What are the limits?
+    Nr = 200 # number of recurrent units
     Nl = 5 # number of recurrent layers
-    reg = 10.0**-2
+    reg = 10.0**-1 # probably refers to lambda_r, readout regularization
+                    # BUG: however we also set regularization in the config file
     transient = 5
     
     # initialize the ESN
@@ -79,6 +82,7 @@ def main():
     test_error = error_function(test_outputs, test_targets)
     print('Test ACC: ', np.mean(test_error), '\n')
 
+    # duration is difference between end time and start time
     t1 = time.perf_counter()
     print(f"Time elapsed: {t1-t0:0.5f} s")
  

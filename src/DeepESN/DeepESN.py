@@ -242,9 +242,19 @@ class DeepESN():
         return states
     
     # TODO: consider function decorators for verbose printing
-    def computeState(self, inputs:list, DeepIP:int=0, initialStates:None=None, verbose:int=0) -> np.ndarray:
-        # compute the global state of DeepESN
-        # use pre-training if DeepIP == 1         
+    def computeState(self, inputs: list, DeepIP: int=0, initialStates: None=None, verbose: int=0) -> np.ndarray:
+        """
+        Iterate over each time-series and compute the state of each reservoir (layer) for each time step.
+        
+        Args:
+            inputs: 
+            DeepIP: Whether to use intrinsic plasticity.
+            initialStates: Unclear why this needs to be passed. Probably always None.
+            verbose: Verbose printing.
+
+        Returns:
+            An array called "state" with the state of each reservoir for each time step for each time-series.
+        """
         
         # BUG: control via config file and function arguments is not intuitive
         if self.IPconf.DeepIP and DeepIP and False:

@@ -47,6 +47,8 @@ def main():
     configs = config_MG(list(TR_indexes) + list(VL_indexes))
     
     # Be careful with memory usage
+    # TODO: What does careful with memory usage mean?
+    # What are the limits?
     Nr = 100 # number of recurrent units
     Nl = 5 # number of recurrent layers
     reg = 0.0
