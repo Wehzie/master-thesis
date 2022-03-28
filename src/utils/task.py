@@ -21,6 +21,7 @@ import os
 from scipy.io import loadmat
 import numpy as np
 
+# TODO: consider dataclass
 class Struct(object): pass
 
 def select_indexes(data, indexes, transient=0):
@@ -32,6 +33,7 @@ def select_indexes(data, indexes, transient=0):
 
 def load_pianomidi(path, metric_function):
     
+    # TODO: convert data to CSV format
     data = loadmat(os.path.join(path, 'pianomidi.mat')) # load dataset
 
     dataset = Struct()

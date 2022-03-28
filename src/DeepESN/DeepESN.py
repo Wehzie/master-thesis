@@ -4,6 +4,8 @@ import scipy as sc
 import random
 import sys
 
+DEBUG = False
+
 class DeepESN():
     
     '''
@@ -93,9 +95,12 @@ class DeepESN():
             target_rho = rhos[layer]
             input_scale = iss[layer]
 
+            # TODO: search over distributions, introduce more zero weights
             if layer==0:
+                # mapping between input dim and layer dim
                 self.Win[layer] = np.random.uniform(-input_scale, input_scale, size=(Nr,Nu+1))
             else:
+                # mapping between layer dim and layer dim
                 self.Win[layer] = np.random.uniform(-input_scale, input_scale, size=(Nr,Nr+1))
 
             Ws = (1-target_li) * np.eye(self.W[layer].shape[0], self.W[layer].shape[1]) + target_li * self.W[layer]
@@ -112,35 +117,70 @@ class DeepESN():
             print('done.')
             sys.stdout.flush()
     
-    def computeLayerState(self, input, layer, initialStatesLayer = None, DeepIP = 0):  
-        # compute the state of a layer with pre-training if DeepIP == 1                    
+    def computeLayerState(self,
+        raw_input: np.ndarray,
+        layer,
+        initialStatesLayer: np.ndarray = None,
+        DeepIP = 0
+    ) -> np.ndarray:  
+        """
+        Compute state of a single reservoir (layer).
+        Use Pre-training when DeepIP == 1.
+        """
         
-        state = np.zeros((self.Nr, input.shape[1]))   
+        time_series_len = raw_input.shape[1] # length of a time series, for example one MIDI
+        l_states = np.zeros((self.Nr, time_series_len)) # states of a layer across time-series
         
         if initialStatesLayer is None:
-            initialStatesLayer = np.zeros(state[:,0:1].shape)
+            # None when intrinsic plasticity is not used
+            # dimension is (nodes_in_layer, 1)
+            # each node of the reservoir has zero activation
+            initialStatesLayer = np.zeros(l_states[:,0:1].shape)
         
-        input = self.Win[layer][:,0:-1].dot(input) + np.expand_dims(self.Win[layer][:,-1],1)   
-        
-        if DeepIP:
-            state_net = np.zeros((self.Nr, input.shape[1]))
-            state_net[:,0:1] = input[:,0:1]
-            state[:,0:1] = self.lis[layer] * np.tanh(np.multiply(self.Gain[layer], state_net[:,0:1]) + self.Bias[layer])
+        # DIMENSIONS
+        # raw_input.shape == (data_point_dim, time_series_len)
+        # self.Win[layer][:,0:-1].shape == (nodes_in_layer, data_point_dim)
+        # the above dimension pairs are used as mappings between dimensions
+        # np.expand_dims(self.Win[layer][:,-1],1).shape == (nodes_in_layer, 1)
+
+        # the raw_input directly passed to this function is a data point
+        # the last element of the weight vector is the bias
+        # by [:,0:-1] the last column is excluded
+        # by [:,-1] the last column is selected
+        weights = self.Win[layer][:,0:-1]
+        biases = np.expand_dims(self.Win[layer][:,-1], axis=1)
+        # weighted input is result of map between raw input and reservoir dimension via input weight matrix
+        w_input = weights.dot(raw_input) + biases
+        # w_input.shape == (nodes_in_layer, time_series_len)
+
+        if DeepIP and False:
+            state_net = np.zeros((self.Nr, w_input.shape[1]))
+            state_net[:,0:1] = w_input[:,0:1]
+            l_states[:,0:1] = self.lis[layer] * np.tanh(np.multiply(self.Gain[layer], state_net[:,0:1]) + self.Bias[layer])
         else:
-            #state[:,0:1] = self.lis[layer] * np.tanh(np.multiply(self.Gain[layer], input[:,0:1]) + self.Bias[layer])        
-            state[:,0:1] = (1-self.lis[layer]) * initialStatesLayer + self.lis[layer] * np.tanh( np.multiply(self.Gain[layer], self.W[layer].dot(initialStatesLayer) + input[:,0:1]) + self.Bias[layer])        
+            # l_state[:,0:1] = self.lis[layer] * np.tanh(np.multiply(self.Gain[layer], w_input[:,0:1]) + self.Bias[layer])        
+            
+            # w_input[:,0:1] gives all rows at column 0
+            # print(len(w_input[:,0:1])) gives 100 which is the number of nodes per reservoir
+            # w_input[:,0:1] then refers to the activation or state of each node for t=0
+            
+            # compute reservoir state for first time step of the time-series
+            l_states[:,0:1] = (1-self.lis[layer]) * initialStatesLayer + self.lis[layer] * np.tanh( np.multiply(self.Gain[layer], self.W[layer].dot(initialStatesLayer) + w_input[:,0:1]) + self.Bias[layer])        
  
-        for t in range(1,state.shape[1]):
-            if DeepIP:
-                state_net[:,t:t+1] = self.W[layer].dot(state[:,t-1:t]) + input[:,t:t+1]
-                state[:,t:t+1] = (1-self.lis[layer]) * state[:,t-1:t] + self.lis[layer] * np.tanh(np.multiply(self.Gain[layer], state_net[:,t:t+1]) + self.Bias[layer])
+
+        # compute reservoir states for times, t, in the time-series where t > 0
+        for t in range(1, l_states.shape[1]):
+            if DEBUG: print(f"computeLayerState: t {t}")
+            if DeepIP and False:
+                state_net[:,t:t+1] = self.W[layer].dot(l_states[:,t-1:t]) + w_input[:,t:t+1]
+                l_states[:,t:t+1] = (1-self.lis[layer]) * l_states[:,t-1:t] + self.lis[layer] * np.tanh(np.multiply(self.Gain[layer], state_net[:,t:t+1]) + self.Bias[layer])
                 
                 eta = self.IPconf.eta
                 mu = self.IPconf.mu
                 sigma2 = self.IPconf.sigma**2
             
                 # IP learning rule
-                deltaBias = -eta*((-mu/sigma2)+ np.multiply(state[:,t:t+1], (2*sigma2+1-(state[:,t:t+1]**2)+mu*state[:,t:t+1])/sigma2))
+                deltaBias = -eta*((-mu/sigma2)+ np.multiply(l_states[:,t:t+1], (2*sigma2+1-(l_states[:,t:t+1]**2)+mu*l_states[:,t:t+1])/sigma2))
                 deltaGain = eta / npm.repmat(self.Gain[layer],1,state_net[:,t:t+1].shape[1]) + deltaBias * state_net[:,t:t+1]
                 
                 # update gain and bias of activation function
@@ -148,9 +188,9 @@ class DeepESN():
                 self.Bias[layer] = self.Bias[layer] + deltaBias
                 
             else:
-                state[:,t:t+1] = (1-self.lis[layer]) * state[:,t-1:t] + self.lis[layer] * np.tanh( np.multiply(self.Gain[layer], self.W[layer].dot(state[:,t-1:t]) + input[:,t:t+1]) + self.Bias[layer])
+                l_states[:,t:t+1] = (1-self.lis[layer]) * l_states[:,t-1:t] + self.lis[layer] * np.tanh( np.multiply(self.Gain[layer], self.W[layer].dot(l_states[:,t-1:t]) + w_input[:,t:t+1]) + self.Bias[layer])
                 
-        return state
+        return l_states
 
     def computeDeepIntrinsicPlasticity(self, inputs):
         # we incrementally perform the pre-training (deep intrinsic plasticity) over layers
@@ -161,9 +201,12 @@ class DeepESN():
         for i in len_inputs:
             states.append(np.zeros((self.Nr*self.Nl, inputs[i].shape[1])))
         
+        # loop over layers (reservoirs)
         for layer in range(self.Nl):
+            if DEBUG: print(f"computeDeepIntrinsicPlasticity: layer {layer}")
 
             for epoch in range(self.IPconf.Nepochs):
+                if DEBUG: print(f"computeDeepIntrinsicPlasticity: epoch {epoch}")
                 Gain_epoch = self.Gain[layer]
                 Bias_epoch = self.Bias[layer]
 
@@ -172,6 +215,7 @@ class DeepESN():
                     self.computeLayerState(inputs[0][:,self.IPconf.indexes], layer, DeepIP = 1)
                 else:
                     for i in self.IPconf.indexes:
+                        if DEBUG: print(f"computeDeepIntrinsicPlasticity: i {i}")
                         self.computeLayerState(inputs[i], layer, DeepIP = 1)
                        
                 
@@ -197,10 +241,13 @@ class DeepESN():
             
         return states
     
-    def computeState(self,inputs, DeepIP = 0, initialStates = None, verbose=0):
-        # compute the global state of DeepESN with pre-training if DeepIP == 1         
+    # TODO: consider function decorators for verbose printing
+    def computeState(self, inputs:list, DeepIP:int=0, initialStates:None=None, verbose:int=0) -> np.ndarray:
+        # compute the global state of DeepESN
+        # use pre-training if DeepIP == 1         
         
-        if self.IPconf.DeepIP and DeepIP:
+        # BUG: control via config file and function arguments is not intuitive
+        if self.IPconf.DeepIP and DeepIP and False:
             if verbose:
                 sys.stdout.write('compute state with DeepIP...')
                 sys.stdout.flush()
@@ -220,19 +267,38 @@ class DeepESN():
         
         return states
     
-    def computeGlobalState(self,input, initialStates):
+    def computeGlobalState(self, input, initialStates):
         # compute the global state of DeepESN
 
-        state = np.zeros((self.Nl*self.Nr,input.shape[1]))
+        midi_duration = input.shape[1] # number of discrete time steps in a midi
+
+        # each time step in the midi corresponds to a state of the RNN
+        state = np.zeros((self.Nl*self.Nr, midi_duration))
+        # example state has dim (500, 346) where
+        # 500 = number of layers * number of nodes per layer
+        # 346 = the number of discrete time steps in a time series, for example MIDI
         
         initialStatesLayer = None
 
-
         for layer in range(self.Nl):
+            if DEBUG: print(f"computeGlobalState: layer {layer}")
+
             if initialStates is not None:
-                initialStatesLayer = initialStates[(layer)*self.Nr: (layer+1)*self.Nr,:]            
+                # NOTE: I think initialStates is always None?
+                # theory: initialStates it NOT None when intrinsic plasticity is computed
+
+                # initalStatesLayer seems to be an int used as an index to a layer
+                # OOP not nicely used here
+                print(initialStates)
+                initialStatesLayer = initialStates[layer*self.Nr : (layer+1)*self.Nr,:]            
+
+            # write to state
             state[(layer)*self.Nr: (layer+1)*self.Nr,:] = self.computeLayerState(input, layer, initialStatesLayer, 0)    
-            input = state[(layer)*self.Nr: (layer+1)*self.Nr,:]   
+            
+            # override input
+            # the ndarray slice is to be read as follows
+            # [row_x : to row_y, across all columns]
+            input = state[(layer)*self.Nr: (layer+1)*self.Nr,:]
 
         return state
         

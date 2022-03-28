@@ -23,9 +23,10 @@ http://www.di.unipi.it/groups/ciml/
 
 ----
 '''
+import random
+import time
 
 import numpy as np
-import random
 from DeepESN import DeepESN
 from utils import MSE, config_MG, load_MG, select_indexes
 class Struct(object): pass
@@ -33,12 +34,13 @@ class Struct(object): pass
 # sistemare indici per IP in config_pianomidi, mettere da un'altra parte
 # sistema selezione indici con transiente messi all'interno della rete
 def main():
+    t0 = time.perf_counter()
     
     # fix a seed for the reproducibility of results
     np.random.seed(7)
    
     # dataset path 
-    path = 'datasets'
+    path = 'data'
     dataset, Nu, error_function, optimization_problem, TR_indexes, VL_indexes, TS_indexes = load_MG(path, MSE)
 
     # load configuration for pianomidi task
@@ -47,7 +49,7 @@ def main():
     # Be careful with memory usage
     Nr = 100 # number of recurrent units
     Nl = 5 # number of recurrent layers
-    reg = 0.0;
+    reg = 0.0
     transient = 100
     
     deepESN = DeepESN(Nu, Nr, Nl, configs)
@@ -67,6 +69,9 @@ def main():
     test_outputs = deepESN.computeOutput(test_states)
     test_error = error_function(test_outputs, test_targets)
     print('Test ACC: ', np.mean(test_error), '\n')
+
+    t1 = time.perf_counter()
+    print(f"Time elapsed: {t0-t1}")
  
  
 if __name__ == "__main__":
