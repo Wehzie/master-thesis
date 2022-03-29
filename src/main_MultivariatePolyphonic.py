@@ -56,9 +56,9 @@ def main():
     # Be careful with memory usage
     # TODO: What does careful with memory usage mean?
     # What are the limits?
-    Nr = 200 # number of recurrent units
-    Nl = 5 # number of recurrent layers
-    reg = 10.0**-1 # probably refers to lambda_r, readout regularization
+    Nr = 500 # number of recurrent units
+    Nl = 1 # number of recurrent layers
+    reg = 10.0**-2 # probably refers to lambda_r, readout regularization
                     # BUG: however we also set regularization in the config file
     transient = 5
     
@@ -76,11 +76,11 @@ def main():
     
     train_outputs = deepESN.computeOutput(train_states)
     train_error = error_function(train_outputs, train_targets)
-    print('Training ACC: ', np.mean(train_error), '\n')
+    print(f"Training ACC: {np.mean(train_error):0.5f} \n")
     
     test_outputs = deepESN.computeOutput(test_states)
     test_error = error_function(test_outputs, test_targets)
-    print('Test ACC: ', np.mean(test_error), '\n')
+    print(f"Test ACC: {np.mean(test_error):0.5f} \n")
 
     # duration is difference between end time and start time
     t1 = time.perf_counter()

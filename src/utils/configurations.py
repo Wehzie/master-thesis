@@ -37,7 +37,7 @@ def config_pianomidi(IP_indexes):
     configs.iss = 0.1 # set insput scale 0.1 for all recurrent layers
     
     configs.IPconf = Struct()
-    configs.IPconf.DeepIP = 1 # activate pre-train
+    configs.IPconf.DeepIP = True # TODO: control ipconf outside of config file
     configs.IPconf.threshold = 0.1 # threshold for gradient descent in pre-train algorithm
     configs.IPconf.eta = 10**-5 # learning rate for IP rule
     configs.IPconf.mu = 0 # mean of target gaussian function
