@@ -56,7 +56,7 @@ def main():
     # Be careful with memory usage
     # TODO: What does careful with memory usage mean?
     # What are the limits?
-    Nr = 500 # number of recurrent units
+    Nr = 50 # number of recurrent units
     Nl = 1 # number of recurrent layers
     reg = 10.0**-2 # probably refers to lambda_r, readout regularization
                     # BUG: however we also set regularization in the config file

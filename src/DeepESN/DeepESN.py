@@ -244,36 +244,36 @@ class DeepESN():
         for layer in range(self.Nl):
             # maximum number of training epochs
             for epoch in range(self.IPconf.Nepochs):
+                print(f"DeepIP epoch {epoch}.")
+                print(len(inputs))
                 Gain_epoch = self.Gain[layer]
                 Bias_epoch = self.Bias[layer]
 
-
-                if len(inputs) == 1:
+                # computeLayerStateDeepIP writes to Gain and Bias fields
+                if len(inputs) == 1: # only one time-series
                     self.computeLayerStateDeepIP(inputs[0][:,self.IPconf.indexes], layer)
                 else:
+                    # each index points to a time-series
                     for i in self.IPconf.indexes:
                         self.computeLayerStateDeepIP(inputs[i], layer)
-                       
                 
-                if (np.linalg.norm(self.Gain[layer]-Gain_epoch,2) < self.IPconf.threshold) and (np.linalg.norm(self.Bias[layer]-Bias_epoch,2)< self.IPconf.threshold):
-                    sys.stdout.write(str(epoch+1))
-                    sys.stdout.write('.')
-                    sys.stdout.flush()
+                # compute difference between old and new gain and bias vectors
+                gain_diff = self.Gain[layer]-Gain_epoch
+                bias_diff = self.Bias[layer]-Bias_epoch
+                # compute l2-norms of the difference vectors
+                # stop optimization when l2-norm below threshold
+                if (np.linalg.norm(gain_diff, ord=2) < self.IPconf.threshold
+                    and np.linalg.norm(bias_diff, ord=2) < self.IPconf.threshold):
                     break
-                
-                if epoch+1 == self.IPconf.Nepochs:
-                    sys.stdout.write(str(epoch+1))
-                    sys.stdout.write('.')
-                    sys.stdout.flush()
             
-            inputs2 = []
-            for i in range(len(inputs)):
-                inputs2.append(self.computeLayerState(inputs[i], layer))
+            # regular layer states are computed after intrinsic plasticity optimization
+            layer_states = []
+            for i in range(len(inputs)): # number of time-series
+                layer_states.append(self.computeLayerState(inputs[i], layer))
             
+            # write layer_states to the states-variable that tracks all time-series, layers and time steps
             for i in range(len(inputs)):
-                states[i][(layer)*self.Nr: (layer+1)*self.Nr,:] = inputs2[i]
-
-            inputs = inputs2                   
+                states[i][(layer)*self.Nr: (layer+1)*self.Nr,:] = layer_states[i]
             
         return states
     
@@ -294,21 +294,20 @@ class DeepESN():
         
         if DeepIP:
             if verbose:
-                sys.stdout.write('compute state with DeepIP...')
-                sys.stdout.flush()
+                print('compute state with DeepIP...')
+                # receives all time-series as input
             states = self.computeDeepIntrinsicPlasticity(inputs)
         else:      
             if verbose:
-                sys.stdout.write('compute state...')
-                sys.stdout.flush()
+                print('compute state...')
             states = []
 
             for i_seq in range(len(inputs)):
+                # receives a single time-series as input
                 states.append(self.computeGlobalState(inputs[i_seq], initialStates))
                 
         if verbose:        
             print('done.')
-            sys.stdout.flush()
         
         return states
     
