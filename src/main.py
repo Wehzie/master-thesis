@@ -1,3 +1,4 @@
+from netlist_generation import SpiceNetlist
 import networkx as nx
 import matplotlib.pyplot as plt
 
@@ -16,12 +17,23 @@ def watts_strogatz_graph() -> nx.Graph:
 def simple_graph() -> nx.Graph:
     """define a simple weighted graph."""
     G = nx.Graph()
-    G.add_weighted_edges_from([(1, 2, 1/6), (2, 0, 1/3), (2, 3, 1/2)], weight='Y')
+    G.add_weighted_edges_from([(1, 2, 1/6), (2, 0, 1/3), (2, 3, 1/2)])
+    # TODO: a dict can be used to set individual attributes
+    oscillator_model = "hartley"
+    nx.set_edge_attributes(G, oscillator_model, "model")
     return G
 
 def main():
     G = simple_graph()
     nx.draw(G, with_labels=True)
     plt.show()
+    exit()
+    for edge in G.edges:
+        print(G.get_edge_data(edge[0], edge[1]))
+
+
+    netlist = SpiceNetlist()
+    netlist.generate_netlist(G)
+    netlist.run_ngspice()
 
 main()
