@@ -1,6 +1,7 @@
 # data directories
 circuit_lib/*
 !cricuit_lib/README.md
+data/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
