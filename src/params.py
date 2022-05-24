@@ -3,9 +3,9 @@ param_sweep_schedule = {
         "changed_component": "R1",
         "dependent_component": "v(\"/A\")",
         
-        "start": "10k",
-        "stop": "90k",
-        "step": "10k",
+        "start": "5k",
+        "stop": "150k",
+        "step": "1k",
 
         "time_step": "5e-9",
         "time_stop": "10u",
