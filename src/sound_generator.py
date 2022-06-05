@@ -7,8 +7,10 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+from scipy.io.wavfile import read
 from scipy.io.wavfile import write
 
+TARGET_AUDIO_PATH = Path("data/magpie. 35k, mono, 8-bit, 11025 Hz, 3.3 seconds.wav")
 DATA_PATH = Path("circuit_lib")
 PARAM = bird_params["magpie"]
 
@@ -107,17 +109,51 @@ dv: str, freq: np.ndarray, abs_spec: np.ndarray
 
 def signal_to_wav(s: pd.Series,
 path: Path = Path("data/out.wav"),
-samp_rate: int = int(1/PARAM["time_step"])
 ) -> None:
     """Convert a pandas series into a .wav file."""
-    amplitude = np.iinfo(np.int16).max
-    s = amplitude * s.to_numpy()
-    write(path, samp_rate, s.astype(np.int64))
+    samp_rate: int = int(0.00001/PARAM["time_step"])
+    print(f"samplerate: {samp_rate}")
+    # TODO: auto-set sampling rate so that duration of clip is 1s
+    
+    s = s.repeat(3) # stretch signal duration
+    s = s.to_numpy()
+    amplitude = np.iinfo(np.uint8).max
+    s *= amplitude # scale
+    write(path, samp_rate, s.astype(np.uint8))
 
-# tmp_path = build_netlist(DATA_PATH)
-# run_ngspice(tmp_path)
+def scale_up(short: np.ndarray, len_long: int) -> np.ndarray:
+    short = pd.Series(short)
+    short = short.repeat(len_long//len(short))
+    # pad with zeros at the end
+    to_pad = len_long - len(short)
+    padded = np.pad(short, (0, to_pad))
+    return padded
+
+def rmse(p: pd.Series, t: np.ndarray):
+    """
+    Compute root mean square error (RMSE) between prediction and target signal.
+    Scale up smaller signal to enable metric.
+    """
+    diff_len = lambda p, t: len(p) != len(t)
+    get_shortest = lambda p, t: np.argmin([len(p), len(t)])
+    get_longest = lambda p, t: np.argmax([len(p), len(t)])
+
+    p = p.to_numpy()
+    if diff_len(p, t):
+        tup = (p, t)
+        short_sig = tup[get_shortest(p, t)]
+        long_sig = tup[get_longest(p, t)]
+        short_sig = scale_up(short_sig, len(long_sig))
+        return np.sqrt(((short_sig-long_sig)**2).mean())
+
+    return np.sqrt(((p-t)**2).mean())
+
+tmp_path = build_netlist(DATA_PATH)
+run_ngspice(tmp_path)
 df = load_data()
 s = df.iloc[:,1] # column as series
-# freq, abs_spec = analyze_data(s)
-# visualize_analysis(df, PARAM["dependent_component"], freq, abs_spec)
-signal_to_wav(s)
+#freq, abs_spec = analyze_data(s)
+#visualize_analysis(df, PARAM["dependent_component"], freq, abs_spec)
+target = read(TARGET_AUDIO_PATH)[1]
+print(rmse(s, target))
+#signal_to_wav(s)

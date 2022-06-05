@@ -16,11 +16,11 @@ param_sweep_schedule = {
 # parameters to generate bird sounds
 bird_params = {
         "magpie": {
-        "num_osc": 10,
+        "num_osc": 1,
 
         "v_in": 14,
 
-        "r_last": 30e2,
+        "r_last": 30e3,
 
         "r_min": 30e3,
         "r_max": 60e3,
