@@ -28,17 +28,25 @@ let temp = start
 * loop
 while temp le stop
     set title = {changed_component}=\{{$&temp}}
+    * component name based file names
     set path = data/{{$title}}.txt
+    * counter based file names
     *set path = data/{{$&counter}}.txt
 
+    * change component and run simulation
     alter {changed_component} temp
     tran {time_step} {time_stop} {time_start} uic
-    *set curplottitle = $title
-    *plot {dependent_component}
+    
     let temp = temp + step
 
+    * save data to file
     wrdata $path {dependent_component}
 
+    * plot data with ngspice and show
+    *set curplottitle = $title
+    *plot {dependent_component}
+
+    * plot data with ngspice and save
     *set gnuplot_terminal = png/quit
     *gnuplot $path {dependent_component}
     *+ title $title
@@ -88,7 +96,7 @@ def sweep(visual=True):
         abs_spec = abs(spectrum)
         freq = np.fft.fftfreq(len(abs_spec), d=5e-9)
 
-         # compute fundamental frequency
+        # compute fundamental frequency
         nlargest = pd.Series(abs_spec).nlargest(2)
         nlargest_arg = nlargest.index.values.tolist()
         f0 = abs(freq[nlargest_arg[1]])
