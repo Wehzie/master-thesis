@@ -1,12 +1,13 @@
-import os
 from params import bird_params
 
+import os
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+from scipy.io.wavfile import write
 
 DATA_PATH = Path("circuit_lib")
 PARAM = bird_params["magpie"]
@@ -104,10 +105,19 @@ dv: str, freq: np.ndarray, abs_spec: np.ndarray
 
     plt.show()
 
-tmp_path = build_netlist(DATA_PATH)
-run_ngspice(tmp_path)
-df = load_data()
-s = df.iloc[:,1]
-freq, abs_spec = analyze_data(s)
-visualize_analysis(df, PARAM["dependent_component"], freq, abs_spec)
+def signal_to_wav(s: pd.Series,
+path: Path = Path("data/out.wav"),
+samp_rate: int = int(1/PARAM["time_step"])
+) -> None:
+    """Convert a pandas series into a .wav file."""
+    amplitude = np.iinfo(np.int16).max
+    s = amplitude * s.to_numpy()
+    write(path, samp_rate, s.astype(np.int64))
 
+# tmp_path = build_netlist(DATA_PATH)
+# run_ngspice(tmp_path)
+df = load_data()
+s = df.iloc[:,1] # column as series
+# freq, abs_spec = analyze_data(s)
+# visualize_analysis(df, PARAM["dependent_component"], freq, abs_spec)
+signal_to_wav(s)
