@@ -1,7 +1,10 @@
+from csv import excel
+import glob
 from params import bird_params
 
 import os
 from pathlib import Path
+import json
 
 import numpy as np
 import pandas as pd
@@ -11,11 +14,11 @@ from scipy.io.wavfile import read
 from scipy.io.wavfile import write
 
 TARGET_AUDIO_PATH = Path("data/magpie. 35k, mono, 8-bit, 11025 Hz, 3.3 seconds.wav")
-DATA_PATH = Path("circuit_lib")
+DATA_PATH = Path("data")
 PARAM = bird_params["magpie"]
 
 POWER = """
-.include ../circuit_lib/VO2_Sto_rand.cir
+.include ./circuit_lib/VO2_Sto_rand.cir
 V1 /bridge 0 dc {v}
 """
 
@@ -24,6 +27,7 @@ OSC_TEMPLATE = """
 XU{i} /bridge /osc{i} control{i} VO2_Sto
 C{i} /osc{i} 0 {c}
 R{i} /osc{i} /sum {r}
+R{i}control control{i} 0 {r_control}
 """
 
 POST_SUM = """
@@ -35,24 +39,25 @@ CONTROL_TEMPLATE = """* Control commands
 tran {time_step} {time_stop} {time_start} uic
 set wr_vecnames * to print header
 set wr_singlescale * to not print scale vectors
-wrdata data/{file_name}.txt {dependent_component}
+wrdata {file_path} {dependent_component}
 quit
 .endc
 """
 
-def build_netlist(path: Path, temp_name: str = "temp.cir") -> Path:
+def build_netlist(path: Path) -> Path:
     """create temporary netlist, return path to temp file"""
-    temp_path = path / temp_name
+    det_param = PARAM
 
     netlist = POWER.format(v=PARAM["v_in"])
     for i in range(1, 1+PARAM["num_osc"]):
         # TODO: generalize for >0 and <0 values
         # so over randint vs uniform
         r = np.random.randint(PARAM["r_min"], 1+PARAM["r_max"])
-        c = np.random.uniform(PARAM["c_min"], PARAM["c_max"])        
-        r_out = np.random.randint(PARAM["r_out_min"], 1+PARAM["r_out_max"])
-
-        netlist += OSC_TEMPLATE.format(i=i, r=r, c=c, r_out=r_out)
+        c = np.random.uniform(PARAM["c_min"], PARAM["c_max"])
+        r_control = PARAM["r_control"]
+        netlist += OSC_TEMPLATE.format(i=i, r=r, c=c, r_control=r_control)
+        det_param[f"r{i}"] = r
+        det_param[f"c{i}"] = c
 
     netlist += POST_SUM.format(r_last=PARAM["r_last"])
     netlist += CONTROL_TEMPLATE.format(
@@ -60,16 +65,19 @@ def build_netlist(path: Path, temp_name: str = "temp.cir") -> Path:
         time_stop=PARAM["time_stop"],
         time_start=PARAM["time_start"],
         dependent_component=PARAM["dependent_component"],
-        file_name=PARAM["file_name"])
+        file_path=Path(str(path) + ".dat"))
 
-    with open(temp_path, "w") as f:
+    with open(path, "w") as f:
         f.write(netlist)
-    return temp_path
+
+    return det_param
 
 def run_ngspice(netlist: Path) -> None:
+    """start an ngspice simulation from python"""
     os.system(f"ngspice {netlist}")
 
-def load_data(data_path: Path = f"data/{PARAM['file_name']}.txt") -> pd.DataFrame:
+def load_sim_data(data_path: Path) -> pd.DataFrame:
+    """load the simulation data written to file by ngspice into python"""
     df = pd.DataFrame()
     df = pd.read_csv(data_path, sep="[ ]+", engine="python") # match any number of spaces
     return df
@@ -85,7 +93,12 @@ def analyze_data(data: pd.Series,
 sample_spacing : float = PARAM["time_step"]
 ) -> tuple:
     # apply fourier transform to signal
-    signal = clean_signal(data)
+    signal = None
+    try:
+        signal = clean_signal(data)
+    except:
+        print("EXCEPT")
+        signal = data.to_numpy()
     spectrum = np.fft.fft(signal)
     abs_spec = abs(spectrum)
     freq = np.fft.fftfreq(len(abs_spec), d=sample_spacing)
@@ -98,6 +111,7 @@ dv: str, freq: np.ndarray, abs_spec: np.ndarray
     dv = dv.replace('"', '') # ngspice removes "
     sns.lineplot(data=df, x="time", y=dv)
     
+    # frequency-domain plot
     fig, ax = plt.subplots()
     plt.plot(freq, abs_spec)
     ax.set_xscale('log')
@@ -117,7 +131,7 @@ path: Path = Path("data/out.wav"),
     
     s = s.repeat(3) # stretch signal duration
     s = s.to_numpy()
-    amplitude = np.iinfo(np.uint8).max
+    amplitude = np.iinfo(np.uint8).max # 255
     s *= amplitude # scale
     write(path, samp_rate, s.astype(np.uint8))
 
@@ -129,7 +143,7 @@ def scale_up(short: np.ndarray, len_long: int) -> np.ndarray:
     padded = np.pad(short, (0, to_pad))
     return padded
 
-def rmse(p: pd.Series, t: np.ndarray):
+def rmse(p: pd.Series, t: np.ndarray) -> float:
     """
     Compute root mean square error (RMSE) between prediction and target signal.
     Scale up smaller signal to enable metric.
@@ -148,12 +162,47 @@ def rmse(p: pd.Series, t: np.ndarray):
 
     return np.sqrt(((p-t)**2).mean())
 
-tmp_path = build_netlist(DATA_PATH)
-run_ngspice(tmp_path)
-df = load_data()
-s = df.iloc[:,1] # column as series
-#freq, abs_spec = analyze_data(s)
-#visualize_analysis(df, PARAM["dependent_component"], freq, abs_spec)
-target = read(TARGET_AUDIO_PATH)[1]
-print(rmse(s, target))
-#signal_to_wav(s)
+def find_dir_name() -> Path:
+    """find unused directory name for a search experiment and make directory"""
+    path = DATA_PATH
+    for i in range(100):
+        path = Path(DATA_PATH / f"experiment{i}")
+        if not path.exists():
+            path.mkdir()
+            break
+    return path
+
+def json_to_df(path: Path) -> pd.DataFrame:
+    """aggregate parameters and results of multiple json files into a dataframe"""
+    data_rows = []
+    for json_file in glob.glob(str(path) + "/*.json"):
+        with open(json_file) as f:
+            data_rows.append(json.load(f))
+    df = pd.DataFrame(data_rows)
+    return df
+
+def random_search(trials: int = 1, visual: bool = True) -> None:
+    """random search over oscillator space"""
+    experiment_path = find_dir_name()
+    target = read(TARGET_AUDIO_PATH)[1]
+    for i in range(trials):
+        tmp_path = experiment_path / f"netlist{i}.cir"
+        det_params = build_netlist(tmp_path)
+        run_ngspice(tmp_path)
+        df = load_sim_data(Path(str(tmp_path) + ".dat"))
+        s = df.iloc[:,1] # column as series
+        if visual:
+            freq, abs_spec = analyze_data(s)
+            visualize_analysis(df, PARAM["dependent_component"], freq, abs_spec)
+        det_params["rmse"] = rmse(s, target) 
+        with open(experiment_path / f"param{i}.json", "w") as f:
+            json.dump(det_params, f)
+    
+    df = json_to_df(Path(DATA_PATH / "experiment0/"))
+    print(df)
+
+
+def main():
+    random_search()
+
+main()

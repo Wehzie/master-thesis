@@ -1,3 +1,5 @@
+.vscode
+
 # data directories
 circuit_lib/*
 !cricuit_lib/README.md

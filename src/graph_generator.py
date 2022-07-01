@@ -1,4 +1,5 @@
-from netlist_generation import SpiceNetlist
+from pathlib import Path
+from netlist_generator import generate_tree_netlist
 import networkx as nx
 import matplotlib.pyplot as plt
 
@@ -24,16 +25,9 @@ def simple_graph() -> nx.Graph:
     return G
 
 def main():
-    G = simple_graph()
+    G = nx.balanced_tree(2, 2, create_using=nx.DiGraph())
     nx.draw(G, with_labels=True)
     plt.show()
-    exit()
-    for edge in G.edges:
-        print(G.get_edge_data(edge[0], edge[1]))
-
-
-    netlist = SpiceNetlist()
-    netlist.generate_netlist(G)
-    netlist.run_ngspice()
+    generate_tree_netlist(G, Path("yolo.cir"))
 
 main()
