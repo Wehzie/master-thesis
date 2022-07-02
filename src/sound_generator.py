@@ -1,7 +1,7 @@
-from csv import excel
-import glob
 from params import bird_params
+from netlist_generator import build_sum_netlist
 
+import glob
 import os
 from pathlib import Path
 import json
@@ -16,61 +16,6 @@ from scipy.io.wavfile import write
 TARGET_AUDIO_PATH = Path("data/magpie. 35k, mono, 8-bit, 11025 Hz, 3.3 seconds.wav")
 DATA_PATH = Path("data")
 PARAM = bird_params["magpie"]
-
-POWER = """
-.include ./circuit_lib/VO2_Sto_rand.cir
-V1 /bridge 0 dc {v}
-"""
-
-# vo2 only
-OSC_TEMPLATE = """
-XU{i} /bridge /osc{i} control{i} VO2_Sto
-C{i} /osc{i} 0 {c}
-R{i} /osc{i} /sum {r}
-R{i}control control{i} 0 {r_control}
-"""
-
-POST_SUM = """
-R_last /sum 0 {r_last}
-"""
-
-CONTROL_TEMPLATE = """* Control commands
-.control
-tran {time_step} {time_stop} {time_start} uic
-set wr_vecnames * to print header
-set wr_singlescale * to not print scale vectors
-wrdata {file_path} {dependent_component}
-quit
-.endc
-"""
-
-def build_netlist(path: Path) -> Path:
-    """create temporary netlist, return path to temp file"""
-    det_param = PARAM
-
-    netlist = POWER.format(v=PARAM["v_in"])
-    for i in range(1, 1+PARAM["num_osc"]):
-        # TODO: generalize for >0 and <0 values
-        # so over randint vs uniform
-        r = np.random.randint(PARAM["r_min"], 1+PARAM["r_max"])
-        c = np.random.uniform(PARAM["c_min"], PARAM["c_max"])
-        r_control = PARAM["r_control"]
-        netlist += OSC_TEMPLATE.format(i=i, r=r, c=c, r_control=r_control)
-        det_param[f"r{i}"] = r
-        det_param[f"c{i}"] = c
-
-    netlist += POST_SUM.format(r_last=PARAM["r_last"])
-    netlist += CONTROL_TEMPLATE.format(
-        time_step=PARAM["time_step"],
-        time_stop=PARAM["time_stop"],
-        time_start=PARAM["time_start"],
-        dependent_component=PARAM["dependent_component"],
-        file_path=Path(str(path) + ".dat"))
-
-    with open(path, "w") as f:
-        f.write(netlist)
-
-    return det_param
 
 def run_ngspice(netlist: Path) -> None:
     """start an ngspice simulation from python"""
@@ -187,7 +132,7 @@ def random_search(trials: int = 1, visual: bool = True) -> None:
     target = read(TARGET_AUDIO_PATH)[1]
     for i in range(trials):
         tmp_path = experiment_path / f"netlist{i}.cir"
-        det_params = build_netlist(tmp_path)
+        det_params = build_sum_netlist(tmp_path, bird_params["magpie"])
         run_ngspice(tmp_path)
         df = load_sim_data(Path(str(tmp_path) + ".dat"))
         s = df.iloc[:,1] # column as series
