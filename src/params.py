@@ -20,9 +20,11 @@ bird_params = {
 
         "v_in": 4,
 
-        "r_last": 1,
+        "r_last": 1, # only with sum architecture
+        "r_tree": 1, # only with tree architecture
 
         "r_control": 1e6,
+
 
         "r_min": 8e3,
         "r_max": 8e3,

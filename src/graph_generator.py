@@ -1,7 +1,11 @@
+from netlist_generator import build_tree_netlist
+from params import bird_params
+
 from pathlib import Path
-from netlist_generator import generate_tree_netlist
 import networkx as nx
 import matplotlib.pyplot as plt
+
+PARAM = bird_params["magpie"]
 
 def connected_components(G: nx.Graph) -> nx.Graph:
     """extract subgraphs ordered from largest to smallest."""
@@ -25,9 +29,9 @@ def simple_graph() -> nx.Graph:
     return G
 
 def main():
-    G = nx.balanced_tree(2, 2, create_using=nx.DiGraph())
+    G = nx.balanced_tree(2, 1, create_using=nx.DiGraph())
     nx.draw(G, with_labels=True)
     plt.show()
-    generate_tree_netlist(G, Path("yolo.cir"))
+    build_tree_netlist(G, Path("yolo.cir"), PARAM)
 
 main()

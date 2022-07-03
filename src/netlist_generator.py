@@ -8,10 +8,28 @@ INCLUDE = """
 POWER = """
 V1 /bridge 0 dc {v}
 """
+RESISTOR_0 = """
+R{i} 0 right{i} {r}
+"""
+RESISTOR = """
+R{i} left{i} right{j} {r}
+"""
+POST_SUM = """
+R_last /sum 0 {r_last}
+"""
+TREE_POWER = """
+V{i} /bridge{i} 0 dc {v}
+"""
 SUM_OSC_TEMPLATE = """
 XU{i} /bridge /osc{i} control{i} VO2_Sto
 C{i} /osc{i} 0 {c}
 R{i} /osc{i} /sum {r}
+R{i}control control{i} 0 {r_control}
+"""
+LEAF_OSC_TEMPLATE = """
+XU{i} /bridge{i} /osc{i} control{i} VO2_Sto
+C{i} /osc{i} 0 {c}
+R{i} /osc{i} /right{j} {r}
 R{i}control control{i} 0 {r_control}
 """
 TREE_OSC_TEMPLATE = """
@@ -19,9 +37,6 @@ XU{i} /out{j} /osc{i} control{i} VO2_Sto
 C{i} /osc{i} 0 {c}
 R{i} /osc{i} /out{i} {r}
 R{i}control control{i} 0 {r_control}
-"""
-POST_SUM = """
-R_last /sum 0 {r_last}
 """
 CONTROL_TEMPLATE = """* Control commands
 .control
@@ -47,31 +62,40 @@ def build_tree_netlist(G: nx.DiGraph, path: Path, PARAM: dict) -> dict:
     netlist = [] # netlist as list of lines
     # add includes and power supply to netlist
     netlist.append(INCLUDE)
-    netlist.append(POWER.format(v=PARAM["v_in"]))
 
     # add root to netlist
     root = list(nx.topological_sort(G))[0]
-    r = np.random.randint(PARAM["r_min"], 1+PARAM["r_max"])
-    c = np.random.uniform(PARAM["c_min"], PARAM["c_max"])
-    r_control = PARAM["r_control"]
-    det_param[f"r0"] = r
-    det_param[f"c0"] = c
-    netlist.append(SUM_OSC_TEMPLATE.format(i=root, r=r, c=c, r_control=r_control))
-    
+    netlist.append(RESISTOR_0.format(i=root, r=PARAM["r_tree"]))
+
     # add root's children to netlist
     def add_children(root):
-        for edge in nx.edges(G, [root]): # add all children of root to netlist
-            child = edge[1]
+        edges = nx.edges(G, [root])
+        # base case: no children
+        if len(edges) == 0:
+            parent = list(G.in_edges(root))[0][0]
             r = np.random.randint(PARAM["r_min"], 1+PARAM["r_max"])
             c = np.random.uniform(PARAM["c_min"], PARAM["c_max"])
-            det_param[f"r{child}"] = r
-            det_param[f"c{child}"] = c
-            netlist.append(TREE_OSC_TEMPLATE.format(i=child, j=root, r=r, c=c, r_control=r_control))
-            # recursive case: children means appending
+            r_control = PARAM["r_control"]
+            det_param[f"r{root}"] = r
+            det_param[f"c{root}"] = c
+            netlist.append(LEAF_OSC_TEMPLATE.format(i=root, j=parent, r=r, c=c, r_control=r_control))
+            netlist.append(TREE_POWER.format(i=root, v=PARAM["v_in"]))
+            return
+        
+        # recursive case: node has children
+        def add_resistor_node(child):
+            det_param[f"r{child}"] = PARAM["r_tree"]
+            netlist.append(RESISTOR.format(i=child, j=root, r=PARAM["r_tree"]))
             add_children(child)
-        # base case: no children means do nothing
-
-    add_children(root)
+        
+        children = [edge[1] for edge in edges] # get children
+        map(add_resistor_node, children)
+      
+    # we have already added the root node as a special case
+    # so build tree starting with its children
+    for edge in nx.edges(G, [root]):
+        child = edge[1]
+        add_children(child)
 
     with open(path, "w") as f:
         f.write("\n".join(netlist))
