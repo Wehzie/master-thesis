@@ -156,7 +156,8 @@ def plot_frequency_dependency(df):
 
 def main():
     df = sweep()
-    plot_frequency_dependency(df)
+    print(df)
+    #plot_frequency_dependency(df)
     
 main()
 

@@ -29,7 +29,7 @@ def simple_graph() -> nx.Graph:
     return G
 
 def main():
-    G = nx.balanced_tree(2, 1, create_using=nx.DiGraph())
+    G = nx.balanced_tree(2, 2, create_using=nx.DiGraph())
     nx.draw(G, with_labels=True)
     plt.show()
     build_tree_netlist(G, Path("yolo.cir"), PARAM)

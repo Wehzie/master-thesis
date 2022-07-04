@@ -13,9 +13,9 @@ import matplotlib.pyplot as plt
 from scipy.io.wavfile import read
 from scipy.io.wavfile import write
 
-TARGET_AUDIO_PATH = Path("data/magpie. 35k, mono, 8-bit, 11025 Hz, 3.3 seconds.wav")
+TARGET_AUDIO_PATH = Path("resources/magpie. 35k, mono, 8-bit, 11025 Hz, 3.3 seconds.wav")
 DATA_PATH = Path("data")
-PARAM = bird_params["magpie"]
+PARAM = bird_params["magpie_single_oscillator"]
 
 def run_ngspice(netlist: Path) -> None:
     """start an ngspice simulation from python"""
@@ -126,28 +126,28 @@ def json_to_df(path: Path) -> pd.DataFrame:
     df = pd.DataFrame(data_rows)
     return df
 
-def random_search(trials: int = 1, visual: bool = True) -> None:
+def random_search(param: dict, visual: bool = True) -> None:
     """random search over oscillator space"""
     experiment_path = find_dir_name()
     target = read(TARGET_AUDIO_PATH)[1]
-    for i in range(trials):
+    for i in range(param["trials"]):
         tmp_path = experiment_path / f"netlist{i}.cir"
-        det_params = build_sum_netlist(tmp_path, bird_params["magpie"])
+        det_params = build_sum_netlist(tmp_path, param)
         run_ngspice(tmp_path)
         df = load_sim_data(Path(str(tmp_path) + ".dat"))
         s = df.iloc[:,1] # column as series
         if visual:
             freq, abs_spec = analyze_data(s)
-            visualize_analysis(df, PARAM["dependent_component"], freq, abs_spec)
+            visualize_analysis(df, param["dependent_component"], freq, abs_spec)
         det_params["rmse"] = rmse(s, target) 
         with open(experiment_path / f"param{i}.json", "w") as f:
             json.dump(det_params, f)
     
-    df = json_to_df(Path(DATA_PATH / "experiment0/"))
+    df = json_to_df(experiment_path)
     print(df)
 
-
 def main():
-    random_search()
+    print(PARAM)
+    random_search(param=PARAM["magpie_single_oscillator"])
 
 main()

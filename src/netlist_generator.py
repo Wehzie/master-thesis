@@ -9,10 +9,10 @@ POWER = """
 V1 /bridge 0 dc {v}
 """
 RESISTOR_0 = """
-R{i} 0 right{i} {r}
+R{i} 0 wire{i} {r}
 """
 RESISTOR = """
-R{i} left{i} right{j} {r}
+R{i} wire{i} wire{j} {r}
 """
 POST_SUM = """
 R_last /sum 0 {r_last}
@@ -29,7 +29,7 @@ R{i}control control{i} 0 {r_control}
 LEAF_OSC_TEMPLATE = """
 XU{i} /bridge{i} /osc{i} control{i} VO2_Sto
 C{i} /osc{i} 0 {c}
-R{i} /osc{i} /right{j} {r}
+R{i} /osc{i} /wire{j} {r}
 R{i}control control{i} 0 {r_control}
 """
 TREE_OSC_TEMPLATE = """
@@ -37,6 +37,13 @@ XU{i} /out{j} /osc{i} control{i} VO2_Sto
 C{i} /osc{i} 0 {c}
 R{i} /osc{i} /out{i} {r}
 R{i}control control{i} 0 {r_control}
+"""
+SINGLE_OSCILLATOR_CIRCUIT = """
+V1 power 0 dc 14
+XU1 power osc control VO2_Sto
+C1 osc 0 {c}
+R1 osc 0 {r}
+R1control control 0 {r_control}
 """
 CONTROL_TEMPLATE = """* Control commands
 .control
@@ -48,7 +55,6 @@ quit
 .endc
 """
 
-# TODO: reverse tree such that leafs are powered and root is integrator
 def build_tree_netlist(G: nx.DiGraph, path: Path, PARAM: dict) -> dict:
     """
     Write a netlist to file where oscillators signals are summed in a.
@@ -68,11 +74,13 @@ def build_tree_netlist(G: nx.DiGraph, path: Path, PARAM: dict) -> dict:
     netlist.append(RESISTOR_0.format(i=root, r=PARAM["r_tree"]))
 
     # add root's children to netlist
-    def add_children(root):
+    def add_children(root, parent):
+        print(root, parent, "root, parent")
         edges = nx.edges(G, [root])
+        children = [edge[1] for edge in edges]
+
         # base case: no children
         if len(edges) == 0:
-            parent = list(G.in_edges(root))[0][0]
             r = np.random.randint(PARAM["r_min"], 1+PARAM["r_max"])
             c = np.random.uniform(PARAM["c_min"], PARAM["c_max"])
             r_control = PARAM["r_control"]
@@ -83,19 +91,17 @@ def build_tree_netlist(G: nx.DiGraph, path: Path, PARAM: dict) -> dict:
             return
         
         # recursive case: node has children
-        def add_resistor_node(child):
-            det_param[f"r{child}"] = PARAM["r_tree"]
-            netlist.append(RESISTOR.format(i=child, j=root, r=PARAM["r_tree"]))
-            add_children(child)
         
-        children = [edge[1] for edge in edges] # get children
-        map(add_resistor_node, children)
+        det_param[f"r{root}"] = PARAM["r_tree"]
+        netlist.append(RESISTOR.format(i=root, j=parent, r=PARAM["r_tree"]))
+        for child in children:
+            add_children(root=child, parent=root)
       
     # we have already added the root node as a special case
     # so build tree starting with its children
     for edge in nx.edges(G, [root]):
         child = edge[1]
-        add_children(child)
+        add_children(child, root)
 
     with open(path, "w") as f:
         f.write("\n".join(netlist))
@@ -132,6 +138,23 @@ def build_sum_netlist(path: Path, PARAM: dict) -> dict:
         time_start=PARAM["time_start"],
         dependent_component=PARAM["dependent_component"],
         file_path=Path(str(path) + ".dat"))
+
+    with open(path, "w") as f:
+        f.write(netlist)
+
+    return det_param
+
+def build_single_oscillator_circuit(path: Path, PARAM: dict) -> dict:
+    assert PARAM["c_max"] <= 1, "Randomly generating capacitors with >1 Farad is not implemented!"
+    det_param = PARAM # probabilistic to deterministic
+    netlist = INCLUDE
+    
+    r = np.random.randint(PARAM["r_min"], 1+PARAM["r_max"])
+    c = np.random.uniform(PARAM["c_min"], PARAM["c_max"])
+    r_control = PARAM["r_control"]
+    netlist += SINGLE_OSCILLATOR_CIRCUIT.format(r=r, c=c, r_control=r_control)
+    det_param["r"] = r
+    det_param["c"] = c
 
     with open(path, "w") as f:
         f.write(netlist)
