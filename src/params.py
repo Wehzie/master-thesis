@@ -38,7 +38,7 @@ bird_params = {
         "time_stop": "1e-5",
         "time_start": "0",
 
-        "dependent_component": "v(\"/osc1\")",
+        "dependent_component": "v(osc1)",
     },
     "magpie_sum": {
         "trials": 1,
@@ -64,22 +64,22 @@ bird_params = {
         "time_stop": "10e-6",
         "time_start": "0",
 
-        "dependent_component": "v(\"/sum\")",
+        "dependent_component": "v(sum)",
     },
     "magpie_tree": {
         "trials": 1,
 
         "branching": 2, # branching factor
-        "height": 1, # tree height
+        "height": 5, # tree height
 
         "v_in": 14,
 
-        "r_tree": 30e2, # only with tree architecture
+        "r_tree": 0, # only with tree architecture
 
         "r_control": 1e6,
 
-        "r_min": 47e3,
-        "r_max": 47e3,
+        "r_min": 30e3,
+        "r_max": 70e3,
         "r_dist": "uniform",
 
         "c_min": 300e-12,

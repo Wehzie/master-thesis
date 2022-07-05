@@ -8,7 +8,7 @@ INCLUDE = """
 .include ./circuit_lib/VO2_Sto_rand.cir
 """
 POWER = """
-V1 /bridge 0 dc {v}
+V1 bridge 0 dc {v}
 """
 RESISTOR_0 = """
 R{i} 0 wire{i} {r}
@@ -17,27 +17,27 @@ RESISTOR = """
 R{i} wire{i} wire{j} {r}
 """
 POST_SUM = """
-R_last /sum 0 {r_last}
+R_last sum 0 {r_last}
 """
 TREE_POWER = """
-V{i} /bridge{i} 0 dc {v}
+V{i} bridge{i} 0 dc {v}
 """
 SUM_OSC_TEMPLATE = """
-XU{i} /bridge /osc{i} control{i} VO2_Sto
-C{i} /osc{i} 0 {c}
-R{i} /osc{i} /sum {r}
+XU{i} bridge osc{i} control{i} VO2_Sto
+C{i} osc{i} 0 {c}
+R{i} osc{i} sum {r}
 R{i}control control{i} 0 {r_control}
 """
 LEAF_OSC_TEMPLATE = """
-XU{i} /bridge{i} /osc{i} control{i} VO2_Sto
-C{i} /osc{i} 0 {c}
-R{i} /osc{i} wire{j} {r}
+XU{i} bridge{i} osc{i} control{i} VO2_Sto
+C{i} osc{i} 0 {c}
+R{i} osc{i} wire{j} {r}
 R{i}control control{i} 0 {r_control}
 """
 TREE_OSC_TEMPLATE = """
-XU{i} /out{j} /osc{i} control{i} VO2_Sto
-C{i} /osc{i} 0 {c}
-R{i} /osc{i} /out{i} {r}
+XU{i} out{j} osc{i} control{i} VO2_Sto
+C{i} osc{i} 0 {c}
+R{i} osc{i} out{i} {r}
 R{i}control control{i} 0 {r_control}
 """
 SINGLE_OSCILLATOR_CIRCUIT = """
