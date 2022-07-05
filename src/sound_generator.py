@@ -1,5 +1,6 @@
+from typing import Callable
 from params import bird_params
-from netlist_generator import build_sum_netlist
+from netlist_generator import select_netlist_generator
 
 import glob
 import os
@@ -15,7 +16,7 @@ from scipy.io.wavfile import write
 
 TARGET_AUDIO_PATH = Path("resources/magpie. 35k, mono, 8-bit, 11025 Hz, 3.3 seconds.wav")
 DATA_PATH = Path("data")
-PARAM = bird_params["magpie_single_oscillator"]
+PARAM = bird_params["magpie_tree"]
 
 def run_ngspice(netlist: Path) -> None:
     """start an ngspice simulation from python"""
@@ -126,14 +127,17 @@ def json_to_df(path: Path) -> pd.DataFrame:
     df = pd.DataFrame(data_rows)
     return df
 
-def random_search(param: dict, visual: bool = True) -> None:
+def random_search(netlist_generator: Callable, param: dict, visual: bool = True) -> None:
     """random search over oscillator space"""
     experiment_path = find_dir_name()
     target = read(TARGET_AUDIO_PATH)[1]
     for i in range(param["trials"]):
         tmp_path = experiment_path / f"netlist{i}.cir"
-        det_params = build_sum_netlist(tmp_path, param)
+        # build netlist and store parameters
+        det_params = netlist_generator(tmp_path, param)
+        # run simulation on netlist
         run_ngspice(tmp_path)
+        # load the simulation data written by ngspice into Python
         df = load_sim_data(Path(str(tmp_path) + ".dat"))
         s = df.iloc[:,1] # column as series
         if visual:
@@ -143,11 +147,12 @@ def random_search(param: dict, visual: bool = True) -> None:
         with open(experiment_path / f"param{i}.json", "w") as f:
             json.dump(det_params, f)
     
+    # aggregate the results of n trials into a single dataframe
     df = json_to_df(experiment_path)
     print(df)
 
 def main():
-    print(PARAM)
-    random_search(param=PARAM["magpie_single_oscillator"])
+    netlist_generator = select_netlist_generator("tree")
+    random_search(netlist_generator, param=PARAM)
 
 main()

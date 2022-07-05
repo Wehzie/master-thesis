@@ -1,6 +1,8 @@
 from pathlib import Path
+from typing import Callable
 import networkx as nx
 import numpy as np
+import matplotlib.pyplot as plt
 
 INCLUDE = """
 .include ./circuit_lib/VO2_Sto_rand.cir
@@ -29,7 +31,7 @@ R{i}control control{i} 0 {r_control}
 LEAF_OSC_TEMPLATE = """
 XU{i} /bridge{i} /osc{i} control{i} VO2_Sto
 C{i} /osc{i} 0 {c}
-R{i} /osc{i} /wire{j} {r}
+R{i} /osc{i} wire{j} {r}
 R{i}control control{i} 0 {r_control}
 """
 TREE_OSC_TEMPLATE = """
@@ -55,7 +57,15 @@ quit
 .endc
 """
 
-def build_tree_netlist(G: nx.DiGraph, path: Path, PARAM: dict) -> dict:
+def build_control(path: Path, PARAM: dict) -> str:
+    return CONTROL_TEMPLATE.format(
+        time_step=PARAM["time_step"],
+        time_stop=PARAM["time_stop"],
+        time_start=PARAM["time_start"],
+        dependent_component=PARAM["dependent_component"],
+        file_path=Path(str(path) + ".dat"))
+
+def build_tree_netlist(path: Path, PARAM: dict, visual: bool = False) -> dict:
     """
     Write a netlist to file where oscillators signals are summed in a.
     
@@ -63,6 +73,12 @@ def build_tree_netlist(G: nx.DiGraph, path: Path, PARAM: dict) -> dict:
     """
     assert PARAM["c_max"] <= 1, "Randomly generating capacitors with >1 Farad is not implemented!"
     
+    # build graph
+    G = nx.balanced_tree(PARAM["branching"], PARAM["height"], create_using=nx.DiGraph())
+    if visual:
+        nx.draw(G, with_labels=True)
+        plt.show()
+
     det_param = PARAM # probabilistic to deterministic parameters
 
     netlist = [] # netlist as list of lines
@@ -91,7 +107,7 @@ def build_tree_netlist(G: nx.DiGraph, path: Path, PARAM: dict) -> dict:
             return
         
         # recursive case: node has children
-        
+
         det_param[f"r{root}"] = PARAM["r_tree"]
         netlist.append(RESISTOR.format(i=root, j=parent, r=PARAM["r_tree"]))
         for child in children:
@@ -102,6 +118,9 @@ def build_tree_netlist(G: nx.DiGraph, path: Path, PARAM: dict) -> dict:
     for edge in nx.edges(G, [root]):
         child = edge[1]
         add_children(child, root)
+
+    # add control statements
+    netlist.append(build_control(path, PARAM))
 
     with open(path, "w") as f:
         f.write("\n".join(netlist))
@@ -132,12 +151,7 @@ def build_sum_netlist(path: Path, PARAM: dict) -> dict:
         det_param[f"c{i}"] = c
 
     netlist += POST_SUM.format(r_last=PARAM["r_last"])
-    netlist += CONTROL_TEMPLATE.format(
-        time_step=PARAM["time_step"],
-        time_stop=PARAM["time_stop"],
-        time_start=PARAM["time_start"],
-        dependent_component=PARAM["dependent_component"],
-        file_path=Path(str(path) + ".dat"))
+    netlist += build_control(path, PARAM)
 
     with open(path, "w") as f:
         f.write(netlist)
@@ -145,6 +159,10 @@ def build_sum_netlist(path: Path, PARAM: dict) -> dict:
     return det_param
 
 def build_single_oscillator_circuit(path: Path, PARAM: dict) -> dict:
+    """
+    probably not going to use this as n-oscillator circuit can be used
+    idea was synthesizing a single oscillator circuit
+    """
     assert PARAM["c_max"] <= 1, "Randomly generating capacitors with >1 Farad is not implemented!"
     det_param = PARAM # probabilistic to deterministic
     netlist = INCLUDE
@@ -160,3 +178,16 @@ def build_single_oscillator_circuit(path: Path, PARAM: dict) -> dict:
         f.write(netlist)
 
     return det_param
+
+def select_netlist_generator(builder: str) -> Callable:
+    """
+    select a netlist generator and return appropriate function
+
+    selection: "tree", "sum", "single"
+    """
+    if builder == "tree": return build_tree_netlist
+    if builder == "sum": return build_sum_netlist
+    if builder == "single": return build_single_oscillator_circuit
+    raise ValueError()
+
+    
