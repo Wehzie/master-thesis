@@ -82,6 +82,7 @@ path: Path = Path("data/out.wav"),
     write(path, samp_rate, s.astype(np.uint8))
 
 def scale_up(short: np.ndarray, len_long: int) -> np.ndarray:
+    """scale a short signal up to the desired length by repeating each symbol in-place"""
     short = pd.Series(short)
     short = short.repeat(len_long//len(short))
     # pad with zeros at the end
