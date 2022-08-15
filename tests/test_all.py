@@ -15,9 +15,9 @@ def test_signal_to_wav(visual: bool = False) -> None:
     """test by loading from wav, then saving, then loading again"""
     from data_analysis import plot_signal
     
-    data = io.load_data() # load default data
+    _, data = io.load_data() # load default data
     preprocessor.save_signal_to_wav(data) # save default data to wav
-    data_from_wav = io.load_data(Path("data/test.wav")) # load from wav
+    _, data_from_wav = io.load_data(Path("data/test.wav")) # load from wav
     
     if visual:
         plot_signal(data) # plot default data

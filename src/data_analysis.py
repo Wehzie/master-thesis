@@ -22,10 +22,16 @@ def plot_signal(data: np.ndarray, show: bool = True, save_path: Path = None) -> 
 def plot_fourier(data: np.ndarray, show: bool = True, save_path: Path = None) -> None:
     """plot the fourier transform of a 2 dimensional time series"""
     # apply fourier transform to signal
-    spectrum = np.fft.fft(data)
+	# can use rfft since data purely real
+    # twice as fast as fft using complex conjugates
+    spectrum = np.fft.rfft(data)
     abs_spec = abs(spectrum) # absolute spectrum
     sample_spacing = 1.0 / 44100 # inverse of the sampling rate
     freq = np.fft.fftfreq(len(abs_spec), d=sample_spacing)
+	
+	# plot negative spectrum first and avoid horizontal line in plot
+    abs_spec = np.fft.fftshift(abs_spec)
+    freq = np.fft.fftshift(freq)
 
     _, ax = plt.subplots()
     plt.plot(freq, abs_spec)
@@ -40,7 +46,7 @@ def plot_fourier(data: np.ndarray, show: bool = True, save_path: Path = None) ->
         plt.savefig(save_path, dpi=300)
 
 def main():
-    data = load_data()
+    sampling_rate, data = load_data()
     plot_signal(data)
     plot_fourier(data)
 

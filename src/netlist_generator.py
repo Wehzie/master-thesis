@@ -158,36 +158,14 @@ def build_sum_netlist(path: Path, PARAM: dict) -> dict:
 
     return det_param
 
-def build_single_oscillator_circuit(path: Path, PARAM: dict) -> dict:
-    """
-    probably not going to use this as n-oscillator circuit can be used
-    idea was synthesizing a single oscillator circuit
-    """
-    assert PARAM["c_max"] <= 1, "Randomly generating capacitors with >1 Farad is not implemented!"
-    det_param = PARAM # probabilistic to deterministic
-    netlist = INCLUDE
-    
-    r = np.random.randint(PARAM["r_min"], 1+PARAM["r_max"])
-    c = np.random.uniform(PARAM["c_min"], PARAM["c_max"])
-    r_control = PARAM["r_control"]
-    netlist += SINGLE_OSCILLATOR_CIRCUIT.format(r=r, c=c, r_control=r_control)
-    det_param["r"] = r
-    det_param["c"] = c
-
-    with open(path, "w") as f:
-        f.write(netlist)
-
-    return det_param
-
 def select_netlist_generator(builder: str) -> Callable:
     """
     select a netlist generator and return appropriate function
 
-    selection: "tree", "sum", "single"
+    selection: "tree", "sum"
     """
     if builder == "tree": return build_tree_netlist
     if builder == "sum": return build_sum_netlist
-    if builder == "single": return build_single_oscillator_circuit
     raise ValueError()
 
     

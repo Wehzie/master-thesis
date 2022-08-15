@@ -16,7 +16,7 @@ from scipy.io.wavfile import write
 
 TARGET_AUDIO_PATH = Path("resources/magpie. 35k, mono, 8-bit, 11025 Hz, 3.3 seconds.wav")
 DATA_PATH = Path("data")
-PARAM = bird_params["magpie_tree"]
+PARAM = bird_params["magpie_single_oscillator"]
 
 def run_ngspice(netlist: Path) -> None:
     """start an ngspice simulation from python"""
@@ -153,7 +153,8 @@ def random_search(netlist_generator: Callable, param: dict, visual: bool = True)
     print(df)
 
 def main():
-    netlist_generator = select_netlist_generator("tree")
+    netlist_generator = select_netlist_generator("sum")
     random_search(netlist_generator, param=PARAM)
 
-main()
+if __name__ == "__main__":
+    main()
