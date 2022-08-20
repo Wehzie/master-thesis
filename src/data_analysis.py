@@ -5,6 +5,21 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+def plot_pred_target(pred: np.ndarray, target: np.ndarray, show: bool = True, save_path: Path = None) -> None:
+    """plot a 2 dimensional time series signal"""
+
+    plt.figure()
+    plt.plot(target, label="target", linestyle="dashed", alpha=0.9)
+    plt.plot(pred, label="prediction", linestyle="dashdot", alpha=0.9)
+    plt.gca().set_xlabel("sample index")
+    plt.gca().set_ylabel("amplitude")
+    plt.legend()
+
+    if show:
+        plt.show()
+    if save_path:
+        plt.savefig(save_path, dpi=300)
+
 def plot_signal(data: np.ndarray, show: bool = True, save_path: Path = None) -> None:
     """plot a 2 dimensional time series signal"""
     x = list(range(len(data)))
@@ -47,6 +62,7 @@ def plot_fourier(data: np.ndarray, show: bool = True, save_path: Path = None) ->
 
 def main():
     sampling_rate, data = load_data()
+    plot_pred_target(data, data-10)
     plot_signal(data)
     plot_fourier(data)
 

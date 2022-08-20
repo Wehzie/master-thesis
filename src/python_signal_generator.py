@@ -7,9 +7,11 @@ import numpy as np
 from scipy.interpolate import interp1d
 from scipy import signal
 import matplotlib.pyplot as plt
+from sklearn.linear_model import LinearRegression
 
 # the sampling rate of the target signal
 DEFAULT_SAMPLING_RATE: Final = 11025
+DEFAULT_AMPLITUDE: Final = 0.5 # resembling 0.5 V amplitude of V02
 
 def gen_sawtooth():
     """generate sawtooth using scipy"""
@@ -17,7 +19,12 @@ def gen_sawtooth():
     plt.plot(x, signal.sawtooth(2 * np.pi * 5 * x))
     plt.show()
 
-def gen_inv_sawtooth(freq: float, duration: float,
+def gen_inv_sawtooth(
+    freq: float,
+    duration: float,
+    amplitude: int = DEFAULT_AMPLITUDE, 
+    weight: float = 1,
+    random_phase: bool = False,
     sampling_rate: int = DEFAULT_SAMPLING_RATE,
     visual: bool = False):
     """
@@ -29,8 +36,16 @@ def gen_inv_sawtooth(freq: float, duration: float,
     """
 
     samples = duration * int(sampling_rate)
+    
+    phase = 0
+    if random_phase:
+        if freq > 0:
+            phase = np.random.uniform(0, freq)
+        else:
+            phase = np.random.uniform(freq, 0)
+
     x = np.linspace(0, duration, samples)
-    y = signal.sawtooth(2 * np.pi * freq * x, width=0.15)
+    y = weight * amplitude * signal.sawtooth(2 * np.pi * freq * x + phase, width=0.15)
     if visual:
         plt.plot(x, y)
         plt.show()
@@ -40,7 +55,9 @@ def gen_inv_sawtooth_api(det_params: dict):
     """api to get_inv_sawtooth via det_params dict"""
     freq = det_params["f"]
     duration = det_params["duration"]
-    return gen_inv_sawtooth(freq, duration)
+    random_phase = det_params["random_phase"]
+    weight = det_params["weight"]
+    return gen_inv_sawtooth(freq, duration, weight=weight, random_phase=random_phase)
 
 def gen_custom_sawtooth():
     x = np.linspace(1, 10, 100)
@@ -71,7 +88,7 @@ def interpolate_signal():
     plt.show()
 
 def main():
-    gen_inv_sawtooth(2, 10, visual=True, sampling_rate=DEFAULT_SAMPLING_RATE)
+    gen_inv_sawtooth(freq=0.5, duration=10, weight=0.5, visual=True, sampling_rate=DEFAULT_SAMPLING_RATE)
 
 if __name__ == "__main__":
     main()
