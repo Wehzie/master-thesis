@@ -35,7 +35,10 @@ def gen_inv_sawtooth(
     sampling_rate: number of samples per second
     """
 
-    samples = duration * int(sampling_rate)
+    # ceil is used to handle float durations
+    ceil_duration = np.ceil(duration)
+    samples = int(duration * sampling_rate)
+    ceil_samples = int(ceil_duration * sampling_rate)
     
     phase = 0
     if random_phase:
@@ -44,7 +47,7 @@ def gen_inv_sawtooth(
         else:
             phase = np.random.uniform(freq, 0)
 
-    x = np.linspace(0, duration, samples)
+    x = np.linspace(0, ceil_duration, ceil_samples)[0:samples]
     y = weight * amplitude * signal.sawtooth(2 * np.pi * freq * x + phase, width=0.15)
     if visual:
         plt.plot(x, y)
@@ -88,7 +91,7 @@ def interpolate_signal():
     plt.show()
 
 def main():
-    gen_inv_sawtooth(freq=0.5, duration=10, weight=0.5, visual=True, sampling_rate=DEFAULT_SAMPLING_RATE)
+    gen_inv_sawtooth(freq=0.5, duration=1, weight=0.5, visual=True, sampling_rate=DEFAULT_SAMPLING_RATE)
 
 if __name__ == "__main__":
     main()
