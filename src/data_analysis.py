@@ -5,7 +5,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-def plot_pred_target(pred: np.ndarray, target: np.ndarray, show: bool = True, save_path: Path = None) -> None:
+def plot_pred_target(pred: np.ndarray, target: np.ndarray, show: bool = True,
+    save_path: Path = None, title: str = None) -> None:
     """plot a 2 dimensional time series signal"""
 
     plt.figure()
@@ -14,6 +15,7 @@ def plot_pred_target(pred: np.ndarray, target: np.ndarray, show: bool = True, sa
     plt.gca().set_xlabel("sample index")
     plt.gca().set_ylabel("amplitude")
     plt.legend()
+    if title: plt.title(title)
 
     if show:
         plt.show()
@@ -59,6 +61,17 @@ def plot_fourier(data: np.ndarray, show: bool = True, save_path: Path = None) ->
         plt.show()
     if save_path:
         plt.savefig(save_path, dpi=300)
+
+        
+def compute_rmse(p: np.ndarray, t: np.ndarray, verbose: bool = False) -> float:
+    """
+    Compute root mean square error (RMSE) between prediction and target signal.
+    """
+    rmse = np.sqrt(((p-t)**2).mean())
+    if verbose:
+        print(f"RMSE: {rmse}")
+    return rmse
+
 
 def main():
     sampling_rate, data = load_data()

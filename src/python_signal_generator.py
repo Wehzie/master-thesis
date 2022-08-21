@@ -2,12 +2,10 @@ from pathlib import Path
 from typing import Final
 from sound_generator import load_sim_data
 
-import pandas as pd
 import numpy as np
 from scipy.interpolate import interp1d
 from scipy import signal
 import matplotlib.pyplot as plt
-from sklearn.linear_model import LinearRegression
 
 # the sampling rate of the target signal
 DEFAULT_SAMPLING_RATE: Final = 11025
@@ -21,7 +19,8 @@ def gen_sawtooth():
 
 def gen_inv_sawtooth(
     freq: float,
-    duration: float,
+    duration: float = None,
+    samples: int = None,
     amplitude: int = DEFAULT_AMPLITUDE, 
     weight: float = 1,
     random_phase: bool = False,
@@ -34,10 +33,15 @@ def gen_inv_sawtooth(
     duration: length of the generated signal in seconds
     sampling_rate: number of samples per second
     """
-
+    if duration == None and samples != None:
+        duration = samples/sampling_rate
+    elif samples == None and duration != None:
+        samples = int(duration * sampling_rate)
+    else:
+        raise ValueError("either duration or number of samples must be specified")
+    
     # ceil is used to handle float durations
     ceil_duration = np.ceil(duration)
-    samples = int(duration * sampling_rate)
     ceil_samples = int(ceil_duration * sampling_rate)
     
     phase = 0
@@ -47,20 +51,27 @@ def gen_inv_sawtooth(
         else:
             phase = np.random.uniform(freq, 0)
 
-    x = np.linspace(0, ceil_duration, ceil_samples)[0:samples]
-    y = weight * amplitude * signal.sawtooth(2 * np.pi * freq * x + phase, width=0.15)
+    x_time = np.linspace(0, ceil_duration, ceil_samples)[0:samples]
+    x_samples = range(len(x_time))
+    y = weight * amplitude * signal.sawtooth(2 * np.pi * freq * x_time + phase, width=0.15)
     if visual:
-        plt.plot(x, y)
+        plt.figure()
+        plt.plot(x_time, y)
+        plt.title("x-time")
+        plt.figure()
+        plt.plot(x_samples, y)
+        plt.title("x-samples")
         plt.show()
-    return x, y
+    return x_samples, y
 
 def gen_inv_sawtooth_api(det_params: dict):
     """api to get_inv_sawtooth via det_params dict"""
     freq = det_params["f"]
-    duration = det_params["duration"]
+    #duration = det_params["duration"]
+    samples = det_params["samples"]
     random_phase = det_params["random_phase"]
     weight = det_params["weight"]
-    return gen_inv_sawtooth(freq, duration, weight=weight, random_phase=random_phase)
+    return gen_inv_sawtooth(freq=freq, samples=samples, weight=weight, random_phase=random_phase)
 
 def gen_custom_sawtooth():
     x = np.linspace(1, 10, 100)
@@ -91,7 +102,7 @@ def interpolate_signal():
     plt.show()
 
 def main():
-    gen_inv_sawtooth(freq=0.5, duration=1, weight=0.5, visual=True, sampling_rate=DEFAULT_SAMPLING_RATE)
+    gen_inv_sawtooth(freq=0.5, samples=1e4, weight=0.5, visual=True, sampling_rate=DEFAULT_SAMPLING_RATE)
 
 if __name__ == "__main__":
     main()
