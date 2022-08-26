@@ -70,12 +70,12 @@ class Sample():
         return reg
 
     @staticmethod
-    def predict(X: list, coef: np.ndarray) -> np.ndarray:
+    def predict(X: list, coef: np.ndarray, intercept: float) -> np.ndarray:
         """generate approximation of target, y"""
         X = np.array(X)
         X = X.T
         print(X.shape)
-        fit = np.sum(X * coef, axis=1)
+        fit = np.sum(X * coef, axis=1) + intercept
         print(fit.shape)
         return fit
 
@@ -195,11 +195,10 @@ def main():
 
     # apply regression
     reg = best_sample.regress_linear(target, verbose=True)
-    pred = Sample.predict(best_sample.y_li, reg.coef_)
+    pred = Sample.predict(best_sample.y_li, reg.coef_, reg.intercept_)
     best_sample.fit_y = pred
     best_sample.rmse_fit = compute_rmse(pred, target)
 
-    print(best_sample)
     plot_pred_target(best_sample.sum_y, target, show=False, title="sum")
     plot_pred_target(best_sample.fit_y, target, show=False, title="regression")
     plt.show()
