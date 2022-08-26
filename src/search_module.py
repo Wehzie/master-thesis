@@ -1,8 +1,9 @@
 import csv
 from pathlib import Path
+from re import S
 from typing import Any, Callable, Final, List
 
-from data_analysis import compute_rmse, plot_pred_target, plot_signal, plot_fourier
+from data_analysis import compute_rmse, hist_rmse, plot_n, plot_pred_target, plot_signal, plot_fourier
 from data_preprocessor import align_signals, scale_down
 from data_io import load_data
 from python_signal_generator import gen_inv_sawtooth_api
@@ -154,19 +155,26 @@ class SearchModule():
             # store sample
             self.samples.append(sample)
 
-    def find_best_sum_sample(self) -> Sample:
-        """find the sample with the lowest root mean square error"""
-        best = self.samples[0]
+    def gather_samples(self) -> tuple[Sample, list]:
+        """find the sample with the lowest root mean square error
+        and return a list of all rmse"""
+        best_sample = self.samples[0]
+        rmse_li = list()
+
         for s in self.samples:
-            if s.rmse_sum < best.rmse_sum:
-                best = s
-        return best
+            rmse_li.append(s.rmse_sum)
+        
+            if s.rmse_sum < best_sample.rmse_sum:
+                best_sample = s
+        
+        return best_sample, rmse_li
+        
 
 def main():
     params = {
-        "n_osc": 100, # number of oscillators
-        "f_lo": 1, # frequency bounds
-        "f_hi": 1e2,
+        "n_osc": 1000, # number of oscillators
+        "f_lo": 1e5, # frequency bounds
+        "f_hi": 1e6,
         #"duration": 0.3, # signal duration in seconds
         "samples": 300, # number of samples in the signal
         "weight": "random",
@@ -174,16 +182,17 @@ def main():
     }
     sampling_rate, target = load_data()
     target = scale_down(target, 0.01)
-    
+
     search = SearchModule(params,
         n_samples=100, # number of generated sum-signals
         sig_gen_func=gen_inv_sawtooth_api,
         target=target)
     search.random_search()
     
-    best_sample = search.find_best_sum_sample()
+    best_sample, rmse_list = search.gather_samples()
     best_sample.save()
-    
+    hist_rmse(rmse_list)
+
     # apply regression
     reg = best_sample.regress_linear(target, verbose=True)
     pred = Sample.predict(best_sample.y_li, reg.coef_)

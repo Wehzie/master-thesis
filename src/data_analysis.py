@@ -3,7 +3,51 @@ from data_io import load_data
 
 import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
+
+def plot_n(data: np.ndarray, show: bool = True, save_path: Path = None) -> None:
+    """plot n signals in a single plot"""
+
+    # generate a grid of subplots
+    n_signals = data.shape[0] # rows
+    n_rows = None
+    
+    i = 0
+    while i**2 <= n_signals:
+        n_rows = i
+        i += 1
+    remainder = n_signals - (i-1)**2
+    n_cols = n_rows
+    n_rows = n_rows + int(np.ceil(remainder / n_cols))
+
+    fig, ax = plt.subplots(n_rows, n_cols)
+
+    # plot signals into each subplot
+    idx_signal = 0
+    print("rows, cols")
+    print(n_rows, n_cols)
+    for r in range(n_rows):
+        for c in range(n_cols):
+            if idx_signal >= n_signals: break
+            ax[r, c].plot(data[idx_signal, :])
+            idx_signal += 1
+
+    if show:
+        plt.show()
+    if save_path:
+        plt.savefig(save_path, dpi=300)
+
+def hist_rmse(rmse_li: list, show: bool = False,  save_path: Path = None) -> None:
+    """produce a histogram over n samples"""
+    plt.figure()
+    plt.hist(rmse_li, bins=len(rmse_li)//10)
+    plt.gca().set_xlabel("rmse")
+    plt.gca().set_ylabel("count")
+
+    if show:
+        plt.show()
+    if save_path:
+        plt.savefig(save_path, dpi=300)
+
 
 def plot_pred_target(pred: np.ndarray, target: np.ndarray, show: bool = True,
     save_path: Path = None, title: str = None) -> None:
