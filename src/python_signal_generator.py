@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Final
+from typing import Callable, Final
 from sound_generator import load_sim_data
 
 import numpy as np
@@ -11,11 +11,6 @@ import matplotlib.pyplot as plt
 DEFAULT_SAMPLING_RATE: Final = 11025
 DEFAULT_AMPLITUDE: Final = 0.5 # resembling 0.5 V amplitude of V02
 
-def gen_sawtooth():
-    """generate sawtooth using scipy"""
-    x = np.linspace(0, 10, 500)
-    plt.plot(x, signal.sawtooth(2 * np.pi * 5 * x))
-    plt.show()
 
 def gen_inv_sawtooth(
     freq: float,
@@ -64,6 +59,7 @@ def gen_inv_sawtooth(
         plt.show()
     return x_samples, y
 
+# TODO: replace with ** notation
 def gen_inv_sawtooth_api(det_params: dict):
     """api to get_inv_sawtooth via det_params dict"""
     freq = det_params["f"]
@@ -73,13 +69,6 @@ def gen_inv_sawtooth_api(det_params: dict):
     weight = det_params["weight"]
     return gen_inv_sawtooth(freq=freq, samples=samples, weight=weight, random_phase=random_phase)
 
-def gen_custom_sawtooth():
-    x = np.linspace(1, 10, 100)
-    a = 1 # amplitude
-    p = 2 # period
-    y = - (2*a) / np.pi * np.arctan(1 / np.tan(np.pi*x / p))
-    plt.plot(x, y)
-    plt.show()
 
 def gen_custom_inv_sawtooth(freq: float):
     """a formula to compute the an inverse sawtooth"""
@@ -89,6 +78,7 @@ def gen_custom_inv_sawtooth(freq: float):
     y = (2*a) / np.pi * np.arctan(1 / np.tan(np.pi*x / p))
     plt.plot(x, y)
     plt.show()
+
 
 def interpolate_signal():
     """load a ngspice generated oscillation and interpolate the signal"""
@@ -101,11 +91,21 @@ def interpolate_signal():
     plt.plot(x, arr, 'o', x, f(x), "-")
     plt.show()
 
+
 def main():
-    gen_inv_sawtooth(freq=0.5, samples=1e4, weight=0.5, visual=True, sampling_rate=DEFAULT_SAMPLING_RATE)
+    param = {
+        "freq": 2,
+        "duration": 10,
+        "amplitude": 5, 
+        "random_phase": False,
+        "visual": True
+    }
+    gen_inv_sawtooth(**param)
+
 
 if __name__ == "__main__":
     main()
+
 
 def test_sum_signals():
     """sum two signals"""

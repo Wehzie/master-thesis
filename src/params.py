@@ -35,8 +35,8 @@ bird_params = {
         "c_dist": "uniform",
 
         "time_step": 5e-9,
-        "time_stop": "1e-5",
-        "time_start": "0",
+        "time_stop": 1e-5,
+        "time_start": 0,
 
         "dependent_component": "v(osc1)",
     },

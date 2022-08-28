@@ -1,9 +1,12 @@
+import glob
+import json
 from pathlib import Path
 import wave
 
 from scipy.io.wavfile import write
 from scipy.io.wavfile import read
 import numpy as np
+import pandas as pd
 
 DATA_PATH = Path("resources/magpie. 35k, mono, 8-bit, 11025 Hz, 3.3 seconds.wav")
 
@@ -46,6 +49,30 @@ def save_signal_to_wav(data: np.ndarray, path: Path = "data/test.wav") -> None:
     amplitude = np.iinfo(np.uint8).max # 255
     data *= amplitude # scale
     write(path, samplerate, data.astype(np.uint8))
+
+def find_dir_name(parent_path: Path) -> Path:
+    """find unused directory name for a search experiment and make directory"""
+    for i in range(100):
+        path = Path(parent_path / f"experiment{i}")
+        if not path.exists():
+            path.mkdir()
+            break
+    return path
+
+def json_to_df(path: Path) -> pd.DataFrame:
+    """aggregate parameters and results of multiple json files into a dataframe"""
+    data_rows = []
+    for json_file in glob.glob(str(path) + "/*.json"):
+        with open(json_file) as f:
+            data_rows.append(json.load(f))
+    df = pd.DataFrame(data_rows)
+    return df
+
+def load_sim_data(data_path: Path) -> pd.DataFrame:
+    """load the simulation data written to file by ngspice into python"""
+    df = pd.DataFrame()
+    df = pd.read_csv(data_path, sep="[ ]+", engine="python") # match any number of spaces
+    return df
 
 def main():
     sampling_rate, data = load_data()

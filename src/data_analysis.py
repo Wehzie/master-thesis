@@ -4,6 +4,8 @@ from data_io import load_data
 import numpy as np
 import matplotlib.pyplot as plt
 
+from data_preprocessor import align_signals
+
 def plot_n(data: np.ndarray, show: bool = True, save_path: Path = None) -> None:
     """plot n signals in a single plot"""
 
@@ -36,7 +38,8 @@ def plot_n(data: np.ndarray, show: bool = True, save_path: Path = None) -> None:
     if save_path:
         plt.savefig(save_path, dpi=300)
 
-def hist_rmse(rmse_li: list, show: bool = False,  save_path: Path = None) -> None:
+
+def hist_rmse(rmse_li: list, show: bool = True,  save_path: Path = None) -> None:
     """produce a histogram over n samples"""
     plt.figure()
     plt.hist(rmse_li, bins=len(rmse_li)//10)
@@ -49,7 +52,7 @@ def hist_rmse(rmse_li: list, show: bool = False,  save_path: Path = None) -> Non
         plt.savefig(save_path, dpi=300)
 
 
-def plot_pred_target(pred: np.ndarray, target: np.ndarray, show: bool = True,
+def plot_pred_target(pred: np.ndarray, target: np.ndarray, show: bool = False,
     save_path: Path = None, title: str = None) -> None:
     """plot a 2 dimensional time series signal"""
 
@@ -66,21 +69,29 @@ def plot_pred_target(pred: np.ndarray, target: np.ndarray, show: bool = True,
     if save_path:
         plt.savefig(save_path, dpi=300)
 
-def plot_signal(data: np.ndarray, show: bool = True, save_path: Path = None) -> None:
+def plot_signal(y: np.ndarray, x: np.ndarray = None, ylabel: str = None, show: bool = False, save_path: Path = None) -> None:
     """plot a 2 dimensional time series signal"""
-    x = list(range(len(data)))
-    y = data
-
     _, ax = plt.subplots()
+
+    if x is None:
+        ax.set_xlabel("sample index")
+        x = list(range(len(y)))
+    else:
+        ax.set_xlabel("time")
+
+    if ylabel is None:
+        ax.set_ylabel("amplitude")
+    else:
+        ax.set_ylabel(ylabel)
+    
     plt.plot(x, y)
-    ax.set_xlabel("sample index")
-    ax.set_ylabel("amplitude")
     if show:
         plt.show()
     if save_path:
         plt.savefig(save_path, dpi=300)
 
-def plot_fourier(data: np.ndarray, show: bool = True, save_path: Path = None) -> None:
+
+def plot_fourier(data: np.ndarray, show: bool = False, save_path: Path = None) -> None:
     """plot the fourier transform of a 2 dimensional time series"""
     # apply fourier transform to signal
 	# can use rfft since data purely real
@@ -107,15 +118,15 @@ def plot_fourier(data: np.ndarray, show: bool = True, save_path: Path = None) ->
         plt.savefig(save_path, dpi=300)
 
         
-def compute_rmse(p: np.ndarray, t: np.ndarray, verbose: bool = False) -> float:
+def compute_rmse(p: np.ndarray, t: np.ndarray, verbose: bool = False, pad: bool = False) -> float:
     """
     Compute root mean square error (RMSE) between prediction and target signal.
     """
+    if pad: p, t = align_signals(p, t)
     rmse = np.sqrt(((p-t)**2).mean())
     if verbose:
         print(f"RMSE: {rmse}")
     return rmse
-
 
 def main():
     sampling_rate, data = load_data()

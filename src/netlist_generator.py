@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import Callable
 import networkx as nx
@@ -168,4 +169,6 @@ def select_netlist_generator(builder: str) -> Callable:
     if builder == "sum": return build_sum_netlist
     raise ValueError()
 
-    
+def run_ngspice(netlist: Path) -> None:
+    """start an ngspice simulation from python"""
+    os.system(f"ngspice {netlist}")

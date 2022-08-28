@@ -1,6 +1,5 @@
 import csv
 from pathlib import Path
-from re import S
 from typing import Any, Callable, Final, List
 
 from data_analysis import compute_rmse, hist_rmse, plot_n, plot_pred_target, plot_signal, plot_fourier
@@ -11,6 +10,7 @@ from python_signal_generator import gen_inv_sawtooth_api
 import numpy as np
 from sklearn.linear_model import LinearRegression
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 
 class Sample():
     def __init__(self, x: np.ndarray, y: np.ndarray):
@@ -74,9 +74,7 @@ class Sample():
         """generate approximation of target, y"""
         X = np.array(X)
         X = X.T
-        print(X.shape)
         fit = np.sum(X * coef, axis=1) + intercept
-        print(fit.shape)
         return fit
 
 class SearchModule():
@@ -124,7 +122,8 @@ class SearchModule():
         return det_param
 
     def random_search(self) -> None:
-        for _ in range(self.n_samples):
+        """generate n-signals which are a sum of k-oscillators"""
+        for _ in tqdm(range(self.n_samples)):
 
             # draw parameters a first time to initialize x and y
             det_params = self.draw_params_random()
@@ -189,18 +188,28 @@ def main():
         target=target)
     search.random_search()
     
+    # without random phase shifts all signals will be the same at x=0
+    if params["random_phase"] == False:
+        for s in search.samples:
+            s.sum_y[0] = 0
+            s.rmse_sum = compute_rmse(s.sum_y, target)
+
+    # find best sample
     best_sample, rmse_list = search.gather_samples()
     best_sample.save()
-    hist_rmse(rmse_list)
+
+    hist_rmse(rmse_list, show=False)
 
     # apply regression
-    reg = best_sample.regress_linear(target, verbose=True)
+    reg = best_sample.regress_linear(target, verbose=False)
     pred = Sample.predict(best_sample.y_li, reg.coef_, reg.intercept_)
     best_sample.fit_y = pred
     best_sample.rmse_fit = compute_rmse(pred, target)
 
     plot_pred_target(best_sample.sum_y, target, show=False, title="sum")
     plot_pred_target(best_sample.fit_y, target, show=False, title="regression")
+    print(f"best_sample.rmse_sum {best_sample.rmse_sum}")
+    print(f"best_sample.rmse_fit {best_sample.rmse_fit}")
     plt.show()
     
 
