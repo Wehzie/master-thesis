@@ -5,12 +5,14 @@ from typing import Any, Callable, Final, List
 from data_analysis import compute_rmse, hist_rmse, plot_n, plot_pred_target, plot_signal, plot_fourier
 from data_preprocessor import align_signals, scale_down
 from data_io import load_data
-from python_signal_generator import gen_inv_sawtooth, gen_inv_sawtooth_api
+from gen_signal_python import gen_inv_sawtooth
 
 import numpy as np
 from sklearn.linear_model import LinearRegression
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+
+from gen_signal_spice import gen_random_spice_signal
 
 class Sample():
     def __init__(self, x: np.ndarray, y: np.ndarray):
@@ -125,8 +127,8 @@ class SearchModule():
             # draw parameters a first time to initialize x and y
             det_params = self.draw_params_random()
             # x doesn't change as oscillators are summed
-            sum_x = self.sig_gen_func(**det_params)[0]
-            pad_sum_x = align_signals(sum_x, self.target)[0]
+            sum_x, _ = self.sig_gen_func(**det_params)
+            pad_sum_x, _ = align_signals(sum_x, self.target)
             
             # y is initialized as array of zeros
             # y has target length from x
@@ -182,7 +184,7 @@ def main():
 
     search = SearchModule(params,
         n_samples=100, # number of generated sum-signals
-        sig_gen_func=gen_inv_sawtooth,
+        sig_gen_func=gen_random_spice_signal,
         target=target)
     search.random_search()
     

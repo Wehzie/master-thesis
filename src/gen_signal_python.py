@@ -1,6 +1,6 @@
 from pathlib import Path
-from typing import Callable, Final
-from sound_generator import load_sim_data
+from typing import Final
+from gen_signal_spice import load_sim_data
 
 import numpy as np
 from scipy.interpolate import interp1d
@@ -58,7 +58,7 @@ def gen_inv_sawtooth(
         plt.title("x-samples")
         plt.show()
     return x_samples, y
-    
+
 
 def gen_custom_inv_sawtooth(freq: float):
     """a formula to compute the an inverse sawtooth"""
