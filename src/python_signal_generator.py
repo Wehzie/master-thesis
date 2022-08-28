@@ -58,17 +58,7 @@ def gen_inv_sawtooth(
         plt.title("x-samples")
         plt.show()
     return x_samples, y
-
-# TODO: replace with ** notation
-def gen_inv_sawtooth_api(det_params: dict):
-    """api to get_inv_sawtooth via det_params dict"""
-    freq = det_params["f"]
-    #duration = det_params["duration"]
-    samples = det_params["samples"]
-    random_phase = det_params["random_phase"]
-    weight = det_params["weight"]
-    return gen_inv_sawtooth(freq=freq, samples=samples, weight=weight, random_phase=random_phase)
-
+    
 
 def gen_custom_inv_sawtooth(freq: float):
     """a formula to compute the an inverse sawtooth"""

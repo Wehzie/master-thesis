@@ -5,7 +5,7 @@ from typing import Any, Callable, Final, List
 from data_analysis import compute_rmse, hist_rmse, plot_n, plot_pred_target, plot_signal, plot_fourier
 from data_preprocessor import align_signals, scale_down
 from data_io import load_data
-from python_signal_generator import gen_inv_sawtooth_api
+from python_signal_generator import gen_inv_sawtooth, gen_inv_sawtooth_api
 
 import numpy as np
 from sklearn.linear_model import LinearRegression
@@ -95,25 +95,22 @@ class SearchModule():
             samples += str(s) + "\n"
         return params + n_samples + sig_gen_func + samples
 
-    def draw_params_random(self, samples: int = None) -> dict:
+    def draw_params_random(self) -> dict:
         """draw randomly from parameter pool"""
+        # NOTE: arg names in det_param correspond to arg names of
+        #    the args of sig_gen_func
         det_param = {}
         # frequency
         f_lo = self.params["f_lo"]
         f_hi = self.params["f_hi"]
         f = np.random.uniform(f_lo, f_hi)
-        det_param["f"] = f
+        det_param["freq"] = f
         
         # duration
         # det_param["duration"] = self.params["duration"]
         
         # samples
-        # provide initial number of samples
-        # or by argument the number of samples in the target
-        if samples == None:
-            det_param["samples"] = self.params["samples"]
-        else:
-            det_param["samples"] = samples
+        det_param["samples"] = self.params["samples"]
 
         # weight
         det_param["weight"] = np.random.uniform(0, 1)
@@ -128,7 +125,7 @@ class SearchModule():
             # draw parameters a first time to initialize x and y
             det_params = self.draw_params_random()
             # x doesn't change as oscillators are summed
-            sum_x = self.sig_gen_func(det_params)[0]
+            sum_x = self.sig_gen_func(**det_params)[0]
             pad_sum_x = align_signals(sum_x, self.target)[0]
             
             # y is initialized as array of zeros
@@ -139,11 +136,11 @@ class SearchModule():
             # compose a signal of single oscillators
             for _ in range(self.params["n_osc"]):
                 # determine a set of parameters for a single oscillator
-                det_params = self.draw_params_random(samples=len(self.target))
+                det_params = self.draw_params_random()
                 # store the parameter set
                 sample.det_param_li.append(det_params)
                 # add single oscillator to sum
-                single_signal = self.sig_gen_func(det_params)
+                single_signal = self.sig_gen_func(**det_params)
                 sample.sum_y = sample.sum_y + single_signal[1]
                 # track individual signals for linear regression
                 sample.y_li.append(single_signal[1])
@@ -170,21 +167,22 @@ class SearchModule():
         
 
 def main():
+    sampling_rate, raw_target = load_data()
+    target: Final = scale_down(raw_target, 0.01)
+
     params = {
         "n_osc": 1000, # number of oscillators
         "f_lo": 1e5, # frequency bounds
         "f_hi": 1e6,
         #"duration": 0.3, # signal duration in seconds
-        "samples": 300, # number of samples in the signal
+        "samples": len(target), # number of samples in the signal
         "weight": "random",
         "random_phase": True
     }
-    sampling_rate, target = load_data()
-    target = scale_down(target, 0.01)
 
     search = SearchModule(params,
         n_samples=100, # number of generated sum-signals
-        sig_gen_func=gen_inv_sawtooth_api,
+        sig_gen_func=gen_inv_sawtooth,
         target=target)
     search.random_search()
     
