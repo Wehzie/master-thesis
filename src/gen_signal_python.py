@@ -1,5 +1,7 @@
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Final
+from typing import Final, List, Tuple
+from data_analysis import plot_signal
 from gen_signal_spice import load_sim_data
 
 import numpy as np
@@ -7,10 +9,11 @@ from scipy.interpolate import interp1d
 from scipy import signal
 import matplotlib.pyplot as plt
 
+from param_types import PythonSignalDetArgs, PythonSignalRandArgs
+
 # the sampling rate of the target signal
 DEFAULT_SAMPLING_RATE: Final = 11025
 DEFAULT_AMPLITUDE: Final = 0.5 # resembling 0.5 V amplitude of V02
-
 
 def gen_inv_sawtooth(
     freq: float,
@@ -20,7 +23,8 @@ def gen_inv_sawtooth(
     weight: float = 1,
     random_phase: bool = False,
     sampling_rate: int = DEFAULT_SAMPLING_RATE,
-    visual: bool = False):
+    visual: bool = False
+    ) -> Tuple[range, np.ndarray]:
     """
     generate something between inverse sawtooth and triangle wave using scipy
     
@@ -30,6 +34,7 @@ def gen_inv_sawtooth(
     """
     if duration == None and samples != None:
         duration = samples/sampling_rate
+        samples = int(samples) # **dataclass.__dict__ converts to float
     elif samples == None and duration != None:
         samples = int(duration * sampling_rate)
     else:
@@ -50,15 +55,43 @@ def gen_inv_sawtooth(
     x_samples = range(len(x_time))
     y = weight * amplitude * signal.sawtooth(2 * np.pi * freq * x_time + phase, width=0.15)
     if visual:
-        plt.figure()
-        plt.plot(x_time, y)
-        plt.title("x-time")
-        plt.figure()
-        plt.plot(x_samples, y)
-        plt.title("x-samples")
-        plt.show()
+        plot_signal(y, x_time, title="x-time")
+        plot_signal(y, x_samples, title="x-samples")
     return x_samples, y
 
+def sum_atomic_signals(args: PythonSignalRandArgs) -> Tuple[np.ndarray, List[PythonSignalDetArgs]]:
+    """compose a signal of single oscillators"""
+    signal_matrix = np.empty((args.n_osc, args.samples))
+    det_arg_li = list()
+
+    for i in range(args.n_osc):
+        # determine a set of parameters for a single oscillator
+        det_params = draw_params_random(args)
+        # store the parameter set
+        det_arg_li.append(det_params)
+        # generate single oscillator signal and add to matrix
+        single_signal = gen_inv_sawtooth(**det_params.__dict__)
+        _, signal_matrix[i,:] = single_signal
+    return signal_matrix, det_arg_li
+
+def draw_params_random(args: PythonSignalRandArgs) -> PythonSignalDetArgs:
+    """draw randomly from parameter pool"""
+    # frequency
+    f = np.random.uniform(args.f_lo, args.f_hi)
+    
+    duration = args.duration
+    
+    # samples
+    samples = args.samples
+
+    # weight
+    # TODO: better control here, also check const behavior
+    weight = np.random.uniform(0, 1)
+
+    # random phase
+    random_phase = args.random_phase
+
+    return PythonSignalDetArgs(f, duration, samples, weight, random_phase)
 
 def gen_custom_inv_sawtooth(freq: float):
     """a formula to compute the an inverse sawtooth"""
@@ -83,14 +116,16 @@ def interpolate_signal():
 
 
 def main():
-    param = {
-        "freq": 2,
-        "duration": 10,
-        "amplitude": 5, 
-        "random_phase": False,
-        "visual": True
-    }
-    gen_inv_sawtooth(**param)
+    # generate a single signal from deterministic arguments
+    args = PythonSignalDetArgs(1, 10, None, 5, False)
+    gen_inv_sawtooth(**args.__dict__, visual=True)
+    plt.show()
+
+    # generate a sum of signals from random variables
+    args = PythonSignalRandArgs()
+    atomic_signals, det_arg_li = sum_atomic_signals(args)
+    sig_sum = sum(atomic_signals)
+    plot_signal(sig_sum, show=True)
 
 
 if __name__ == "__main__":

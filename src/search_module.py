@@ -176,7 +176,7 @@ def main():
         "n_osc": 1000, # number of oscillators
         "f_lo": 1e5, # frequency bounds
         "f_hi": 1e6,
-        #"duration": 0.3, # signal duration in seconds
+        "duration": None, # signal duration in seconds
         "samples": len(target), # number of samples in the signal
         "weight": "random",
         "random_phase": True
@@ -184,7 +184,7 @@ def main():
 
     search = SearchModule(params,
         n_samples=100, # number of generated sum-signals
-        sig_gen_func=gen_random_spice_signal,
+        sig_gen_func=gen_inv_sawtooth,
         target=target)
     search.random_search()
     

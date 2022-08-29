@@ -69,7 +69,7 @@ def plot_pred_target(pred: np.ndarray, target: np.ndarray, show: bool = False,
     if save_path:
         plt.savefig(save_path, dpi=300)
 
-def plot_signal(y: np.ndarray, x: np.ndarray = None, ylabel: str = None, show: bool = False, save_path: Path = None) -> None:
+def plot_signal(y: np.ndarray, x: np.ndarray = None, ylabel: str = None, title: str = None, show: bool = False, save_path: Path = None) -> None:
     """plot a 2 dimensional time series signal"""
     _, ax = plt.subplots()
 
@@ -83,6 +83,8 @@ def plot_signal(y: np.ndarray, x: np.ndarray = None, ylabel: str = None, show: b
         ax.set_ylabel("amplitude")
     else:
         ax.set_ylabel(ylabel)
+
+    if title: plt.title(title)
     
     plt.plot(x, y)
     if show:
