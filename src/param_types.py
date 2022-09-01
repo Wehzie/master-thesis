@@ -1,5 +1,6 @@
 
 from dataclasses import dataclass
+from typing import List
 
 
 @dataclass
@@ -24,3 +25,46 @@ class PythonSignalDetArgs:
     samples: int
     weight: float
     random_phase: bool
+
+@dataclass
+class SpiceSumRandArgs:
+    n_osc: int = 1
+    v_in: float = 14
+    
+    r_last: float = 0
+    r_control: float = 1e6
+    r_min: float = 30e3
+    r_max: float = 70e3
+    r_dist: str = "uniform"
+
+    c_min: float = 300e-12
+    c_max: float = 300e-12
+    c_dist: str = "uniform"
+
+    time_step: float = 5e-9
+    time_stop: float = 1e-5
+    time_start: float = 0
+
+    dependent_component: str = "v(osc1)"
+
+@dataclass
+class SpiceSumDetArgs:
+    n_osc: int
+    v_in: float
+    r_list: List[float]
+    r_last: float
+    r_control: float
+    c_list: List[float]
+
+@dataclass
+class SpiceSingleDetArgs:
+    n_osc: int
+    v_in: float
+    r: float
+    r_last: float
+    r_control: float
+    c: float
+    time_step: float
+    time_stop: float
+    time_start: float
+    dependent_component: str = "v(osc1)"

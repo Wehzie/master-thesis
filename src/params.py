@@ -18,7 +18,7 @@ bird_params = {
     "magpie_single_oscillator": {
         "trials": 1,
 
-        "num_osc": 1,
+        "n_osc": 1,
 
         "v_in": 14,
 
@@ -43,7 +43,7 @@ bird_params = {
     "magpie_sum": {
         "trials": 1,
 
-        "num_osc": 1,
+        "n_osc": 1,
 
         "v_in": 4,
 

@@ -5,8 +5,10 @@ import networkx as nx
 import numpy as np
 import matplotlib.pyplot as plt
 
+from param_types import SpiceSingleDetArgs, SpiceSumDetArgs
+
 INCLUDE = """
-.include ./circuit_lib/VO2_Sto_rand.cir
+.include ./circuit_lib/custom_spice_lib/VO2_Sto_rand.cir
 """
 POWER = """
 V1 bridge 0 dc {v}
@@ -141,7 +143,7 @@ def build_sum_netlist(path: Path, PARAM: dict) -> dict:
 
     netlist = INCLUDE
     netlist += POWER.format(v=PARAM["v_in"])
-    for i in range(1, 1+PARAM["num_osc"]):
+    for i in range(1, 1+PARAM["n_osc"]):
         # TODO: generalize for >0 and <0 values
         # so over randint vs uniform
         r = np.random.randint(PARAM["r_min"], 1+PARAM["r_max"])
@@ -158,6 +160,23 @@ def build_sum_netlist(path: Path, PARAM: dict) -> dict:
         f.write(netlist)
 
     return det_param
+
+
+def build_single_netlist(path: Path, param: SpiceSingleDetArgs, debug: bool = False) -> None:
+    """
+    Write netlist to file with a single oscillator.
+    
+    Return dictionary of deterministic parameters.
+    """
+    netlist = INCLUDE
+    netlist += POWER.format(v=param.v_in)
+    netlist += SUM_OSC_TEMPLATE.format(i=1, r=param.r, c=param.c, r_control=param.r_control)
+    netlist += POST_SUM.format(r_last=param.r_last)
+    netlist += build_control(path, param.__dict__)
+
+    if debug: print(f"writing netlist to path {path}")
+    with open(path, "w") as f:
+        f.write(netlist)
 
 def select_netlist_generator(builder: str) -> Callable:
     """
