@@ -68,6 +68,8 @@ def draw_params_random(args: SpiceSumRandArgs) -> SpiceSingleDetArgs:
     r, args.r_last, args.r_control, c,
     args.time_step, args.time_stop, args.time_start)
 
+def handle_sim_failure(single_signal: np.ndarray, samples: int):
+    return np.zeros(samples) if len(single_signal) < samples else single_signal
 
 def sum_atomic_signals(args: SpiceSumRandArgs) -> Tuple[np.ndarray, List[SpiceSingleDetArgs]]:
     """compose a signal of single oscillators"""
@@ -80,11 +82,14 @@ def sum_atomic_signals(args: SpiceSumRandArgs) -> Tuple[np.ndarray, List[SpiceSi
         # determine a set of parameters for a single oscillator
         det_params = draw_params_random(args)
         # store the parameter set
-        det_arg_li.append(det_params)
         # generate single oscillator signal and add to matrix
         single_signal = gen_random_spice_signal(build_sum_netlist, det_params)
-        signal_matrix[i,:] = single_signal[0:samples] # exact number of samples is non-deterministic
-                                                        # around 2% cutoff
+        single_signal = handle_sim_failure(single_signal, samples)
+        single_signal = single_signal[0:samples]    # exact number of samples is non-deterministic
+                                                    # around 2% cutoff
+        det_params.sim_success = bool(np.sum(single_signal)) # TODO: this is bad again
+        signal_matrix[i,:] = single_signal            
+        det_arg_li.append(det_params)
     return signal_matrix, det_arg_li
 
 def main():
@@ -92,6 +97,8 @@ def main():
     atomic_signals, det_arg_li = sum_atomic_signals(args)
     sig_sum = sum(atomic_signals)
     plot_signal(sig_sum, show=True)
+    successful_sims = sum([arg.sim_success for arg in det_arg_li])
+    print(f"successful simulations: {successful_sims}")
 
     exit()
     netlist_generator = select_netlist_generator("sum")

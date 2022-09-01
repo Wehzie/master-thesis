@@ -28,7 +28,7 @@ class PythonSignalDetArgs:
 
 @dataclass
 class SpiceSumRandArgs:
-    n_osc: int = 1
+    n_osc: int = 1000
     v_in: float = 14
     
     r_last: float = 0
@@ -67,4 +67,5 @@ class SpiceSingleDetArgs:
     time_step: float
     time_stop: float
     time_start: float
+    sim_success: bool = None
     dependent_component: str = "v(osc1)"
