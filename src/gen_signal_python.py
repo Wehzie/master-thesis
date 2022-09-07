@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Final, List, Tuple
-from data_analysis import plot_signal
+from data_analysis import plot_pred_target, plot_signal
+from data_io import load_data
 from gen_signal_spice import load_sim_data
 
 import numpy as np
@@ -16,13 +17,14 @@ DEFAULT_SAMPLING_RATE: Final = 11025
 DEFAULT_AMPLITUDE: Final = 0.5 # resembling 0.5 V amplitude of V02
 
 def gen_inv_sawtooth(
+    duration: float,
+    samples: int,
     freq: float,
-    duration: float = None,
-    samples: int = None,
-    amplitude: int = DEFAULT_AMPLITUDE, 
-    weight: float = 1,
-    random_phase: bool = False,
-    sampling_rate: int = DEFAULT_SAMPLING_RATE,
+    amplitude: int,
+    weight: float,
+    phase: float,
+    offset_fctr: float,
+    sampling_rate: int,
     visual: bool = False
     ) -> Tuple[range, np.ndarray]:
     """
@@ -44,16 +46,10 @@ def gen_inv_sawtooth(
     ceil_duration = np.ceil(duration)
     ceil_samples = int(ceil_duration * sampling_rate)
     
-    phase = 0
-    if random_phase:
-        if freq > 0:
-            phase = np.random.uniform(0, freq)
-        else:
-            phase = np.random.uniform(freq, 0)
-
     x_time = np.linspace(0, ceil_duration, ceil_samples)[0:samples]
     x_samples = range(len(x_time))
-    y = weight * amplitude * signal.sawtooth(2 * np.pi * freq * x_time + phase, width=0.15)
+    offset = amplitude * weight * offset_fctr
+    y = offset + weight * amplitude * signal.sawtooth(phase * np.pi + 2 * np.pi * freq * x_time, width=0.15)
     if visual:
         plot_signal(y, x_time, title="x-time")
         plot_signal(y, x_samples, title="x-samples")
@@ -117,16 +113,23 @@ def interpolate_signal():
 
 def main():
     # generate a single signal from deterministic arguments
-    args = PythonSignalDetArgs(1, 10, None, 5, False)
+    args = PythonSignalDetArgs(duration=10, samples=None,
+        freq=0.5,
+        amplitude=1, weight=1,
+        phase=0,
+        offset_fctr=0,
+        sampling_rate=DEFAULT_SAMPLING_RATE)
+
     gen_inv_sawtooth(**args.__dict__, visual=True)
     plt.show()
+
+    exit()
 
     # generate a sum of signals from random variables
     args = PythonSignalRandArgs()
     atomic_signals, det_arg_li = sum_atomic_signals(args)
     sig_sum = sum(atomic_signals)
-    plot_signal(sig_sum, show=True)
-
+    plot_signal(sig_sum)
 
 if __name__ == "__main__":
     main()

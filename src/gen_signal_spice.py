@@ -1,17 +1,18 @@
-from data_analysis import compute_rmse, plot_fourier, plot_signal
+from data_analysis import compute_rmse, plot_fourier, plot_pred_target, plot_signal
 from data_io import find_dir_name, json_to_df, load_data, load_sim_data
-from data_preprocessor import clean_signal
+from data_preprocessor import clean_signal, scale_down
 from param_types import SpiceSingleDetArgs, SpiceSumDetArgs, SpiceSumRandArgs
 from params import bird_params
 from netlist_generator import build_single_netlist, build_sum_netlist, run_ngspice, select_netlist_generator
 
 from typing import Callable, List, Tuple
 from pathlib import Path
-import json
 
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+
+import search_module as sm
 
 PARAM = bird_params["magpie_single_oscillator"]
     
@@ -33,7 +34,6 @@ def gen_random_spice_signal(netlist_generator: Callable, param: SpiceSingleDetAr
     l trees or graphs
     
     the random search module is responsible for said abstraction"""
-    sampling_rate, target = load_data()
     # generate path to save signal and circuit
     experiment_path = find_dir_name(Path("data"))
     tmp_path = experiment_path / "netlist.cir"
@@ -45,13 +45,7 @@ def gen_random_spice_signal(netlist_generator: Callable, param: SpiceSingleDetAr
     df = load_sim_data(Path(str(tmp_path) + ".dat"))
     # convert from dataframe to numpy
     pred = df.iloc[:,1].to_numpy()
-    # compute rmse of generated signal with the target
-    
-    # TODO: migrate
-    # with open(experiment_path / f"param.json", "w") as f:
-    #     json.dump(det_params, f)
-    
-    # df = json_to_df(experiment_path)
+
     return pred
 
 
@@ -69,6 +63,7 @@ def draw_params_random(args: SpiceSumRandArgs) -> SpiceSingleDetArgs:
     args.time_step, args.time_stop, args.time_start)
 
 def handle_sim_failure(single_signal: np.ndarray, samples: int):
+    """handle simulation failures by return an array of zeros"""
     return np.zeros(samples) if len(single_signal) < samples else single_signal
 
 def sum_atomic_signals(args: SpiceSumRandArgs) -> Tuple[np.ndarray, List[SpiceSingleDetArgs]]:
@@ -99,6 +94,19 @@ def main():
     plot_signal(sig_sum, show=True)
     successful_sims = sum([arg.sim_success for arg in det_arg_li])
     print(f"successful simulations: {successful_sims}")
+
+    # TODO: padding
+    exit()
+
+    sampling_rate, target = load_data()
+    target = scale_down(target, 0.01)
+    reg = sm.Sample.regress_linear(atomic_signals, target, verbose=False)
+    fit_y = sm.Sample.predict(atomic_signals, reg.coef_, reg.intercept_)
+    rmse_fit = compute_rmse(fit_y, target)
+    print(rmse_fit)
+    plot_signal(fit_y)
+    plot_pred_target(fit_y, target)
+    plt.show()
 
     exit()
     netlist_generator = select_netlist_generator("sum")

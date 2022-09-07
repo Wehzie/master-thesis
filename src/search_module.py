@@ -3,16 +3,15 @@ from pathlib import Path
 from typing import Callable, Final, List
 
 from data_analysis import compute_rmse, hist_rmse, plot_n, plot_pred_target, plot_signal, plot_fourier
-from data_preprocessor import align_signals, scale_down
+from data_preprocessor import scale_down
 from data_io import load_data
-from gen_signal_python import draw_params_random, gen_inv_sawtooth, sum_atomic_signals
+from gen_signal_python import gen_inv_sawtooth, sum_atomic_signals
 
 import numpy as np
 from sklearn.linear_model import LinearRegression
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 
-from gen_signal_spice import gen_random_spice_signal
 from param_types import PythonSignalDetArgs, PythonSignalRandArgs
 
 class Sample():
@@ -49,12 +48,13 @@ class Sample():
             for osc in self.det_param_li:
                 writer.writerow(osc.__dict__.values())
 
-    def regress_linear(self, t: np.ndarray, verbose: bool = False):
+    @staticmethod
+    def regress_linear(p: np.ndarray, t: np.ndarray, verbose: bool = False):
         """apply linear regression"""
         # matrix_y refers to the y-values of a generated signal
         # the individual signals are used as regressors 
 
-        r = self.matrix_y.T
+        r = p.T
 
         if verbose:
             print("Computing regression")
@@ -151,7 +151,7 @@ def main():
     hist_rmse(rmse_list, show=False)
 
     # apply regression
-    reg = best_sample.regress_linear(target, verbose=False)
+    reg = Sample.regress_linear(best_sample.matrix_y, target, verbose=False)
     pred = Sample.predict(best_sample.matrix_y, reg.coef_, reg.intercept_)
     best_sample.fit_y = pred
     best_sample.rmse_fit = compute_rmse(pred, target)
