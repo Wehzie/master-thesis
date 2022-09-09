@@ -39,21 +39,24 @@ class PythonSignalRandArgs:
     samples: int = 300 # number of samples in a signal
 
     f_dist: Dist = Dist(rng.uniform, low=1e5, high=1e6)
-    weight_dist: Dist = Dist(rng.uniform, low=0, high=1)    # amplitude=weight_dist*default_amplitude
+    amplitude: float = 0.5 # resembling 0.5 V amplitude of V02
+    weight_dist: Dist = Dist(rng.uniform, low=0.2, high=1)    # amplitude=weight_dist*default_amplitude
                                                             # resistor doesn't amplify so not > 1
-    phase_dist: Dist = Dist(rng.uniform, low=2-1/3, high=2+1/3) # phase=phase_dist.draw()*pi
+    phase_dist: Dist = Dist(rng.uniform, low=-1/3, high=1/3) # phase=phase_dist.draw()*pi
     offset_dist: Dist = Dist(rng.uniform, low=-1/3, high=1/3) # offset=offset_dist.draw()*amplitude*weight
+    sampling_rate: int = 11025 # the sampling rate of the Magpie signal
 
 @dataclass
 class PythonSignalDetArgs:
     """define a python signal with deterministic parameters"""
-    duration: float
+    duration: float # specify either duration OR samples, let other be None
     samples: int
-    freq: float
-    amplitude: float
-    weight: float
-    phase: float
-    offset_fctr: float
+    freq: float # frequency
+    amplitude: float # amplitude
+    weight: float # weight is a factor that scales amplitude
+    phase: float # phase shift
+    offset_fctr: float  # offset_fctr is a factor proportional to amplitude and weight
+                        # defining some offset
     sampling_rate: int
 
 @dataclass

@@ -12,10 +12,6 @@ import matplotlib.pyplot as plt
 
 from param_types import PythonSignalDetArgs, PythonSignalRandArgs
 
-# the sampling rate of the target signal
-DEFAULT_SAMPLING_RATE: Final = 11025
-DEFAULT_AMPLITUDE: Final = 0.5 # resembling 0.5 V amplitude of V02
-
 def gen_inv_sawtooth(
     duration: float,
     samples: int,
@@ -72,22 +68,16 @@ def sum_atomic_signals(args: PythonSignalRandArgs) -> Tuple[np.ndarray, List[Pyt
 
 def draw_params_random(args: PythonSignalRandArgs) -> PythonSignalDetArgs:
     """draw randomly from parameter pool"""
-    # frequency
-    f = np.random.uniform(args.f_lo, args.f_hi)
-    
     duration = args.duration
-    
-    # samples
     samples = args.samples
+    freq = args.f_dist.draw() # frequency
+    amplitude = args.amplitude
+    weight = args.weight_dist.draw()    
+    phase = args.phase_dist.draw()
+    offset_fctr = args.offset_dist.draw()
+    sampling_rate = args.sampling_rate
 
-    # weight
-    # TODO: better control here, also check const behavior
-    weight = np.random.uniform(0, 1)
-
-    # random phase
-    random_phase = args.random_phase
-
-    return PythonSignalDetArgs(f, duration, samples, weight, random_phase)
+    return PythonSignalDetArgs(duration, samples, freq, amplitude, weight, phase, offset_fctr, sampling_rate)
 
 def gen_custom_inv_sawtooth(freq: float):
     """a formula to compute the an inverse sawtooth"""
@@ -116,20 +106,19 @@ def main():
     args = PythonSignalDetArgs(duration=10, samples=None,
         freq=0.5,
         amplitude=1, weight=1,
-        phase=0,
+        phase=-1/3,
         offset_fctr=0,
-        sampling_rate=DEFAULT_SAMPLING_RATE)
+        sampling_rate=11025)
 
     gen_inv_sawtooth(**args.__dict__, visual=True)
     plt.show()
-
-    exit()
 
     # generate a sum of signals from random variables
     args = PythonSignalRandArgs()
     atomic_signals, det_arg_li = sum_atomic_signals(args)
     sig_sum = sum(atomic_signals)
     plot_signal(sig_sum)
+    plt.show()
 
 if __name__ == "__main__":
     main()
