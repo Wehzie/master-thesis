@@ -4,12 +4,18 @@ import data_analysis
 
 from scipy import signal
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 
-def scale_down(data: np.ndarray, s_factor: float = 0.01) -> np.ndarray:
+def scale_down(data: np.ndarray, s_factor: float = 0.01) -> npt.NDArray[np.float64]:
     """reduce the size of a signal by a given factor via downsampling"""
     return signal.resample(data, int(len(data) * s_factor))
 
+def scale_down_int(data: np.ndarray, s_factor: float) -> np.ndarray:
+    """downsample a signal by taking each n-th sample.
+    input signal maintains its type"""
+    step = int(1/s_factor)
+    return data[0:-1:step]
 
 def scale_up(short: np.ndarray, len_long: int) -> np.ndarray:
     """scale a short signal up to the desired length by repeating each symbol in-place"""

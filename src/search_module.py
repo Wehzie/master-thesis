@@ -1,10 +1,11 @@
 import csv
 from pathlib import Path
+from random import sample
 from typing import Callable, Final, List
 
 from data_analysis import compute_rmse, hist_rmse, plot_n, plot_pred_target, plot_signal, plot_fourier
-from data_preprocessor import scale_down
-from data_io import load_data
+from data_preprocessor import scale_down, scale_down_int
+from data_io import DATA_PATH, load_data, load_data_numpy, save_signal_to_wav
 import gen_signal_python
 import params
 
@@ -127,11 +128,25 @@ class SearchModule():
         
 
 def main():
-    sampling_rate, raw_target = load_data()
-    target: Final = scale_down(raw_target, 0.1)
+    raw_sampling_rate, raw_target, raw_dtype = load_data()
+    save_signal_to_wav(raw_target, raw_sampling_rate, raw_dtype, Path("data/target_control.wav"))
+    print(raw_target)
+
+    scale_factor = 0.5
+    target: Final = scale_down_int(raw_target, scale_factor)
+    sampling_rate = int(scale_factor*raw_sampling_rate)
+    print(target)
+    save_signal_to_wav(target, sampling_rate, target.dtype, Path("data/target_scipy.wav"))
     
+    # this works
+    manual_down_sample = raw_target[0:-1:2]
+    print(manual_down_sample)
+    save_signal_to_wav(manual_down_sample, raw_sampling_rate//2, raw_dtype, Path("data/target_manual.wav"))
+    exit()
+
     rand_args = params.py_rand_args_uniform
-    rand_args.n_osc = 5000
+    rand_args.n_osc = 4000
+    rand_args.sampling_rate = sampling_rate
     rand_args.samples = len(target) # generated signals match length of target
 
     search = SearchModule(
@@ -149,6 +164,7 @@ def main():
     # find best sample
     best_sample, rmse_list = search.gather_samples()
     best_sample.save()
+    save_signal_to_wav(best_sample.sum_y, sampling_rate, Path("data/best_sample.wav"))
 
     hist_rmse(rmse_list, show=False)
 
@@ -156,6 +172,7 @@ def main():
     reg = Sample.regress_linear(best_sample.matrix_y, target, verbose=False)
     pred = Sample.predict(best_sample.matrix_y, reg.coef_, reg.intercept_)
     best_sample.fit_y = pred
+    save_signal_to_wav(best_sample.fit_y, sampling_rate, Path("data/fit.wav"))
     best_sample.rmse_fit = compute_rmse(pred, target)
 
     plot_pred_target(best_sample.sum_y, target, show=False, title="sum")
