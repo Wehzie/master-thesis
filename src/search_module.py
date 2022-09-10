@@ -1,10 +1,10 @@
 import csv
 from pathlib import Path
-from random import sample
+import re
 from typing import Callable, Final, List
 
 from data_analysis import compute_rmse, hist_rmse, plot_n, plot_pred_target, plot_signal, plot_fourier
-from data_preprocessor import scale_down, scale_down_int
+from data_preprocessor import norm, sample_down, sample_down_int, take_middle_third
 from data_io import DATA_PATH, load_data, load_data_numpy, save_signal_to_wav
 import gen_signal_python
 import params
@@ -32,6 +32,7 @@ class Sample():
         
         self.rmse_sum = None        # root mean square error of summed signal
         self.rmse_fit = None        # root mean square error of regression fit signal
+        self.rmse_norm = None       # rmse after normalization of target and sum_y
 
     def __str__(self) -> str:
         x = f"x: {self.sum_x}\n"
@@ -116,41 +117,36 @@ class SearchModule():
         """find the sample with the lowest root mean square error
         and return a list of all rmse"""
         best_sample = self.samples[0]
-        rmse_li = list()
+        rmse_li, rmse_norm_li = list(), list()
 
         for s in self.samples:
             rmse_li.append(s.rmse_sum)
+            rmse_norm_li.append(s.rmse_norm)
         
             if s.rmse_sum < best_sample.rmse_sum:
                 best_sample = s
         
-        return best_sample, rmse_li
+        return best_sample, rmse_li, rmse_norm_li
         
 
 def main():
+    # loading and manipulating the target signal
     raw_sampling_rate, raw_target, raw_dtype = load_data()
-    save_signal_to_wav(raw_target, raw_sampling_rate, raw_dtype, Path("data/target_control.wav"))
-    print(raw_target)
-
-    scale_factor = 0.5
-    target: Final = scale_down_int(raw_target, scale_factor)
+    scale_factor = 0.1
+    target_full_len: Final = sample_down_int(raw_target, scale_factor)
+    # shorten the target
+    target: Final = take_middle_third(target_full_len)
+    # normalize to range 0 1
+    target_norm: Final = norm(target)
+    # save to wav
     sampling_rate = int(scale_factor*raw_sampling_rate)
-    print(target)
-    save_signal_to_wav(target, sampling_rate, target.dtype, Path("data/target_scipy.wav"))
+    save_signal_to_wav(target, sampling_rate, raw_dtype, Path("data/target_downsampled.wav"))
     
-    # this works
-    manual_down_sample = raw_target[0:-1:2]
-    print(manual_down_sample)
-    save_signal_to_wav(manual_down_sample, raw_sampling_rate//2, raw_dtype, Path("data/target_manual.wav"))
-    exit()
-
+    # initialize and start search
     rand_args = params.py_rand_args_uniform
-    rand_args.n_osc = 4000
-    rand_args.sampling_rate = sampling_rate
     rand_args.samples = len(target) # generated signals match length of target
-
     search = SearchModule(
-        n_samples=10, # number of generated sum-signals
+        n_samples=1000, # number of generated sum-signals
         rand_args=rand_args,
         target=target)
     search.random_search()
@@ -160,25 +156,46 @@ def main():
     for s in search.samples:
         s.sum_y[0] = 0 # set first point to 0
         s.rmse_sum = compute_rmse(s.sum_y, target)
+        s.rmse_norm = compute_rmse(norm(s.sum_y), target_norm)
 
-    # find best sample
-    best_sample, rmse_list = search.gather_samples()
+    # find best sample and save
+    best_sample, rmse_list, rmse_norm_list = search.gather_samples()
     best_sample.save()
-    save_signal_to_wav(best_sample.sum_y, sampling_rate, Path("data/best_sample.wav"))
+    save_signal_to_wav(best_sample.sum_y, sampling_rate, raw_dtype, Path("data/best_sample.wav"))
 
-    hist_rmse(rmse_list, show=False)
-
-    # apply regression
+    # normalize best sample
+    norm_sum = norm(best_sample.sum_y)
+    norm_rmse = compute_rmse(norm_sum, target_norm)
+    
+    # compute regression against target
     reg = Sample.regress_linear(best_sample.matrix_y, target, verbose=False)
     pred = Sample.predict(best_sample.matrix_y, reg.coef_, reg.intercept_)
     best_sample.fit_y = pred
-    save_signal_to_wav(best_sample.fit_y, sampling_rate, Path("data/fit.wav"))
+    save_signal_to_wav(best_sample.fit_y, sampling_rate, raw_dtype, Path("data/fit.wav"))
     best_sample.rmse_fit = compute_rmse(pred, target)
+    
+    # norm regression after fit (good enough)
+    norm_reg = norm(best_sample.fit_y)
+    norm_reg_rmse = compute_rmse(norm_reg, target_norm)
+    
+    # plots
+    if False: # time-domain
+        hist_rmse(rmse_list, title="sum distribution")
+        hist_rmse(rmse_norm_list, title="norm-sum distribution")
+        plot_pred_target(best_sample.sum_y, target, title="sum")
+        plot_pred_target(best_sample.fit_y, target, title="regression")
+        plot_pred_target(norm_sum, target_norm, title="norm-sum")
+        plot_pred_target(norm_reg, target_norm, title="norm after fit")
+    if True: # frequency-domain
+        plot_fourier(target, title="target")
+        plot_fourier(best_sample.sum_y, title="sum")
+        plot_fourier(best_sample.fit_y, title="regression")
 
-    plot_pred_target(best_sample.sum_y, target, show=False, title="sum")
-    plot_pred_target(best_sample.fit_y, target, show=False, title="regression")
     print(f"best_sample.rmse_sum {best_sample.rmse_sum}")
+    print(f"best_sample.rmse_sum-norm {norm_rmse}")
     print(f"best_sample.rmse_fit {best_sample.rmse_fit}")
+    print(f"best_sample.rmse_fit-norm {norm_reg_rmse}")
+    norm_reg_rmse
     plt.show()
     
 

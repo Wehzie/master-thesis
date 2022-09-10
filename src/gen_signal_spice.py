@@ -1,6 +1,6 @@
 from data_analysis import compute_rmse, plot_fourier, plot_pred_target, plot_signal
 from data_io import find_dir_name, json_to_df, load_data, load_sim_data
-from data_preprocessor import clean_signal, scale_down
+from data_preprocessor import clean_signal, sample_down
 from param_types import SpiceSingleDetArgs, SpiceSumDetArgs, SpiceSumRandArgs
 from params import bird_params
 from netlist_generator import build_single_netlist, build_sum_netlist, run_ngspice, select_netlist_generator
@@ -99,7 +99,7 @@ def main():
     exit()
 
     sampling_rate, target = load_data()
-    target = scale_down(target, 0.01)
+    target = sample_down(target, 0.01)
     reg = sm.Sample.regress_linear(atomic_signals, target, verbose=False)
     fit_y = sm.Sample.predict(atomic_signals, reg.coef_, reg.intercept_)
     rmse_fit = compute_rmse(fit_y, target)

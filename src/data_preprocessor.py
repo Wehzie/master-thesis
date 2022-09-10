@@ -7,11 +7,11 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 
-def scale_down(data: np.ndarray, s_factor: float = 0.01) -> npt.NDArray[np.float64]:
+def sample_down(data: np.ndarray, s_factor: float = 0.01) -> npt.NDArray[np.float64]:
     """reduce the size of a signal by a given factor via downsampling"""
     return signal.resample(data, int(len(data) * s_factor))
 
-def scale_down_int(data: np.ndarray, s_factor: float) -> np.ndarray:
+def sample_down_int(data: np.ndarray, s_factor: float) -> np.ndarray:
     """downsample a signal by taking each n-th sample.
     input signal maintains its type"""
     step = int(1/s_factor)
@@ -56,12 +56,21 @@ def clean_signal(s: np.ndarray, points_dropped: int = 200) -> np.ndarray:
     no_offset = no_startup - min(no_startup)
     return no_offset
 
+def take_middle_third(signal: np.ndarray) -> np.ndarray:
+    """return only the middle third of a signal"""
+    third = len(signal)//3
+    return signal[third:len(signal)-third]
+
+def norm(signal: np.ndarray) -> np.ndarray:
+    """normalize a signal to the range from 0 to 1"""
+    return signal / np.max(np.abs(signal), axis=0)
+
 def main():
     sampling_rate, data = data_io.load_data()
     data_analysis.plot_signal(data)
     data_analysis.plot_fourier(data)
 
-    sd_data = scale_down(data)
+    sd_data = sample_down(data)
     
     data_analysis.plot_signal(sd_data)
     data_analysis.plot_fourier(sd_data)

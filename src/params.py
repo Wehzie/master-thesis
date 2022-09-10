@@ -1,7 +1,8 @@
 import numpy as np
 from param_types import Dist, PythonSignalRandArgs
 
-rng = np.random.default_rng(seed=5)
+GLOBAL_SEED = 5
+rng = np.random.default_rng(GLOBAL_SEED)
 
 param_sweep_schedule = {
     "vo2_r1": {

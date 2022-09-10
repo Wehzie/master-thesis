@@ -10,7 +10,8 @@ from scipy.interpolate import interp1d
 from scipy import signal
 import matplotlib.pyplot as plt
 
-from param_types import PythonSignalDetArgs, PythonSignalRandArgs
+from param_types import Dist, PythonSignalDetArgs, PythonSignalRandArgs
+import params
 
 def gen_inv_sawtooth(
     duration: float,
@@ -114,7 +115,18 @@ def main():
     plt.show()
 
     # generate a sum of signals from random variables
-    args = PythonSignalRandArgs()
+    rng = np.random.default_rng(params.GLOBAL_SEED)
+    args = PythonSignalRandArgs(
+        n_osc = 1000,
+        duration = None,
+        samples = 300,
+        f_dist = Dist(rng.uniform, low=1e5, high=1e6),
+        amplitude = 0.5,
+        weight_dist = Dist(rng.uniform, low=0.1, high=1),
+        phase_dist = Dist(rng.uniform, low=0, high=2),
+        offset_dist = Dist(rng.uniform, low=-1/3, high=1/3),
+        sampling_rate = 11025
+    )
     atomic_signals, det_arg_li = sum_atomic_signals(args)
     sig_sum = sum(atomic_signals)
     plot_signal(sig_sum)

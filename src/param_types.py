@@ -2,13 +2,11 @@ from dataclasses import dataclass
 from typing import Callable, Final
 import numpy as np
 
-rng = np.random.default_rng(seed=5)
-
 class Dist:
     """define distributions for random drawing"""
     def __init__(self, dist: int|float|Callable, *args, **kwargs):
         if isinstance(dist, Callable):
-            rng = np.random.default_rng()
+            rng = np.random.default_rng() # no seed needed since not used to draw
             # rng1.uniform != rng2.uniform, therefore must use name
             assert dist.__name__ in [rng.uniform.__name__, rng.normal.__name__], "unsupported distribution"
             

@@ -39,12 +39,13 @@ def plot_n(data: np.ndarray, show: bool = True, save_path: Path = None) -> None:
         plt.savefig(save_path, dpi=300)
 
 
-def hist_rmse(rmse_li: list, show: bool = True,  save_path: Path = None) -> None:
+def hist_rmse(rmse_li: list, show: bool = False, title: str = None, save_path: Path = None) -> None:
     """produce a histogram over n samples"""
     plt.figure()
     plt.hist(rmse_li, bins=len(rmse_li)//10)
     plt.gca().set_xlabel("rmse")
     plt.gca().set_ylabel("count")
+    if title: plt.title(title)
 
     if show:
         plt.show()
@@ -93,7 +94,7 @@ def plot_signal(y: np.ndarray, x: np.ndarray = None, ylabel: str = None, title: 
         plt.savefig(save_path, dpi=300)
 
 
-def plot_fourier(data: np.ndarray, show: bool = False, save_path: Path = None) -> None:
+def plot_fourier(data: np.ndarray, title: str = None, show: bool = False, save_path: Path = None) -> None:
     """plot the fourier transform of a 2 dimensional time series"""
     # apply fourier transform to signal
 	# can use rfft since data purely real
@@ -113,7 +114,9 @@ def plot_fourier(data: np.ndarray, show: bool = False, save_path: Path = None) -
     ax.set_yscale('log')
     ax.set_xlabel("log-frequency [Hz]")
     ax.set_ylabel('log-amplitude')
-
+    
+    if title:
+        plt.title(title)
     if show:
         plt.show()
     if save_path:
