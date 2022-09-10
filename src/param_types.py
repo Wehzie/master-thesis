@@ -1,4 +1,3 @@
-
 from dataclasses import dataclass
 from typing import Callable, Final
 import numpy as np
@@ -31,20 +30,20 @@ class Dist:
 @dataclass
 class PythonSignalRandArgs:
     """define the distribution from which deterministic parameters are drawn"""
-    n_osc: int = 100 # number of oscillators
+    n_osc: int # number of oscillators
 
     # NOTE: specify either duration or samples while the other is none
     # TODO: handle this more appropriately with a separate Type/Class
-    duration: float = None # signal duration in seconds
-    samples: int = 300 # number of samples in a signal
+    duration: float # signal duration in seconds
+    samples: int # number of samples in a signal
 
-    f_dist: Dist = Dist(rng.uniform, low=1e5, high=1e6)
-    amplitude: float = 0.5 # resembling 0.5 V amplitude of V02
-    weight_dist: Dist = Dist(rng.uniform, low=0.2, high=1)    # amplitude=weight_dist*default_amplitude
-                                                            # resistor doesn't amplify so not > 1
-    phase_dist: Dist = Dist(rng.uniform, low=-1/3, high=1/3) # phase=phase_dist.draw()*pi
-    offset_dist: Dist = Dist(rng.uniform, low=-1/3, high=1/3) # offset=offset_dist.draw()*amplitude*weight
-    sampling_rate: int = 11025 # the sampling rate of the Magpie signal
+    f_dist: Dist # frequency distribution
+    amplitude: float # shared by all oscillators in a sum
+    weight_dist: Dist # amplitude=weight_dist*default_amplitude
+                     
+    phase_dist: Dist # phase=phase_dist.draw()*pi
+    offset_dist: Dist # offset=offset_dist.draw()*amplitude*weight
+    sampling_rate: int # number of samples per second
 
 @dataclass
 class PythonSignalDetArgs:

@@ -5,7 +5,8 @@ from typing import Callable, Final, List
 from data_analysis import compute_rmse, hist_rmse, plot_n, plot_pred_target, plot_signal, plot_fourier
 from data_preprocessor import scale_down
 from data_io import load_data
-from gen_signal_python import gen_inv_sawtooth, sum_atomic_signals
+import gen_signal_python
+import params
 
 import numpy as np
 from sklearn.linear_model import LinearRegression
@@ -80,10 +81,9 @@ class Sample():
 
 class SearchModule():
 
-    def __init__(self, rand_args: PythonSignalRandArgs, n_samples: int, sig_gen_func: Callable, target: np.ndarray):
+    def __init__(self, rand_args: PythonSignalRandArgs, n_samples: int, target: np.ndarray):
         self.rand_args = rand_args # search parameters
         self.n_samples = n_samples # number of samples
-        self.sig_gen_func = sig_gen_func # function to generate a signal
         self.target = target # target function to approximate
         
         self.samples: List[Sample] = list() # list of samples and results
@@ -102,7 +102,7 @@ class SearchModule():
         for _ in tqdm(range(self.n_samples)):
             # TODO: idem, sig_gen_func
             # compose a signal of single oscillators
-            signal_matrix, det_param_li = sum_atomic_signals(self.rand_args)
+            signal_matrix, det_param_li = gen_signal_python.sum_atomic_signals(self.rand_args)
             signal_sum = sum(signal_matrix)
             # store summed signal, single signals, and parameters for each single signal
             sample = Sample(signal_sum, signal_matrix, det_param_li)
@@ -128,21 +128,23 @@ class SearchModule():
 
 def main():
     sampling_rate, raw_target = load_data()
-    target: Final = scale_down(raw_target, 0.01)
-    rand_args = PythonSignalRandArgs(samples=len(target))
+    target: Final = scale_down(raw_target, 0.1)
+    
+    rand_args = params.py_rand_args_uniform
+    rand_args.n_osc = 5000
+    rand_args.samples = len(target) # generated signals match length of target
 
     search = SearchModule(
         n_samples=10, # number of generated sum-signals
         rand_args=rand_args,
-        sig_gen_func=gen_inv_sawtooth,
         target=target)
     search.random_search()
     
-    # without random phase shifts all signals will be the same at x=0
-    if rand_args.random_phase == False:
-        for s in search.samples:
-            s.sum_y[0] = 0
-            s.rmse_sum = compute_rmse(s.sum_y, target)
+    # without random phase shifts between 0 and 2 pi
+    # signals will overlap at the first sample
+    for s in search.samples:
+        s.sum_y[0] = 0 # set first point to 0
+        s.rmse_sum = compute_rmse(s.sum_y, target)
 
     # find best sample
     best_sample, rmse_list = search.gather_samples()

@@ -1,3 +1,8 @@
+import numpy as np
+from param_types import Dist, PythonSignalRandArgs
+
+rng = np.random.default_rng(seed=5)
+
 param_sweep_schedule = {
     "vo2_r1": {
         "changed_component": "R1",
@@ -93,3 +98,27 @@ bird_params = {
         "dependent_component": "v(wire0)",
     }
 }
+
+py_rand_args_uniform = PythonSignalRandArgs(
+    n_osc = 50,
+    duration = None,
+    samples = 300,
+    f_dist = Dist(rng.uniform, low=1e5, high=1e6),
+    amplitude = 0.5,                                    # resembling 0.5 V amplitude of V02
+    weight_dist = Dist(rng.uniform, low=0.1, high=1),   # resistor doesn't amplify so not > 1
+    phase_dist = Dist(rng.uniform, low=-1/3, high=1/3), # uniform 0 to 2 pi phase shift seems too wild
+    offset_dist = Dist(rng.uniform, low=-1/3, high=1/3),    # offset should be reasonable and bounded by amplitude*weight
+    sampling_rate = 11025                               # the sampling rate of the Magpie signal
+)
+
+py_rand_args_normal = PythonSignalRandArgs(
+    n_osc = 50,
+    duration = None,
+    samples = 300,
+    f_dist = Dist(rng.normal, loc=5e5, scale=4e5),
+    amplitude = 0.5,                                    # resembling 0.5 V amplitude of V02
+    weight_dist = Dist(rng.normal, loc=0.5, scale=0.5),   # resistor doesn't amplify so not > 1
+    phase_dist = Dist(rng.normal, loc=0, scale=1/3), # uniform 0 to 2 pi phase shift seems too wild
+    offset_dist = Dist(rng.normal, loc=0, scale=1/3),    # offset should be reasonable and bounded by amplitude*weight
+    sampling_rate = 11025                               # the sampling rate of the Magpie signal
+)
