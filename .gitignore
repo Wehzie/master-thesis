@@ -1,8 +1,8 @@
 .vscode
 
 # data directories
-circuit_lib/*
-!cricuit_lib/README.md
+circuit_lib/temp.cir
+circuit_lib/custom_spice_lib
 data/*
 resources/*
 

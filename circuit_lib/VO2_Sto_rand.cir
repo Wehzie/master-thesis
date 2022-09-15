@@ -1,0 +1,76 @@
+* Voltage-controlled VO2 SPICE model                                                             *
+* Based on: Modeling and Simulation of Vanadium Dioxide Relaxation Oscillators                   *
+* IEEE TRANSACTIONS ON CIRCUITS AND SYSTEMS I: REGULAR PAPERS, VOL. 62, NO. 9, SEPTEMBER 2015    *
+* P. Maffezzoni, L. Daniel, N. Shukla,  S. Datta,and A. Raychowdhury                             *
+* Implemented and updated by J. G�mez                                                            *
+
+* Changes:
+* 1/4: Model was created.
+*26/4: Stochasticity added.
+
+*Parameters:
+*************************************************************************
+* Rins   : Resistance in insulator state  	   					        *
+* Rmet   : Resistance in metal state                                    *
+* Vmit   : Voltage threshold at which MIT occurs                 	    *
+* Vimt   : Voltage threshold at which IMT occurs                	    *
+* Tmit   : Time to go from metal to insulator						    *
+* Timt	 : Time to go from insulator to metal                           *
+* Aimt   : Amplitude in which Vimt can oscillate with uniform distr.    *
+* Amit   : Amplitude in which Vmit can oscillate with uniform distr.    *
+*************************************************************************
+
+
+
+*Netlist:
+
+.subckt VO2_Sto in out s PARAMS:
+* parameters in original file
+*+ Rins=28k Rmet=3.6k
+*+ Vimt=1.2 Vmit=0.4
+*+ Timt=75u Tmit=75u
+*+ Aimt=0.001 Amit=0.001
+* parameters set for RC circuit
++ Rins=100.2k Rmet=0.99k
++ Vimt=1.99 Vmit=1
++ Timt=30n Tmit=30n
++ Aimt=0.001 Amit=0.001
+
+* Initial conditions:
+.ic V(s)= 1
+.ic V(c)= 1
+.ic V(f)=Rins
+.ic V(p)=Vimt
+.ic V(imt)= Vimt
+.ic V(mit)= Vmit
+
+
+* non random
+*Bimt imt 0 V=Vimt
+*Bmit mit 0 V=Vmit
+
+* LTSpice syntax
+* rand(x) yields float between 0 and 1 under a uniform distribution 
+* 1e9*time serves as seed
+*Bimt imt 0 V=(Vimt+Aimt*(rand(1e9*time)-0.5))
+*Bmit mit 0 V=(Vmit+Amit*(rand(1e9*time)-0.5))
+
+* ngspice syntax
+* setseed 5
+.param rnd = aunif(0, 0.5)
+
+* Bxxx is a nonlinear dependent source (ASRC)
+* can be voltage or current source
+* for example voltage dependent on temperature
+Bimt imt 0 V=(Vimt+Aimt*rnd)
+Bmit mit 0 V=(Vmit+Amit*rnd)
+Ep p out value={V(mit)*(1-V(s))+V(imt)*V(s)}
+Eo s 0 value={0.5*(1+tanh(10000*(V(p)-V(in))))}
+Cc c 0 10p
+Raux1 s c 1000Meg
+Gs s c value={(10p/(Timt/5))*(V(s)-V(c))*(1-V(s))+(10p/(Tmit/5))*(V(s)-V(c))*V(s)}
+Ef f 0 value={(Rins)*(V(c))+(Rmet)*(1-V(c))}
+Raux2 in out 1000Meg
+Gf in out value={(V(in)-V(out))*(1/V(f))}
+.ends
+

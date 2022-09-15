@@ -80,14 +80,20 @@ def draw_params_random(args: PythonSignalRandArgs) -> PythonSignalDetArgs:
 
     return PythonSignalDetArgs(duration, samples, freq, amplitude, weight, phase, offset_fctr, sampling_rate)
 
-def gen_custom_inv_sawtooth(freq: float):
+def gen_custom_inv_sawtooth(
+    duration: float,
+    freq: float,
+    amplitude: int,
+    phase: float,
+    offset: float,
+    sampling_rate: int,
+    ) -> np.ndarray:
     """a formula to compute the an inverse sawtooth"""
-    x = np.linspace(1, 10, 100)
-    a = 1 # amplitude
-    p = 1 / freq # period
-    y = (2*a) / np.pi * np.arctan(1 / np.tan(np.pi*x / p))
-    plt.plot(x, y)
-    plt.show()
+    x = np.linspace(1, duration, sampling_rate)
+    T = 1 / freq # period
+    y = offset + (2*amplitude) / np.pi * np.arctan(1 / np.tan(np.pi*phase + np.pi*x / T))
+
+    return x, y
 
 
 def interpolate_signal():
@@ -103,6 +109,18 @@ def interpolate_signal():
 
 
 def main():
+    x, y = gen_custom_inv_sawtooth(
+        duration = 10,
+        freq = 1,
+        amplitude = 1,
+        phase = 0,
+        offset = 0,
+        sampling_rate = 10000
+    )
+    plot_signal(y)
+    plt.show()
+    exit()
+
     # generate a single signal from deterministic arguments
     args = PythonSignalDetArgs(duration=10, samples=None,
         freq=0.5,

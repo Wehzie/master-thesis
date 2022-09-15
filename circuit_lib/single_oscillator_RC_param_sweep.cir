@@ -1,0 +1,50 @@
+* Title: Single VO2-RC oscillator
+
+.include ./custom_spice_lib/VO2_Sto_rand.cir
+
+* Netlist
+
+V1 Net-_V1-Pad1_ 0 dc 14
+C1 /A 0 300p
+R1 /A 0 47k
+XU1 Net-_V1-Pad1_ /A /C VO2_Sto Rins=100.2k Rmet=0.99k Vimt=1.99 Vmit=1 Timt=30n Tmit=30n Aimt=0.001 Amit=0.001
+
+* Control commands
+.control
+set wr_vecnames * to print header
+set wr_singlescale * to not print scale vectors
+
+let start_r = 10k
+let stop_r = 100k
+let delta_r = 20k
+let r_act = start_r
+let counter = 1
+* loop
+while r_act le stop_r
+    set title = R1={$&r_act}
+    *set path = data/{$title}
+    set path = data/{$&counter}.txt
+
+    alter r1 r_act
+    tran 5e-9 10u 0 uic
+    set curplottitle = $title
+    plot v("/A")
+    let r_act = r_act + delta_r
+
+    *wrdata $path v("/A")
+
+    *set gnuplot_terminal = png/quit
+    *gnuplot $path v("/A")
+    *+ title $title
+    *+ xlabel "time [s]" ylabel "v("/A") [V]"
+    
+    let lin-tstep = 5e-9
+    linearize V("/A")
+    fft V("/A")
+    plot log(abs(V("/A")))
+
+    let counter = $&counter + 1
+end
+
+*quit
+.endc

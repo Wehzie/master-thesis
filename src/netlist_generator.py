@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from param_types import SpiceSingleDetArgs, SpiceSumDetArgs
 
 INCLUDE = """
-.include ./circuit_lib/custom_spice_lib/VO2_Sto_rand.cir
+.include ./circuit_lib/VO2_Sto_rand.cir
 """
 POWER = """
 V1 bridge 0 dc {v}
@@ -70,7 +70,7 @@ def build_control(path: Path, PARAM: dict) -> str:
 
 def build_tree_netlist(path: Path, PARAM: dict, visual: bool = False) -> dict:
     """
-    Write a netlist to file where oscillators signals are summed in a.
+    Write a netlist to file where oscillators signals are summed into one node.
     
     Return dictionary of deterministic parameters.
     """

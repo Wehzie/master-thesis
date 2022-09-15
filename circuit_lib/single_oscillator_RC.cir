@@ -1,0 +1,10 @@
+* Title: Single VO2-RC oscillator
+
+.include ./VO2_Sto_rand.cir
+
+* Netlist
+
+V1 Net-_V1-Pad1_ 0 dc 14
+C1 /A 0 300p
+R1 /A 0 47k
+XU1 Net-_V1-Pad1_ /A /C VO2_Sto Rins=100.2k Rmet=0.99k Vimt=1.99 Vmit=1 Timt=30n Tmit=30n Aimt=0.001 Amit=0.001
