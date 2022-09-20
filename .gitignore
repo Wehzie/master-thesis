@@ -1,4 +1,5 @@
 .vscode
+peregrine.sh
 
 # data directories
 circuit_lib/temp.cir
