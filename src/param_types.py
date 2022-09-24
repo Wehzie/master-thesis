@@ -57,6 +57,8 @@ class PythonSignalDetArgs:
                         # defining some offset
     sampling_rate: int
 
+# TODO: type for algorithm and it's parameters
+
 @dataclass
 class SpiceSumRandArgs:
     n_osc: int = 2

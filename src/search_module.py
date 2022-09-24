@@ -215,12 +215,13 @@ class SearchModule():
         
         return best_model, best_rmse, j  
     
-    def random_exploit(self, j_exploits: int) -> None:
+    def random_exploit(self, j_exploits: int, zero_model: bool = False) -> None:
         """generate an ensemble of n-oscillators
         reduce loss by iteratively replacing oscillators in the ensemble
         
         param:
-            j_exploits: number of 
+            j_exploits: number of re-drawn oscillators per model
+            zero_model: if True, start out with a model of zero-oscillators
         """
         # TODO: hacky solution to draw l-oscillators from sum_atomic signals
         mod_args = copy.deepcopy(self.rand_args)
@@ -230,30 +231,38 @@ class SearchModule():
 
         best_model = None
         best_rmse = np.inf
-        for k in tqdm(range(self.k_samples)):
-            # generate initial random model
+        for _ in tqdm(range(self.k_samples)):
+            # generate initial model
             # TODO: det_param_li is not updated
             model, det_param_li = gen_signal_python.sum_atomic_signals(self.rand_args)
             signal_sum = sum(model)
+            if zero_model:
+                model = np.zeros((self.rand_args.n_osc, self.rand_args.samples))
+                signal_sum = sum(model)
             sample = Sample(signal_sum, model, det_param_li)
-            # calculate rmse
+            # calculate initial rmse
             sample.rmse_sum = compute_rmse(sample.sum_y, self.target)
-            # draw 1 oscillator
-            signal, _ = gen_signal_python.sum_atomic_signals(mod_args)
-            signal = signal.flatten()
+            for _ in tqdm(range(j_exploits)):
+                # draw 1 oscillator
+                signal, _ = gen_signal_python.sum_atomic_signals(mod_args)
+                signal = signal.flatten()
 
-            # replace random oscillator in the model
-            i = rng.integers(0, self.rand_args.n_osc)
-            temp_sum = sum(sample.matrix_y[0:i,:]) + signal + sum(sample.matrix_y[1+i:,:])
-            temp_rmse = compute_rmse(temp_sum, self.target)
+                # replace random oscillator in the model
+                i = rng.integers(0, self.rand_args.n_osc)
+                temp_sum = sum(sample.matrix_y[0:i,:]) + signal + sum(sample.matrix_y[1+i:,:])
+                temp_rmse = compute_rmse(temp_sum, self.target)
 
-            # evaluate replacement
-            if temp_rmse < sample.rmse_sum:
-                sample.matrix_y[i,:] = signal
-                sample.rmse_sum = temp_rmse
-                sample.sum_y = temp_sum
+                # evaluate replacement
+                if temp_rmse < sample.rmse_sum:
+                    sample.matrix_y[i,:] = signal
+                    sample.rmse_sum = temp_rmse
+                    sample.sum_y = temp_sum
 
-            self.samples.append(sample)
+                self.samples.append(sample)
+            
+            if self.samples[-1].rmse_sum < best_rmse:
+                best_rmse = self.samples[-1].rmse_sum
+                best_model = self.samples[-1].matrix_y
         
 
         
@@ -278,7 +287,7 @@ def main():
     # track elapsed time
     t0 = time.time()
     # loading and manipulating the target signal
-    raw_sampling_rate, raw_target, raw_dtype = load_data(Path("resources/yes-5.wav"))
+    raw_sampling_rate, raw_target, raw_dtype = load_data(Path("resources/yes.wav"))
     scale_factor = 0.2
     target_full_len: Final = sample_down_int(raw_target, scale_factor)
     # shorten the target
@@ -303,7 +312,8 @@ def main():
                 k_samples=1, # number of generated sum-signals
                 rand_args=rand_args,
                 target=target)
-    search.random_hybrid()
+    search.random_exploit(20000, zero_model=True)
+    #search.random_hybrid()
     
     # without random phase shifts between 0 and 2 pi
     # signals will overlap at the first sample
