@@ -215,52 +215,48 @@ class SearchModule():
         
         return best_model, best_rmse, j  
     
-    def random_exploit(self) -> None:
+    def random_exploit(self, j_exploits: int) -> None:
         """generate an ensemble of n-oscillators
-        reduce loss by iteratively replacing oscillators in the ensemble"""
+        reduce loss by iteratively replacing oscillators in the ensemble
+        
+        param:
+            j_exploits: number of 
+        """
         # TODO: hacky solution to draw l-oscillators from sum_atomic signals
         mod_args = copy.deepcopy(self.rand_args)
-        
-        REPLACE_INIT_FRAC = 0.2 # hyper parameter controls how many l-oscillators 
-                                #   are replaced on first iteration
-        mod_args.n_osc = int(self.rand_args.n_osc * REPLACE_INIT_FRAC) # initial number of l-oscillators to replace
-        REPLACE_STEPS = mod_args.n_osc - 1 # number of steps to decrease from initial l-oscillators to 1
-        l_step_size = 1 # mod_args.n_osc // REPLACE_STEPS   # amount by which the number of replaced l-oscillators is decreased
-        j_iter_decrease = int(self.k_samples / REPLACE_STEPS) # every j-th iteration decrease the number of l-oscillators
-        if j_iter_decrease < 1: j_iter_decrease = 1
+        mod_args.n_osc = 1
 
-        # TODO: det_param_li is not updated
-        if self.start is None:
-            signal_matrix, _ = gen_signal_python.sum_atomic_signals(self.rand_args)
-        else:
-            signal_matrix = self.start
+        rng = np.random.default_rng(params.GLOBAL_SEED)
 
-        signal_sum = sum(signal_matrix)
-        # store summed signal, single signals, and parameters for each single signal
-        sample = Sample(signal_sum, signal_matrix, None)
-        # calculate rmse
-        sample.rmse_sum = compute_rmse(signal_sum, self.target)
+        best_model = None
+        best_rmse = np.inf
         for k in tqdm(range(self.k_samples)):
-            # draw l oscillators
-            temp_matrix, _ = gen_signal_python.sum_atomic_signals(mod_args)
+            # generate initial random model
+            # TODO: det_param_li is not updated
+            model, det_param_li = gen_signal_python.sum_atomic_signals(self.rand_args)
+            signal_sum = sum(model)
+            sample = Sample(signal_sum, model, det_param_li)
+            # calculate rmse
+            sample.rmse_sum = compute_rmse(sample.sum_y, self.target)
+            # draw 1 oscillator
+            signal, _ = gen_signal_python.sum_atomic_signals(mod_args)
+            signal = signal.flatten()
 
-            # replace l random oscillators in the matrix
-            rng = np.random.default_rng(params.GLOBAL_SEED)
-            i = rng.integers(0, self.rand_args.n_osc - mod_args.n_osc)
-            temp_sum = sum(sample.matrix_y[0:i,:]) + sum(temp_matrix) + sum(sample.matrix_y[i:-1,:])
+            # replace random oscillator in the model
+            i = rng.integers(0, self.rand_args.n_osc)
+            temp_sum = sum(sample.matrix_y[0:i,:]) + signal + sum(sample.matrix_y[1+i:,:])
             temp_rmse = compute_rmse(temp_sum, self.target)
 
             # evaluate replacement
             if temp_rmse < sample.rmse_sum:
-                print(f"k{k}, mod_args.n_osc:{mod_args.n_osc}, rmse: {temp_rmse}")
-                sample.matrix_y[i:i+mod_args.n_osc,:] = temp_matrix
+                sample.matrix_y[i,:] = signal
                 sample.rmse_sum = temp_rmse
                 sample.sum_y = temp_sum
 
-            # decrease l-oscillators each 10 percent of the steps
-            if mod_args.n_osc > l_step_size and k!=0 and k % j_iter_decrease == 0:
-                mod_args.n_osc = int(mod_args.n_osc - l_step_size)
-        self.samples.append(sample) # only ever contains 1 sample
+            self.samples.append(sample)
+        
+
+        
 
     def gather_samples(self) -> tuple[Sample, list]:
         """find the sample with the lowest root mean square error
@@ -282,11 +278,11 @@ def main():
     # track elapsed time
     t0 = time.time()
     # loading and manipulating the target signal
-    raw_sampling_rate, raw_target, raw_dtype = load_data()
-    scale_factor = 0.01
+    raw_sampling_rate, raw_target, raw_dtype = load_data(Path("resources/yes-5.wav"))
+    scale_factor = 0.2
     target_full_len: Final = sample_down_int(raw_target, scale_factor)
     # shorten the target
-    target: Final = take_middle_third(target_full_len)
+    target: Final = target_full_len #take_middle_third(target_full_len)
     # normalize to range 0 1
     target_norm: Final = norm(target)
     # save to wav
@@ -299,10 +295,9 @@ def main():
                                     # NOTE: the sampling rate could also be set lower instead
     
     #k_dependency_one_shot([1, 10, 100, 500, 1000, 2000], 20, rand_args, target, visual=True)
-    n_dependency(rand_args, target, visual=True)
-    time_elapsed=time.time()-t0
-    print(f"time elapsed: {time_elapsed}")
-    exit()
+    #n_dependency(rand_args, target, visual=True)
+    #time_elapsed=time.time()-t0
+    #print(f"time elapsed: {time_elapsed}")
 
     search = SearchModule(
                 k_samples=1, # number of generated sum-signals
@@ -346,7 +341,7 @@ def main():
         plot_pred_target(best_sample.fit_y, target, title="regression")
         plot_pred_target(norm_sum, target_norm, title="norm-sum")
         plot_pred_target(norm_reg, target_norm, title="norm after fit")
-    if True: # frequency-domain
+    if False: # frequency-domain
         plot_fourier(target, title="target")
         plot_fourier(best_sample.sum_y, title="sum")
         plot_fourier(best_sample.fit_y, title="regression")
@@ -355,6 +350,10 @@ def main():
     print(f"best_sample.rmse_sum-norm {norm_rmse}")
     print(f"best_sample.rmse_fit {best_sample.rmse_fit}")
     print(f"best_sample.rmse_fit-norm {norm_reg_rmse}")
+    
+    time_elapsed=time.time()-t0
+    print(f"time elapsed: {time_elapsed:.2f} s")
+    
     plt.show()
     
 

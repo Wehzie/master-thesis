@@ -20,16 +20,25 @@ def load_data(data_path: Path = DATA_PATH, verbose: bool = True) -> tuple:
     return: sampling rate, data, dtype
     """
     sampling_rate, data = read(data_path)
+    
+    msg_convert_stereo = False
+    if len(data.shape) == 2:
+        data = (np.sum(data, axis=1)//2).T
+        msg_converted = True
 
     # remove y-offset of unsigned encoding
+    msg_convert_uint8 = False
     if data.dtype == np.uint8:
-        print("convert uint8 to int16 to remove y-offset")
+        msg_convert_uint8 = True
         data = data.astype("int16") - np.iinfo(np.uint8).max // 2
 
     if verbose:
         print(f"loading file: {data_path}")
+        if msg_convert_stereo: print("converting signal from stereo to mono")
+        if msg_convert_uint8: print("convert uint8 to int16 to remove y-offset")
         print(f"sampling rate: {sampling_rate}")
-        print(f"data type: {data.dtype}\n")
+        print(f"data type: {data.dtype}")
+        print(f"data shape: {data.shape}\n")
 
     return sampling_rate, data, data.dtype
     
@@ -96,11 +105,8 @@ def load_pickled_fig(data_path: Path) -> None:
     plt.show()
 
 def main():
-    sampling_rate, data = load_data()
-    print(f"data: {data}")
-    print(f"data length: {len(data)}")
-    print(f"sampling rate: {sampling_rate}")
-    save_signal_to_wav(data)
+    sampling_rate, data, dtype = load_data()
+    save_signal_to_wav(data, sampling_rate, dtype)
 
 if __name__ == "__main__":
     main()
