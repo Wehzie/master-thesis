@@ -3,9 +3,11 @@ import json
 from pathlib import Path
 import wave
 import copy
+import pickle
 
 from scipy.io.wavfile import write
 from scipy.io.wavfile import read
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
@@ -84,6 +86,14 @@ def load_sim_data(data_path: Path) -> pd.DataFrame:
     df = pd.DataFrame()
     df = pd.read_csv(data_path, sep="[ ]+", engine="python") # match any number of spaces
     return df
+
+def load_pickled_fig(data_path: Path) -> None:
+    """load a pickled matplotlib figure and display it"""
+    _ = plt.figure()
+    plt.close()
+    with (open("data_path", "rb")) as file:
+        pickle.load(file)
+    plt.show()
 
 def main():
     sampling_rate, data = load_data()

@@ -126,7 +126,7 @@ class SearchModule():
         best_matrix = None
         for _ in tqdm(range(self.k_samples)):
             # compose a signal of single oscillators
-            temp_matrix, det_param_li = gen_signal_python.sum_atomic_signals(self.rand_args)
+            temp_matrix, _ = gen_signal_python.sum_atomic_signals(self.rand_args)
             temp_sum = sum(temp_matrix)
             temp_rmse = compute_rmse(temp_sum, self.target)
             if temp_rmse < best_rmse:
@@ -146,15 +146,13 @@ class SearchModule():
         for _ in tqdm(range(self.k_samples)):
             # init empty sample
             det_param_li = list()
-            # NOTE: np.empty IS AN ACCIDENT BUT WORKS QUITE WELL
-            # so maybe the proper algorithm could be to randomly initialize
-            # and then 
-            signal_matrix = np.empty((self.rand_args.n_osc, self.rand_args.samples))
+            signal_matrix = np.zeros((self.rand_args.n_osc, self.rand_args.samples))
             zeros = np.zeros(self.rand_args.samples)
             sample = Sample(zeros, signal_matrix, det_param_li)
             sample.rmse_sum = np.inf
 
             i = 0 # number of added oscillators
+            j = 0 # number of loops
             while i < self.rand_args.n_osc:
                 # draw an oscillator
                 signal, det_param = gen_signal_python.sum_atomic_signals(mod_args)
@@ -170,8 +168,10 @@ class SearchModule():
                     sample.rmse_sum = temp_rmse
                     sample.matrix_y[i,:] = signal
                     i += 1
+                j += 1
             
             self.samples.append(sample)
+            print(f"\nj={j}\n")
 
     def random_stateless_hybrid(self) -> Tuple[np.ndarray, float]:
         """generate k-signals which are a sum of n-oscillators
@@ -182,39 +182,38 @@ class SearchModule():
         mod_args = copy.deepcopy(self.rand_args)
         mod_args.n_osc = 1
 
-        best_model = np.zeros((self.rand_args.n_osc, self.rand_args.samples))
+        best_model = None
         best_rmse = np.inf
+        best_model_j = np.inf
         for _ in tqdm(range(self.k_samples)):
-            # init empty sample
-            rng = np.random.default_rng()
-            
-            model = np.empty((self.rand_args.n_osc, self.rand_args.samples))
+            # init empty sample            
+            model = np.zeros((self.rand_args.n_osc, self.rand_args.samples))
             rmse = np.inf
 
             i = 0 # number of added oscillators
+            j = 0 # number of iterations
             while i < self.rand_args.n_osc: # TODO: non-deterministic runtime
                 # draw an oscillator
                 signal, _ = gen_signal_python.sum_atomic_signals(mod_args)
                 signal = signal.flatten()
                 # compute rmse with new oscillator
-                temp_sum = model + signal
-                print(model)
-                time.sleep(0.5) 
+                temp_sum = model.sum(axis=0) + signal
                 temp_rmse = compute_rmse(temp_sum, self.target)
-                print(f"rmse: {rmse}, temp_rmse: {temp_rmse}")
 
                 # accept oscillators when they lower the RMSE
                 if temp_rmse < rmse:
                     model[i,:] = signal
                     rmse = temp_rmse
                     i += 1
+                j += 1
             
             # evaluate model against k models
             if rmse < best_rmse:
                 best_model = model
                 best_rmse = rmse
+                best_model_j = j
         
-        return best_model, best_rmse     
+        return best_model, best_rmse, j  
     
     def random_exploit(self) -> None:
         """generate an ensemble of n-oscillators
@@ -278,7 +277,10 @@ class SearchModule():
         
         return best_sample, rmse_li, rmse_norm_li
 
+
 def main():
+    # track elapsed time
+    t0 = time.time()
     # loading and manipulating the target signal
     raw_sampling_rate, raw_target, raw_dtype = load_data()
     scale_factor = 0.01
@@ -290,14 +292,23 @@ def main():
     # save to wav
     sampling_rate = int(scale_factor*raw_sampling_rate)
     save_signal_to_wav(target, sampling_rate, raw_dtype, Path("data/target_downsampled.wav"))
-    
+
     # initialize and start search
     rand_args = params.py_rand_args_uniform
     rand_args.samples = len(target) # generated signals match length of target
-
-    n_dependency(rand_args, target)
-
+                                    # NOTE: the sampling rate could also be set lower instead
+    
+    #k_dependency_one_shot([1, 10, 100, 500, 1000, 2000], 20, rand_args, target, visual=True)
+    n_dependency(rand_args, target, visual=True)
+    time_elapsed=time.time()-t0
+    print(f"time elapsed: {time_elapsed}")
     exit()
+
+    search = SearchModule(
+                k_samples=1, # number of generated sum-signals
+                rand_args=rand_args,
+                target=target)
+    search.random_hybrid()
     
     # without random phase shifts between 0 and 2 pi
     # signals will overlap at the first sample
@@ -335,7 +346,7 @@ def main():
         plot_pred_target(best_sample.fit_y, target, title="regression")
         plot_pred_target(norm_sum, target_norm, title="norm-sum")
         plot_pred_target(norm_reg, target_norm, title="norm after fit")
-    if False: # frequency-domain
+    if True: # frequency-domain
         plot_fourier(target, title="target")
         plot_fourier(best_sample.sum_y, title="sum")
         plot_fourier(best_sample.fit_y, title="regression")
@@ -349,3 +360,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# IDEA: maybe it would be cool to write an algorithm for self-adjustment of the correct number of oscillators

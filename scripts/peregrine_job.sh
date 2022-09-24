@@ -10,13 +10,20 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
 
+# gauge using top
 #SBATCH --time=00:30:00
-#SBATCH --mem-per-cpu=4GB
+# RES column indicates RAM usage in bytes
+#SBATCH --mem-per-cpu=1GB
 
 module load matplotlib
 # yields python-3.9
 # and packages
 # numpy, scipy, pandas, matplotlib
 module load networkx
+module load scikit-learn
+module load tqdm
+module load GCC
+
+mkdir data
 
 srun python3 src/search_module.py

@@ -1,10 +1,11 @@
 from dataclasses import dataclass
-from typing import Callable, Final
+from typing import Callable, Final, Union
 import numpy as np
 
+# "|", for example int|float requires python 3.10 or greater
 class Dist:
     """define distributions for random drawing"""
-    def __init__(self, dist: int|float|Callable, *args, **kwargs):
+    def __init__(self, dist: Union[int, float, Callable], *args, **kwargs):
         if isinstance(dist, Callable):
             rng = np.random.default_rng() # no seed needed since not used to draw
             # rng1.uniform != rng2.uniform, therefore must use name

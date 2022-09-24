@@ -2,3 +2,6 @@ matplotlib
 numpy
 scipy
 pandas
+networkx
+scikit-learn
+tqdm

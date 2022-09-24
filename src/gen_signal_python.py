@@ -119,7 +119,6 @@ def main():
     )
     plot_signal(y)
     plt.show()
-    exit()
 
     # generate a single signal from deterministic arguments
     args = PythonSignalDetArgs(duration=10, samples=None,
@@ -135,7 +134,7 @@ def main():
     # generate a sum of signals from random variables
     rng = np.random.default_rng(params.GLOBAL_SEED)
     args = PythonSignalRandArgs(
-        n_osc = 1000,
+        n_osc = 3,
         duration = None,
         samples = 300,
         f_dist = Dist(rng.uniform, low=1e5, high=1e6),

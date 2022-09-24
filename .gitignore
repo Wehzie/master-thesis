@@ -1,5 +1,6 @@
 .vscode
 peregrine.sh
+src/test.py
 
 # data directories
 circuit_lib/temp.cir
