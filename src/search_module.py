@@ -80,7 +80,7 @@ class Sample():
         return reg
 
     @staticmethod
-    def predict(X: list, coef: np.ndarray, intercept: float) -> np.ndarray:
+    def predict(X: np.ndarray, coef: np.ndarray, intercept: float) -> np.ndarray:
         """generate approximation of target, y"""
         fit = np.sum(X.T * coef, axis=1) + intercept
         return fit
@@ -249,6 +249,7 @@ class SearchModule():
 
                 # replace random oscillator in the model
                 i = rng.integers(0, self.rand_args.n_osc)
+                # TODO: debug whether this works as expected or whether deepcopy is needed
                 temp_sum = sum(sample.matrix_y[0:i,:]) + signal + sum(sample.matrix_y[1+i:,:])
                 temp_rmse = compute_rmse(temp_sum, self.target)
 
@@ -258,15 +259,60 @@ class SearchModule():
                     sample.rmse_sum = temp_rmse
                     sample.sum_y = temp_sum
 
-                self.samples.append(sample)
+            self.samples.append(sample)
             
             if self.samples[-1].rmse_sum < best_rmse:
                 best_rmse = self.samples[-1].rmse_sum
                 best_model = self.samples[-1].matrix_y
         
-
+    def random_weight_exploit(self, j_exploits: int) -> None:
+        """generate an ensemble of n-oscillators and a vector of weights
+        reduce loss by iteratively replacing weights
         
+        param:
+            j_exploits: number of re-drawn oscillators per model
+        """
+        # TODO: hacky solution to draw l-oscillators from sum_atomic signals
+        rng = np.random.default_rng(params.GLOBAL_SEED)
 
+        best_model = None
+        best_rmse = np.inf
+        for _ in tqdm(range(self.k_samples)):
+            # generate initial model
+            # TODO: det_param_li is not updated
+            model, det_param_li = gen_signal_python.sum_atomic_signals(self.rand_args)
+            weights = np.zeros(self.rand_args.n_osc)
+            w_sum = Sample.predict(model, weights, 0) # weighted sum
+
+            sample = Sample(w_sum, model, det_param_li) # TODO: new obj fields
+            # calculate initial rmse
+            sample.rmse_sum = compute_rmse(sample.sum_y, self.target)
+            
+            for _ in tqdm(range(j_exploits)):
+                # TODO: efficiency improvements
+                temp_weights = copy.deepcopy(weights)
+                # replace random oscillator in the model
+                i = rng.integers(0, self.rand_args.n_osc)
+                # draw 1 weight
+                w = self.rand_args.weight_dist.draw()
+                temp_weights[i] = w
+                temp_sum = Sample.predict(model, temp_weights, 0)
+                temp_rmse = compute_rmse(temp_sum, self.target)
+
+                # evaluate replacement
+                if temp_rmse < sample.rmse_sum:
+                    sample.rmse_sum = temp_rmse
+                    sample.sum_y = temp_sum
+                    weights = temp_weights
+
+            # for compatibility, use best weights
+            sample.matrix_y = (model.T * weights).T
+            self.samples.append(sample)
+            
+            if self.samples[-1].rmse_sum < best_rmse:
+                best_rmse = self.samples[-1].rmse_sum
+                best_model = self.samples[-1].matrix_y
+        
     def gather_samples(self) -> tuple[Sample, list]:
         """find the sample with the lowest root mean square error
         and return a list of all rmse"""
@@ -287,11 +333,11 @@ def main():
     # track elapsed time
     t0 = time.time()
     # loading and manipulating the target signal
-    raw_sampling_rate, raw_target, raw_dtype = load_data(Path("resources/yes.wav"))
-    scale_factor = 0.2
+    raw_sampling_rate, raw_target, raw_dtype = load_data()
+    scale_factor = 0.1
     target_full_len: Final = sample_down_int(raw_target, scale_factor)
     # shorten the target
-    target: Final = target_full_len #take_middle_third(target_full_len)
+    target: Final = take_middle_third(target_full_len)
     # normalize to range 0 1
     target_norm: Final = norm(target)
     # save to wav
@@ -312,8 +358,9 @@ def main():
                 k_samples=1, # number of generated sum-signals
                 rand_args=rand_args,
                 target=target)
-    search.random_exploit(20000, zero_model=True)
+    #search.random_exploit(search.rand_args.n_osc*5)
     #search.random_hybrid()
+    search.random_weight_exploit(search.rand_args.n_osc*3)
     
     # without random phase shifts between 0 and 2 pi
     # signals will overlap at the first sample

@@ -101,7 +101,7 @@ bird_params = {
 }
 
 py_rand_args_uniform = PythonSignalRandArgs(
-    n_osc = 6000,
+    n_osc = 3000,
     duration = None,
     samples = 300,
     f_dist = Dist(rng.uniform, low=1e5, high=1e6),
