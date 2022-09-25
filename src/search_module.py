@@ -172,6 +172,41 @@ class SearchModule():
             
             self.samples.append(sample)
             print(f"\nj={j}\n")
+    
+    def random_weight_hybrid(self) -> None:
+        for _ in tqdm(range(self.k_samples)):
+            # init empty sample
+            signal_matrix, det_param_li = gen_signal_python.sum_atomic_signals(self.rand_args)
+            weights = np.ones(self.rand_args.n_osc)
+            signal_sum = Sample.predict(signal_matrix, weights, 0) # weighted sum
+            sample = Sample(signal_sum, signal_matrix, det_param_li)
+            sample.rmse_sum = np.inf
+
+            i = 0 # number of added oscillators
+            j = 0 # number of loops
+            while i < self.rand_args.n_osc:
+                temp_weights = copy.deepcopy(weights)
+                # draw an oscillator
+                w = self.rand_args.weight_dist.draw()
+                temp_weights[i] = w
+
+                # compute rmse with new oscillator
+                temp_sum = Sample.predict(signal_matrix, temp_weights, 0) # weighted sum
+                temp_rmse = compute_rmse(temp_sum, self.target)
+                # TODO: also compute the weighting of the model
+
+                # accept oscillators when they lower the RMSE
+                if temp_rmse < sample.rmse_sum:
+                    print(temp_rmse)
+                    sample.sum_y = temp_sum
+                    sample.rmse_sum = temp_rmse
+                    weights = temp_weights
+                    i += 1
+                j += 1
+            
+            sample.matrix_y = (signal_matrix.T * weights).T
+            self.samples.append(sample)
+            print(f"\nj={j}\n")
 
     def random_stateless_hybrid(self) -> Tuple[np.ndarray, float]:
         """generate k-signals which are a sum of n-oscillators
@@ -277,11 +312,12 @@ class SearchModule():
 
         best_model = None
         best_rmse = np.inf
-        for _ in tqdm(range(self.k_samples)):
+        for _ in range(self.k_samples):
             # generate initial model
             # TODO: det_param_li is not updated
             model, det_param_li = gen_signal_python.sum_atomic_signals(self.rand_args)
-            weights = np.zeros(self.rand_args.n_osc)
+            weights = np.ones(self.rand_args.n_osc)
+            #weights = rng.uniform(0.1, 100, (self.rand_args.n_osc))
             w_sum = Sample.predict(model, weights, 0) # weighted sum
 
             sample = Sample(w_sum, model, det_param_li) # TODO: new obj fields
@@ -334,7 +370,7 @@ def main():
     t0 = time.time()
     # loading and manipulating the target signal
     raw_sampling_rate, raw_target, raw_dtype = load_data()
-    scale_factor = 0.1
+    scale_factor = 0.01
     target_full_len: Final = sample_down_int(raw_target, scale_factor)
     # shorten the target
     target: Final = take_middle_third(target_full_len)
@@ -358,9 +394,11 @@ def main():
                 k_samples=1, # number of generated sum-signals
                 rand_args=rand_args,
                 target=target)
-    #search.random_exploit(search.rand_args.n_osc*5)
+    #search.random_one_shot()
+    #search.random_exploit(search.rand_args.n_osc*5, zero_model=True)
     #search.random_hybrid()
-    search.random_weight_exploit(search.rand_args.n_osc*3)
+    #search.random_weight_exploit(search.rand_args.n_osc*30)
+    search.random_weight_hybrid()
     
     # without random phase shifts between 0 and 2 pi
     # signals will overlap at the first sample
@@ -372,6 +410,7 @@ def main():
 
     # find best sample and save
     best_sample, rmse_list, rmse_norm_list = search.gather_samples()
+    print(f"mean: {np.mean(best_sample.sum_y)}")
     best_sample.save()
     save_signal_to_wav(best_sample.sum_y, sampling_rate, raw_dtype, Path("data/best_sample.wav"))
 

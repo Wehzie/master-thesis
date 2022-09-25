@@ -109,27 +109,29 @@ def interpolate_signal():
 
 
 def main():
-    x, y = gen_custom_inv_sawtooth(
-        duration = 10,
-        freq = 1,
-        amplitude = 1,
-        phase = 0,
-        offset = 0,
-        sampling_rate = 10000
-    )
-    plot_signal(y)
-    plt.show()
+    if False:
+        x, y = gen_custom_inv_sawtooth(
+            duration = 10,
+            freq = 1,
+            amplitude = 1,
+            phase = 0,
+            offset = 0,
+            sampling_rate = 10000
+        )
+        plot_signal(y)
+        plt.show()
 
     # generate a single signal from deterministic arguments
     args = PythonSignalDetArgs(duration=10, samples=None,
         freq=0.5,
         amplitude=1, weight=1,
         phase=-1/3,
-        offset_fctr=0,
+        offset_fctr=-10,
         sampling_rate=11025)
 
     gen_inv_sawtooth(**args.__dict__, visual=True)
     plt.show()
+    exit()
 
     # generate a sum of signals from random variables
     rng = np.random.default_rng(params.GLOBAL_SEED)
