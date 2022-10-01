@@ -1,89 +1,23 @@
 import copy
-import csv
-from operator import mod
 from pathlib import Path
-import re
+import pickle
 import time
-from typing import Callable, Final, List, Tuple
+from typing import Final, List, Tuple
 
-from data_analysis import compute_rmse, hist_rmse, plot_n, plot_pred_target, plot_signal, plot_fourier
-from data_preprocessor import norm, sample_down, sample_down_int, take_middle_third
-from data_io import DATA_PATH, load_data, load_data_numpy, save_signal_to_wav
+import data_analysis
+import data_io
 import gen_signal_python
 import params
+from sample import Sample
+from data_preprocessor import norm, sample_down, sample_down_int, take_middle_third
 
 import numpy as np
-from sklearn.linear_model import LinearRegression
+
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 
-from param_types import PythonSignalDetArgs, PythonSignalRandArgs
+from param_types import PythonSignalRandArgs
 from run_experiments import k_dependency_hybrid, k_dependency_one_shot, n_dependency
-
-class Sample():
-    """a sample corresponds to a randomly drawn signal approximating the target"""
-    def __init__(self, sum_y: np.ndarray,
-        signal_matrix: np.ndarray, det_param_li: List[PythonSignalDetArgs]):
-
-                                                    # store single oscillator signals for linear regression
-        self.matrix_y: np.ndarray = signal_matrix   #   matrix of single-oscillator signals
-        self.sum_y: Final = sum_y   # generated signal y coords
-        self.fit_y = None           # summed signal fit to target with regression
-        
-        # list of determined parameters
-        #   one set of parameters corresponds to a single oscillator
-        self.det_param_li = det_param_li
-        
-        self.rmse_sum = None        # root mean square error of summed signal
-        self.rmse_fit = None        # root mean square error of regression fit signal
-        self.rmse_norm = None       # rmse after normalization of target and sum_y
-
-    def __str__(self) -> str:
-        x = f"x: {self.sum_x}\n"
-        y = f"y: {self.sum_y}\n"
-        rmse_sum = f"rmse sum: {self.rmse_sum}\n"
-        rmse_fit = f"rmse fit: {self.rmse_fit}"
-        return x + y + rmse_sum + rmse_fit
-
-    def save(self, path: Path = "data/best_sample.csv") -> None:
-        """save the determined parameters of a sample to a CSV"""
-        with open(path, "w") as f:
-            writer = csv.writer(f)
-            # write header
-            writer.writerow(self.det_param_li[0].__dict__)
-            # write data
-            for osc in self.det_param_li:
-                writer.writerow(osc.__dict__.values())
-
-    @staticmethod
-    def regress_linear(p: np.ndarray, t: np.ndarray, verbose: bool = False):
-        """apply linear regression"""
-        # matrix_y refers to the y-values of a generated signal
-        # the individual signals are used as regressors 
-
-        r = p.T
-
-        if verbose:
-            print("Computing regression")
-            print(f"r {r}")
-            print(f"r.shape {r.shape}")
-            print(f"t {t}")
-            print(f"t.shape {t.shape}")
-        
-        reg = LinearRegression().fit(r, t)
-
-        if verbose:
-            print(f"Coefficient: {reg.coef_}")
-            print(f"Coefficient.shape: {reg.coef_.shape}")
-            print(f"Intercept: {reg.intercept_}")
-
-        return reg
-
-    @staticmethod
-    def predict(X: np.ndarray, coef: np.ndarray, intercept: float) -> np.ndarray:
-        """generate approximation of target, y"""
-        fit = np.sum(X.T * coef, axis=1) + intercept
-        return fit
 
 class SearchModule():
 
@@ -104,37 +38,45 @@ class SearchModule():
             samples += str(s) + "\n"
         return rand_args + k_samples + sig_gen_func + samples
 
-    def random_one_shot(self) -> None:
-        """generate k-signals which are a sum of n-oscillators"""
-        for _ in tqdm(range(self.k_samples)):
-            # TODO: idem, sig_gen_func
-            # compose a signal of single oscillators
-            signal_matrix, det_param_li = gen_signal_python.sum_atomic_signals(self.rand_args)
-            signal_sum = sum(signal_matrix)
-            # store summed signal, single signals, and parameters for each single signal
-            sample = Sample(signal_sum, signal_matrix, det_param_li)
-            # calculate rmse
-            sample.rmse_sum = compute_rmse(signal_sum, self.target)
-            # store sample
-            self.samples.append(sample)
-
-    def random_stateless_one_shot(self) -> tuple:
+    def random_one_shot(self,
+        k_samples: int,
+        store_det_args: bool = False,
+        history: bool = False,
+        args_path: Path = None) -> Sample:
         """generate k-signals which are a sum of n-oscillators
-        only return the best signal"""
+        on each iteration draw a new full model (matrix of n-oscillators)
+        
+        params:
+            k_samples: number of times to draw a matrix
+            store_det_args: whether to store the deterministic parameters underlying each oscillator in a model
+            history: whether to store all generated samples, may run out of RAM
+            args_path: when not none, write history to disk instead of RAM at specified path
+        """
+        if history and args_path: args_path.unlink(missing_ok=True) # delete file if it exists
 
-        best_rmse = np.inf
-        best_matrix = None
-        for _ in tqdm(range(self.k_samples)):
-            # compose a signal of single oscillators
-            temp_matrix, _ = gen_signal_python.sum_atomic_signals(self.rand_args)
+        best_rmse = np.inf # the lowest rmse
+        best_matrix = None # the oscillators generating the lowest rmse when summed
+        best_matrix_args = None # list of parameters for each signal in matrix
+        for ki in tqdm(range(k_samples)):
+            # compose a matrix
+            temp_matrix, det_param_li = gen_signal_python.sum_atomic_signals(self.rand_args, store_det_args)
             temp_sum = sum(temp_matrix)
-            temp_rmse = compute_rmse(temp_sum, self.target)
+            temp_rmse = data_analysis.compute_rmse(temp_sum, self.target)
+            if history: self.samples.append(Sample(temp_sum, temp_matrix, det_param_li))
+            if history and args_path and (ki == k_samples-1 or ki % params.SAMPLE_FLUSH_PERIOD == 0):
+                with open(args_path, "ab") as f:
+                    pickle.dump(self.samples, f)
+                    self.samples = list() # clear list  
+
+            # compare with best
             if temp_rmse < best_rmse:
                 best_matrix = temp_matrix
                 best_rmse = temp_rmse
+                best_matrix_args = det_param_li 
 
-        self.samples.append(best_matrix)
-        return best_matrix, best_rmse
+        best_sample = Sample(sum(best_matrix), best_matrix, best_matrix_args)
+        self.samples.append(best_sample) # TODO: for backwards compatibility -> purify func 
+        return best_sample
     
     def random_hybrid(self) -> None:
         """generate k-signals which are a sum of n-oscillators
@@ -159,7 +101,7 @@ class SearchModule():
                 signal = signal.flatten()
                 # compute rmse with new oscillator
                 temp_sum = sample.sum_y + signal
-                temp_rmse = compute_rmse(temp_sum, self.target)
+                temp_rmse = data_analysis.compute_rmse(temp_sum, self.target)
 
                 # accept oscillators when they lower the RMSE
                 if temp_rmse < sample.rmse_sum:
@@ -192,7 +134,7 @@ class SearchModule():
 
                 # compute rmse with new oscillator
                 temp_sum = Sample.predict(signal_matrix, temp_weights, 0) # weighted sum
-                temp_rmse = compute_rmse(temp_sum, self.target)
+                temp_rmse = data_analysis.data_analysis.compute_rmse(temp_sum, self.target)
                 # TODO: also compute the weighting of the model
 
                 # accept oscillators when they lower the RMSE
@@ -233,7 +175,7 @@ class SearchModule():
                 signal = signal.flatten()
                 # compute rmse with new oscillator
                 temp_sum = model.sum(axis=0) + signal
-                temp_rmse = compute_rmse(temp_sum, self.target)
+                temp_rmse = data_analysis.compute_rmse(temp_sum, self.target)
 
                 # accept oscillators when they lower the RMSE
                 if temp_rmse < rmse:
@@ -276,7 +218,7 @@ class SearchModule():
                 signal_sum = sum(model)
             sample = Sample(signal_sum, model, det_param_li)
             # calculate initial rmse
-            sample.rmse_sum = compute_rmse(sample.sum_y, self.target)
+            sample.rmse_sum = data_analysis.compute_rmse(sample.sum_y, self.target)
             for _ in tqdm(range(j_exploits)):
                 # draw 1 oscillator
                 signal, _ = gen_signal_python.sum_atomic_signals(mod_args)
@@ -286,7 +228,7 @@ class SearchModule():
                 i = rng.integers(0, self.rand_args.n_osc)
                 # TODO: debug whether this works as expected or whether deepcopy is needed
                 temp_sum = sum(sample.matrix_y[0:i,:]) + signal + sum(sample.matrix_y[1+i:,:])
-                temp_rmse = compute_rmse(temp_sum, self.target)
+                temp_rmse = data_analysis.compute_rmse(temp_sum, self.target)
 
                 # evaluate replacement
                 if temp_rmse < sample.rmse_sum:
@@ -322,7 +264,7 @@ class SearchModule():
 
             sample = Sample(w_sum, model, det_param_li) # TODO: new obj fields
             # calculate initial rmse
-            sample.rmse_sum = compute_rmse(sample.sum_y, self.target)
+            sample.rmse_sum = data_analysis.compute_rmse(sample.sum_y, self.target)
             
             for _ in tqdm(range(j_exploits)):
                 # TODO: efficiency improvements
@@ -333,7 +275,7 @@ class SearchModule():
                 w = self.rand_args.weight_dist.draw()
                 temp_weights[i] = w
                 temp_sum = Sample.predict(model, temp_weights, 0)
-                temp_rmse = compute_rmse(temp_sum, self.target)
+                temp_rmse = data_analysis.compute_rmse(temp_sum, self.target)
 
                 # evaluate replacement
                 if temp_rmse < sample.rmse_sum:
@@ -369,7 +311,7 @@ def main():
     # track elapsed time
     t0 = time.time()
     # loading and manipulating the target signal
-    raw_sampling_rate, raw_target, raw_dtype = load_data()
+    raw_sampling_rate, raw_target, raw_dtype = data_io.load_data()
     scale_factor = 0.01
     target_full_len: Final = sample_down_int(raw_target, scale_factor)
     # shorten the target
@@ -378,7 +320,7 @@ def main():
     target_norm: Final = norm(target)
     # save to wav
     sampling_rate = int(scale_factor*raw_sampling_rate)
-    save_signal_to_wav(target, sampling_rate, raw_dtype, Path("data/target_downsampled.wav"))
+    data_io.save_signal_to_wav(target, sampling_rate, raw_dtype, Path("data/target_downsampled.wav"))
 
     # initialize and start search
     rand_args = params.py_rand_args_uniform
@@ -398,49 +340,54 @@ def main():
     #search.random_exploit(search.rand_args.n_osc*5, zero_model=True)
     #search.random_hybrid()
     #search.random_weight_exploit(search.rand_args.n_osc*30)
-    search.random_weight_hybrid()
+    #search.random_weight_hybrid()
+    best_sample = search.random_stateless_one_shot(10, store_det_args=True,
+        history=True, args_path=Path("data/test_args.pickle"))
     
+    print(data_io.load_pickled_samples(Path("data/test_args.pickle")))
+
+    exit()
     # without random phase shifts between 0 and 2 pi
     # signals will overlap at the first sample
     if False:
         for s in search.samples:
             s.sum_y[0] = 0 # set first point to 0
-            s.rmse_sum = compute_rmse(s.sum_y, target)
-            s.rmse_norm = compute_rmse(norm(s.sum_y), target_norm)
+            s.rmse_sum = data_analysis.compute_rmse(s.sum_y, target)
+            s.rmse_norm = data_analysis.compute_rmse(norm(s.sum_y), target_norm)
 
     # find best sample and save
-    best_sample, rmse_list, rmse_norm_list = search.gather_samples()
+    #best_sample, rmse_list, rmse_norm_list = search.gather_samples()
     print(f"mean: {np.mean(best_sample.sum_y)}")
     best_sample.save()
-    save_signal_to_wav(best_sample.sum_y, sampling_rate, raw_dtype, Path("data/best_sample.wav"))
+    data_io.save_signal_to_wav(best_sample.sum_y, sampling_rate, raw_dtype, Path("data/best_sample.wav"))
 
     # normalize best sample
     norm_sum = norm(best_sample.sum_y)
-    norm_rmse = compute_rmse(norm_sum, target_norm)
+    norm_rmse = data_analysis.compute_rmse(norm_sum, target_norm)
     
     # compute regression against target
     reg = Sample.regress_linear(best_sample.matrix_y, target, verbose=False)
     pred = Sample.predict(best_sample.matrix_y, reg.coef_, reg.intercept_)
     best_sample.fit_y = pred
-    save_signal_to_wav(best_sample.fit_y, sampling_rate, raw_dtype, Path("data/fit.wav"))
-    best_sample.rmse_fit = compute_rmse(pred, target)
+    data_io.save_signal_to_wav(best_sample.fit_y, sampling_rate, raw_dtype, Path("data/fit.wav"))
+    best_sample.rmse_fit = data_analysis.compute_rmse(pred, target)
     
     # norm regression after fit (good enough)
     norm_reg = norm(best_sample.fit_y)
-    norm_reg_rmse = compute_rmse(norm_reg, target_norm)
+    norm_reg_rmse = data_analysis.compute_rmse(norm_reg, target_norm)
     
     # plots
     if True: # time-domain
         #hist_rmse(rmse_list, title="sum distribution")
         #hist_rmse(rmse_norm_list, title="norm-sum distribution")
-        plot_pred_target(best_sample.sum_y, target, title="sum")
-        plot_pred_target(best_sample.fit_y, target, title="regression")
-        plot_pred_target(norm_sum, target_norm, title="norm-sum")
-        plot_pred_target(norm_reg, target_norm, title="norm after fit")
+        data_analysis.plot_pred_target(best_sample.sum_y, target, title="sum")
+        data_analysis.plot_pred_target(best_sample.fit_y, target, title="regression")
+        data_analysis.plot_pred_target(norm_sum, target_norm, title="norm-sum")
+        data_analysis.plot_pred_target(norm_reg, target_norm, title="norm after fit")
     if False: # frequency-domain
-        plot_fourier(target, title="target")
-        plot_fourier(best_sample.sum_y, title="sum")
-        plot_fourier(best_sample.fit_y, title="regression")
+        data_analysis.plot_fourier(target, title="target")
+        data_analysis.plot_fourier(best_sample.sum_y, title="sum")
+        data_analysis.plot_fourier(best_sample.fit_y, title="regression")
 
     print(f"best_sample.rmse_sum {best_sample.rmse_sum}")
     print(f"best_sample.rmse_sum-norm {norm_rmse}")

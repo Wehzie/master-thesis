@@ -52,8 +52,12 @@ def gen_inv_sawtooth(
         plot_signal(y, x_samples, title="x-samples")
     return x_samples, y
 
-def sum_atomic_signals(args: PythonSignalRandArgs) -> Tuple[np.ndarray, List[PythonSignalDetArgs]]:
-    """compose a signal of single oscillators"""
+def sum_atomic_signals(args: PythonSignalRandArgs, store_det_args: bool = False) -> Tuple[np.ndarray, List[PythonSignalDetArgs]]:
+    """compose a signal of single oscillators
+
+    param:
+        store_det_args: whether to store the deterministic parameters underlying each oscillator in a model
+    """
     signal_matrix = np.empty((args.n_osc, args.samples))
     det_arg_li = list()
 
@@ -61,7 +65,7 @@ def sum_atomic_signals(args: PythonSignalRandArgs) -> Tuple[np.ndarray, List[Pyt
         # determine a set of parameters for a single oscillator
         det_params = draw_params_random(args)
         # store the parameter set
-        det_arg_li.append(det_params)
+        if store_det_args: det_arg_li.append(det_params)
         # generate single oscillator signal and add to matrix
         single_signal = gen_inv_sawtooth(**det_params.__dict__)
         _, signal_matrix[i,:] = single_signal

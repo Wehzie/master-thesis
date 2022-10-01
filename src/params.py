@@ -4,6 +4,8 @@ from param_types import Dist, PythonSignalRandArgs
 GLOBAL_SEED = 5
 rng = np.random.default_rng(GLOBAL_SEED)
 
+SAMPLE_FLUSH_PERIOD = 1000 # number of samples to store in RAM before flush to disk
+
 param_sweep_schedule = {
     "vo2_r1": {
         "changed_component": "R1",

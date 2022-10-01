@@ -1,6 +1,9 @@
+import functools
 import glob
 import json
+import operator
 from pathlib import Path
+from typing import List
 import wave
 import copy
 import pickle
@@ -10,6 +13,8 @@ from scipy.io.wavfile import read
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+
+from sample import Sample
 
 DATA_PATH = Path("resources/magpie. 35k, mono, 8-bit, 11025 Hz, 3.3 seconds.wav")
 
@@ -103,6 +108,20 @@ def load_pickled_fig(data_path: Path) -> None:
     with (open("data_path", "rb")) as file:
         pickle.load(file)
     plt.show()
+
+def load_pickled_samples(data_path: Path) -> List[Sample]:
+    data_path = Path("data/test_args.pickle")
+    obj_li = list()
+    with open(data_path, "rb") as f:
+        while True:
+            try:
+                obj_li.append(pickle.load(f))
+            except EOFError:
+                break
+
+    flat = functools.reduce(operator.iconcat, obj_li, [])
+    return flat
+    
 
 def main():
     sampling_rate, data, dtype = load_data()

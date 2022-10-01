@@ -1,10 +1,10 @@
+import data_io
+import data_preprocessor
+
 from pathlib import Path
-from data_io import load_data
 
 import numpy as np
 import matplotlib.pyplot as plt
-
-from data_preprocessor import align_signals
 
 def plot_n(data: np.ndarray, show: bool = True, save_path: Path = None) -> None:
     """plot n signals in a single plot"""
@@ -127,14 +127,14 @@ def compute_rmse(p: np.ndarray, t: np.ndarray, verbose: bool = False, pad: bool 
     """
     Compute root mean square error (RMSE) between prediction and target signal.
     """
-    if pad: p, t = align_signals(p, t)
+    if pad: p, t = data_preprocessor.align_signals(p, t)
     rmse = np.sqrt(((p-t)**2).mean())
     if verbose:
         print(f"RMSE: {rmse}")
     return rmse
 
 def main():
-    sampling_rate, data = load_data()
+    sampling_rate, data = data_io.load_data()
     plot_pred_target(data, data-10)
     plot_signal(data)
     plot_fourier(data)
