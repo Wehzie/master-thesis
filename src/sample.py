@@ -1,50 +1,65 @@
+from __future__ import annotations
 import csv
 import numpy as np
 from pathlib import Path
-from typing import List, Final
+from typing import List, Final, Union
+import data_analysis
 from param_types import PythonSignalDetArgs
 from sklearn.linear_model import LinearRegression
+import data_preprocessor
 
 class Sample():
-    """a sample corresponds to a randomly drawn signal approximating the target"""
-    def __init__(self, sum_y: np.ndarray,
-        signal_matrix: np.ndarray, det_param_li: List[PythonSignalDetArgs]):
+    """a sample consists of n-oscillators with constant parameters
+    the sum of oscillators approximates a target signal"""
+    def __init__(self, signal_matrix: np.ndarray, weights: Union(None, np.ndarray), signal_sum: np.ndarray,
+        offset: Union(None, float), rmse: float, signal_args: List[PythonSignalDetArgs]) -> Sample:
+        """
+        initialize a sample
 
-                                                    # store single oscillator signals for linear regression
-        self.matrix_y: np.ndarray = signal_matrix   #   matrix of single-oscillator signals
-        self.sum_y: Final = sum_y   # generated signal y coords
-        self.fit_y = None           # summed signal fit to target with regression
-        
-        # list of determined parameters
-        #   one set of parameters corresponds to a single oscillator
-        self.det_param_li = det_param_li
-        
-        self.rmse_sum = None        # root mean square error of summed signal
-        self.rmse_fit = None        # root mean square error of regression fit signal
-        self.rmse_norm = None       # rmse after normalization of target and sum_y
+        param:
+            signal_matrix:  matrix of single-oscillator signals
+            weights:        array of weights over signal_matrix
+            signal_sum:     generated signal y coords
+            offset:         offset over matrix
+            rmse:           rmse(signal_sum, target)     
+            signal_args:    list of parameters generating the signal matrix
+                                one set of parameters corresponds to a single oscillator
+
+        return:
+            Sample
+        """
+        self.signal_matrix = signal_matrix
+        self.weights = weights
+        self.signal_sum = signal_sum
+        self.offset = offset
+        self.rmse = rmse
+        self.signal_args = signal_args
+                                        
 
     def __str__(self) -> str:
-        y = f"y:\n{self.sum_y}\n"
-        det_param_li = "det_param_li:\n"
-        for p in self.det_param_li:
-            det_param_li += str(p) + "\n"
-        rmse_sum = f"rmse sum: {self.rmse_sum}\n"
-        rmse_fit = f"rmse fit: {self.rmse_fit}"
-        return y + det_param_li + rmse_sum + rmse_fit
+        signal_matrix = f"signal_matrix:\n{self.signal_matrix}\n"
+        weights = f"weights:\n{self.weights}\n"
+        signal_sum = f"signal_sum:\n{self.signal_sum}\n"
+        offset = f"offset:\n{self.offset}\n"
+        rmse = f"rmse: {self.rmse}\n"
+        signal_args = "signal_args:\n"
+        for args in self.signal_args:
+            signal_args += str(args) + "\n"
+        return signal_matrix + signal_args + signal_sum + offset + weights + rmse
 
-    def save(self, path: Path = "data/best_sample.csv") -> None:
+    def save_signal_args(self, path: Path = "data/best_sample.csv") -> None:
         """save the determined parameters of a sample to a CSV"""
-        if len(self.det_param_li) < 1: return
+        if len(self.signal_args) < 1: return
         with open(path, "w") as f:
             writer = csv.writer(f)
             # write header
-            writer.writerow(self.det_param_li[0].__dict__)
+            writer.writerow(self.signal_args[0].__dict__)
             # write data
-            for osc in self.det_param_li:
+            for osc in self.signal_args:
                 writer.writerow(osc.__dict__.values())
 
     @staticmethod
-    def regress_linear(p: np.ndarray, t: np.ndarray, verbose: bool = False):
+    def regress1d(p: np.ndarray, t: np.ndarray, verbose: bool = False):
         """apply linear regression"""
         # matrix_y refers to the y-values of a generated signal
         # the individual signals are used as regressors 
@@ -72,3 +87,34 @@ class Sample():
         """generate approximation of target, y"""
         fit = np.sum(X.T * coef, axis=1) + intercept
         return fit
+
+    @staticmethod
+    def norm_sample(sample: Sample, target: np.ndarray) -> Sample:
+        """normalize the fields of a sample"""
+        norm_signal_matrix = data_preprocessor.norm2d(sample.signal_matrix)
+        if sample.weights is not None:
+            norm_weights = data_preprocessor.norm1d(sample.weights)
+        else:
+            norm_weights = None
+        norm_signal_sum = data_preprocessor.norm1d(sample.signal_sum)
+        norm_offset = 0
+        norm_rmse = data_analysis.compute_rmse(norm_signal_sum, target)
+        norm_signal_args = sample.signal_args
+        norm_sample = Sample(norm_signal_matrix,
+                            norm_weights,
+                            norm_signal_sum,
+                            norm_offset,
+                            norm_rmse,
+                            norm_signal_args)
+        return norm_sample
+
+    @staticmethod
+    def regress_sample(sample: Sample, target: np.ndarray) -> Sample:
+        """apply linear regression to a sample to fit against target"""
+        reg = Sample.regress1d(sample.signal_matrix, target)
+        signal_matrix = sample.signal_matrix
+        weights = reg.coef_
+        offset = reg.intercept_
+        signal_sum = Sample.predict(signal_matrix, weights, offset)
+        rmse = data_analysis.compute_rmse(signal_sum, target)
+        return Sample(signal_matrix, weights, signal_sum, offset, rmse, sample.signal_args)

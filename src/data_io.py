@@ -109,7 +109,13 @@ def load_pickled_fig(data_path: Path) -> None:
         pickle.load(file)
     plt.show()
 
+def save_sample(sample: Sample, data_path: Path = "data/best_sample.pickle") -> None:
+    """serialize a sample and save to file"""
+    with open(data_path, "wb") as f:
+        pickle.dump(sample, f)
+
 def load_pickled_samples(data_path: Path) -> List[Sample]:
+    """load a list of pickled samples"""
     data_path = Path("data/test_args.pickle")
     obj_li = list()
     with open(data_path, "rb") as f:

@@ -1,7 +1,6 @@
 import copy
 from pathlib import Path
 import pickle
-from signal import signal
 import time
 from typing import Final, List, Tuple
 
@@ -10,7 +9,7 @@ import data_io
 import gen_signal_python
 import params
 from sample import Sample
-from data_preprocessor import norm, sample_down, sample_down_int, take_middle_third
+from data_preprocessor import norm1d, sample_down, sample_down_int, take_middle_third
 
 import numpy as np
 
@@ -77,7 +76,7 @@ class SearchModule():
             temp_matrix, det_param_li = gen_signal_python.sum_atomic_signals(self.rand_args, store_det_args)
             temp_sum = np.sum(temp_matrix, axis=0)
             temp_rmse = data_analysis.compute_rmse(temp_sum, self.target)
-            if history: self.samples.append(Sample(temp_sum, temp_matrix, det_param_li))
+            if history: self.samples.append(Sample(temp_matrix, None, temp_sum, None, temp_rmse, det_param_li))
             if history and args_path: self.pickle_samples(args_path, k_samples, ki)
 
             # compare with best
@@ -87,7 +86,7 @@ class SearchModule():
                 best_rmse = temp_rmse
                 best_matrix_args = det_param_li 
 
-        best_sample = Sample(best_sum, best_matrix, best_matrix_args)
+        best_sample = Sample(best_matrix, None, best_sum, None, best_rmse, best_matrix_args)
         self.samples.append(best_sample) # TODO: for backwards compatibility -> purify func 
         return best_sample
     
@@ -150,7 +149,7 @@ class SearchModule():
                     i += 1
                 j += 1
 
-            if history: self.samples.append(Sample(temp_sum, model, det_args_li))
+            if history: self.samples.append(Sample(model, None, temp_sum, None, temp_rmse, det_args_li))
             if history and args_path: self.pickle_samples(args_path, k_samples, ki)
 
             # evaluate model against k models
@@ -161,7 +160,7 @@ class SearchModule():
                 best_model_j = j
                 best_model_args = det_args_li
         
-        best_sample = Sample(best_sum, best_model, best_model_args)
+        best_sample = Sample(best_model, None, best_sum, None, best_rmse, best_model_args)
         best_sample.rmse_sum = best_rmse
         self.samples.append(best_sample)
 
@@ -211,8 +210,7 @@ class SearchModule():
                 j += 1
             
         signal_matrix = (signal_matrix.T * best_weights).T # TODO: change sample type
-        best_sample = Sample(best_sum, signal_matrix, det_param_li)
-        best_sample.rmse_sum = best_rmse
+        best_sample = Sample(signal_matrix, None, best_sum, None, best_rmse, det_param_li)
         self.samples.append(best_sample)
 
         return best_sample
@@ -241,9 +239,8 @@ class SearchModule():
             if zero_model:
                 model = np.zeros((self.rand_args.n_osc, self.rand_args.samples))
                 signal_sum = sum(model)
-            sample = Sample(signal_sum, model, det_param_li)
-            # calculate initial rmse
-            sample.rmse_sum = data_analysis.compute_rmse(sample.sum_y, self.target)
+            temp_rmse = data_analysis.compute_rmse(sample.sum_y, self.target)
+            sample = Sample(model, None, signal_sum, None, temp_rmse, det_param_li)
             for _ in tqdm(range(j_exploits)):
                 # draw 1 oscillator
                 signal, _ = gen_signal_python.sum_atomic_signals(mod_args)
@@ -287,9 +284,8 @@ class SearchModule():
             #weights = rng.uniform(0.1, 100, (self.rand_args.n_osc))
             w_sum = Sample.predict(model, weights, 0) # weighted sum
 
-            sample = Sample(w_sum, model, det_param_li) # TODO: new obj fields
-            # calculate initial rmse
-            sample.rmse_sum = data_analysis.compute_rmse(sample.sum_y, self.target)
+            temp_rmse = data_analysis.compute_rmse(sample.sum_y, self.target)
+            sample = Sample(model, weights, w_sum, None, temp_rmse, det_param_li)
             
             for _ in tqdm(range(j_exploits)):
                 # TODO: efficiency improvements
@@ -342,7 +338,7 @@ def main():
     # shorten the target
     target: Final = take_middle_third(target_full_len)
     # normalize to range 0 1
-    target_norm: Final = norm(target)
+    target_norm: Final = norm1d(target)
     # save to wav
     sampling_rate = int(scale_factor*raw_sampling_rate)
     data_io.save_signal_to_wav(target, sampling_rate, raw_dtype, Path("data/target_downsampled.wav"))
@@ -371,7 +367,7 @@ def main():
     # best_sample, j = search.random_stateless_hybrid(5, store_det_args=True,
     #     history=True, args_path=Path("data/test_args.pickle"))
 
-    best_sample = search.las_vegas_weight(weight_init=None, store_det_args=False)
+    best_sample: Sample = search.las_vegas_weight(weight_init=None, store_det_args=False)
 
     # without random phase shifts between 0 and 2 pi
     # signals will overlap at the first sample
@@ -379,46 +375,39 @@ def main():
         for s in search.samples:
             s.sum_y[0] = 0 # set first point to 0
             s.rmse_sum = data_analysis.compute_rmse(s.sum_y, target)
-            s.rmse_norm = data_analysis.compute_rmse(norm(s.sum_y), target_norm)
+            s.rmse_norm = data_analysis.compute_rmse(norm1d(s.sum_y), target_norm)
 
     # find best sample and save
-    #best_sample, rmse_list, rmse_norm_list = search.gather_samples()
-    print(f"mean: {np.mean(best_sample.sum_y)}")
-    best_sample.save()
-    data_io.save_signal_to_wav(best_sample.sum_y, sampling_rate, raw_dtype, Path("data/best_sample.wav"))
+    print(f"mean: {np.mean(best_sample.signal_sum)}")
+    data_io.save_sample(best_sample)
+    data_io.save_signal_to_wav(best_sample.signal_sum, sampling_rate, raw_dtype, Path("data/best_sample.wav"))
 
-    # normalize best sample
-    norm_sum = norm(best_sample.sum_y)
-    norm_rmse = data_analysis.compute_rmse(norm_sum, target_norm)
+    norm_sample = Sample.norm_sample(best_sample, target_norm)
     
     # compute regression against target
-    reg = Sample.regress_linear(best_sample.matrix_y, target, verbose=False)
-    pred = Sample.predict(best_sample.matrix_y, reg.coef_, reg.intercept_)
-    best_sample.fit_y = pred
-    data_io.save_signal_to_wav(best_sample.fit_y, sampling_rate, raw_dtype, Path("data/fit.wav"))
-    best_sample.rmse_fit = data_analysis.compute_rmse(pred, target)
+    reg_sample = Sample.regress_sample(best_sample, target)
+    data_io.save_signal_to_wav(reg_sample.signal_sum, sampling_rate, raw_dtype, Path("data/fit.wav"))
     
     # norm regression after fit (good enough)
-    norm_reg = norm(best_sample.fit_y)
-    norm_reg_rmse = data_analysis.compute_rmse(norm_reg, target_norm)
-    
+    norm_reg_sample = Sample.norm_sample(reg_sample, target_norm)
+
     # plots
     if True: # time-domain
         #hist_rmse(rmse_list, title="sum distribution")
         #hist_rmse(rmse_norm_list, title="norm-sum distribution")
-        data_analysis.plot_pred_target(best_sample.sum_y, target, title="sum")
-        data_analysis.plot_pred_target(best_sample.fit_y, target, title="regression")
-        data_analysis.plot_pred_target(norm_sum, target_norm, title="norm-sum")
-        data_analysis.plot_pred_target(norm_reg, target_norm, title="norm after fit")
+        data_analysis.plot_pred_target(best_sample.signal_sum, target, title="sum")
+        data_analysis.plot_pred_target(reg_sample.signal_sum, target, title="regression")
+        data_analysis.plot_pred_target(norm_sample.signal_sum, target_norm, title="norm-sum")
+        data_analysis.plot_pred_target(norm_reg_sample.signal_sum, target_norm, title="norm after fit")
     if False: # frequency-domain
         data_analysis.plot_fourier(target, title="target")
-        data_analysis.plot_fourier(best_sample.sum_y, title="sum")
-        data_analysis.plot_fourier(best_sample.fit_y, title="regression")
+        data_analysis.plot_fourier(best_sample.signal_sum, title="sum")
+        data_analysis.plot_fourier(reg_sample.signal_sum, title="regression")
 
-    print(f"best_sample.rmse_sum {best_sample.rmse_sum}")
-    print(f"best_sample.rmse_sum-norm {norm_rmse}")
-    print(f"best_sample.rmse_fit {best_sample.rmse_fit}")
-    print(f"best_sample.rmse_fit-norm {norm_reg_rmse}")
+    print(f"best_sample.rmse_sum {best_sample.rmse}")
+    print(f"best_sample.rmse_sum-norm {norm_sample.rmse}")
+    print(f"best_sample.rmse_fit {reg_sample.rmse}")
+    print(f"best_sample.rmse_fit-norm {norm_reg_sample.rmse}")
     
     time_elapsed=time.time()-t0
     print(f"time elapsed: {time_elapsed:.2f} s")

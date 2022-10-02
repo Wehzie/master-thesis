@@ -10,7 +10,7 @@ from typing import Callable, Final, List
 
 sys.path.append(os.path.dirname(os.path.realpath(__file__)) + "/../src")
 from data_analysis import compute_rmse, hist_rmse, plot_n, plot_pred_target, plot_signal, plot_fourier
-from data_preprocessor import norm, sample_down, sample_down_int, take_middle_third
+from data_preprocessor import norm1d, sample_down, sample_down_int, take_middle_third
 from data_io import DATA_PATH, load_data, load_data_numpy, save_signal_to_wav
 import gen_signal_python
 import params
@@ -31,7 +31,7 @@ def test_main() -> None:
     # shorten the target
     target: Final = take_middle_third(target_full_len)
     # normalize to range 0 1
-    target_norm: Final = norm(target)
+    target_norm: Final = norm1d(target)
     # save to wav
     sampling_rate = int(scale_factor*raw_sampling_rate)
     save_signal_to_wav(target, sampling_rate, raw_dtype, Path("data/target_downsampled.wav"))
@@ -76,7 +76,7 @@ def main(search: SearchModule, target: np.ndarray, target_norm: np.ndarray, samp
         for s in search.samples:
             s.sum_y[0] = 0 # set first point to 0
             s.rmse_sum = compute_rmse(s.sum_y, target)
-            s.rmse_norm = compute_rmse(norm(s.sum_y), target_norm)
+            s.rmse_norm = compute_rmse(norm1d(s.sum_y), target_norm)
 
     # find best sample and save
     best_sample, rmse_list, rmse_norm_list = search.gather_samples()
@@ -84,7 +84,7 @@ def main(search: SearchModule, target: np.ndarray, target_norm: np.ndarray, samp
     save_signal_to_wav(best_sample.sum_y, sampling_rate, raw_dtype, Path("data/best_sample.wav"))
 
     # normalize best sample
-    norm_sum = norm(best_sample.sum_y)
+    norm_sum = norm1d(best_sample.sum_y)
     norm_rmse = compute_rmse(norm_sum, target_norm)
     
     # compute regression against target
@@ -95,7 +95,7 @@ def main(search: SearchModule, target: np.ndarray, target_norm: np.ndarray, samp
     best_sample.rmse_fit = compute_rmse(pred, target)
     
     # norm regression after fit (good enough)
-    norm_reg = norm(best_sample.fit_y)
+    norm_reg = norm1d(best_sample.fit_y)
     norm_reg_rmse = compute_rmse(norm_reg, target_norm)
     
     # plots

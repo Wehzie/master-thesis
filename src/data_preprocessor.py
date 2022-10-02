@@ -61,9 +61,13 @@ def take_middle_third(signal: np.ndarray) -> np.ndarray:
     third = len(signal)//3
     return signal[third:len(signal)-third]
 
-def norm(signal: np.ndarray) -> np.ndarray:
-    """normalize a signal to the range from 0 to 1"""
-    return signal / np.max(np.abs(signal), axis=0)
+def norm1d(signal: np.ndarray) -> np.ndarray:
+    """normalize a 1d-signal to the range from 0 to 1"""
+    return np.divide(signal, np.max(np.abs(signal), axis=0))
+
+def norm2d(matrix: np.ndarray) -> np.ndarray:
+    """normalize a each row in a matrix to the range from 0 to 1"""
+    return np.apply_along_axis(norm1d, 0, matrix)
 
 def main():
     sampling_rate, data = data_io.load_data()
