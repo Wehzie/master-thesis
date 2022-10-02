@@ -1,6 +1,7 @@
 import copy
 from pathlib import Path
 import pickle
+from signal import signal
 import time
 from typing import Final, List, Tuple
 
@@ -90,41 +91,6 @@ class SearchModule():
         self.samples.append(best_sample) # TODO: for backwards compatibility -> purify func 
         return best_sample
     
-    def random_weight_hybrid(self) -> None:
-        for _ in tqdm(range(self.k_samples)):
-            # init empty sample
-            signal_matrix, det_param_li = gen_signal_python.sum_atomic_signals(self.rand_args)
-            weights = np.ones(self.rand_args.n_osc)
-            signal_sum = Sample.predict(signal_matrix, weights, 0) # weighted sum
-            sample = Sample(signal_sum, signal_matrix, det_param_li)
-            sample.rmse_sum = np.inf
-
-            i = 0 # number of added oscillators
-            j = 0 # number of loops
-            while i < self.rand_args.n_osc:
-                temp_weights = copy.deepcopy(weights)
-                # draw an oscillator
-                w = self.rand_args.weight_dist.draw()
-                temp_weights[i] = w
-
-                # compute rmse with new oscillator
-                temp_sum = Sample.predict(signal_matrix, temp_weights, 0) # weighted sum
-                temp_rmse = data_analysis.data_analysis.compute_rmse(temp_sum, self.target)
-                # TODO: also compute the weighting of the model
-
-                # accept oscillators when they lower the RMSE
-                if temp_rmse < sample.rmse_sum:
-                    print(temp_rmse)
-                    sample.sum_y = temp_sum
-                    sample.rmse_sum = temp_rmse
-                    weights = temp_weights
-                    i += 1
-                j += 1
-            
-            sample.matrix_y = (signal_matrix.T * weights).T
-            self.samples.append(sample)
-            print(f"\nj={j}\n")
-
     def las_vegas(self,
         k_samples: int,
         store_det_args: bool = False,
@@ -200,6 +166,56 @@ class SearchModule():
         self.samples.append(best_sample)
 
         return best_sample, best_model_j
+
+    def init_las_vegas_weight(self, weight_init: str, store_det_args: bool) -> tuple:
+        """TODO"""
+        signal_matrix, det_param_li = gen_signal_python.sum_atomic_signals(self.rand_args, store_det_args)
+        if weight_init == "ones":
+            best_weights = np.ones(self.rand_args.n_osc)
+        if weight_init == "rand":
+            rng = np.random.default_rng(params.GLOBAL_SEED)
+            best_weights = rng.uniform(-1, 1, self.rand_args.n_osc)
+        else:
+            best_weights = np.zeros(self.rand_args.n_osc)
+        best_sum = Sample.predict(signal_matrix, best_weights, 0) # weighted sum
+        best_rmse = np.inf
+        return signal_matrix, best_weights, best_sum, best_rmse, det_param_li
+
+    def draw_weight(self, best_weights: np.ndarray, i: int):
+        temp_weights = copy.deepcopy(best_weights)
+        w = self.rand_args.weight_dist.draw()
+        temp_weights[i] = w
+        return temp_weights
+
+    def draw_candidate(self, signal_matrix, best_weights, i):
+        temp_weights = self.draw_weight(best_weights, i)
+        temp_sum = Sample.predict(signal_matrix, temp_weights, 0)
+        temp_rmse = data_analysis.compute_rmse(temp_sum, self.target)
+        return temp_weights, temp_sum, temp_rmse
+
+    def eval_candidate(self, best_weights, best_sum, best_rmse,
+        temp_weights, temp_sum, temp_rmse, i):
+        """accept weight if it lowers the RMSE"""
+        if temp_rmse < best_rmse:
+            return temp_weights, temp_sum, temp_rmse, i+1
+        return best_weights, best_sum, best_rmse, i
+
+    def las_vegas_weight(self, weight_init: str, store_det_args: bool) -> None:
+        signal_matrix, best_weights, best_sum, best_rmse, det_param_li = self.init_las_vegas_weight(weight_init, store_det_args)
+        best = (best_weights, best_sum, best_rmse)
+        for _ in tqdm(range(self.k_samples)):
+            i, j = 0, 0 # number of accepted and drawn weights respectively
+            while i < self.rand_args.n_osc:
+                temp = self.draw_candidate(signal_matrix, best_weights, i) # temp_weights, temp_sum, temp_rmse
+                best_weights, best_sum, best_rmse, i = self.eval_candidate(*best, *temp, i)
+                j += 1
+            
+        signal_matrix = (signal_matrix.T * best_weights).T # TODO: change sample type
+        best_sample = Sample(best_sum, signal_matrix, det_param_li)
+        best_sample.rmse_sum = best_rmse
+        self.samples.append(best_sample)
+
+        return best_sample
     
     def random_exploit(self, j_exploits: int, zero_model: bool = False) -> None:
         """generate an ensemble of n-oscillators
@@ -352,8 +368,10 @@ def main():
     #search.random_weight_hybrid()
     # best_sample = search.random_one_shot(10, store_det_args=True,
     #     history=True, args_path=Path("data/test_args.pickle"))
-    best_sample, j = search.random_stateless_hybrid(5, store_det_args=True,
-        history=True, args_path=Path("data/test_args.pickle"))
+    # best_sample, j = search.random_stateless_hybrid(5, store_det_args=True,
+    #     history=True, args_path=Path("data/test_args.pickle"))
+
+    best_sample = search.las_vegas_weight(weight_init=None, store_det_args=False)
 
     # without random phase shifts between 0 and 2 pi
     # signals will overlap at the first sample
