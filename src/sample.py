@@ -34,6 +34,7 @@ class Sample():
 
     def save(self, path: Path = "data/best_sample.csv") -> None:
         """save the determined parameters of a sample to a CSV"""
+        if len(self.det_param_li) < 1: return
         with open(path, "w") as f:
             writer = csv.writer(f)
             # write header

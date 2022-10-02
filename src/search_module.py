@@ -38,6 +38,19 @@ class SearchModule():
             samples += str(s) + "\n"
         return rand_args + k_samples + sig_gen_func + samples
 
+    def pickle_samples(self, args_path: Path, k_samples: int, ki: int):
+        """pickle samples in RAM to disk in order to free RAM
+        
+        param:
+            args_path:  where to store pickle
+            k_samples:  total number of samples to draw
+            ki:         current k index
+        """
+        if (ki == k_samples-1 or ki % params.SAMPLE_FLUSH_PERIOD == 0):
+            with open(args_path, "ab") as f:
+                pickle.dump(self.samples, f)
+                self.samples = list() # clear list  
+
     def random_one_shot(self,
         k_samples: int,
         store_det_args: bool = False,
@@ -54,66 +67,28 @@ class SearchModule():
         """
         if history and args_path: args_path.unlink(missing_ok=True) # delete file if it exists
 
+        best_matrix = None # the model generating the lowest rmse when summed
+        best_sum = np.inf # row-summed model
         best_rmse = np.inf # the lowest rmse
-        best_matrix = None # the oscillators generating the lowest rmse when summed
         best_matrix_args = None # list of parameters for each signal in matrix
         for ki in tqdm(range(k_samples)):
             # compose a matrix
             temp_matrix, det_param_li = gen_signal_python.sum_atomic_signals(self.rand_args, store_det_args)
-            temp_sum = sum(temp_matrix)
+            temp_sum = np.sum(temp_matrix, axis=0)
             temp_rmse = data_analysis.compute_rmse(temp_sum, self.target)
             if history: self.samples.append(Sample(temp_sum, temp_matrix, det_param_li))
-            if history and args_path and (ki == k_samples-1 or ki % params.SAMPLE_FLUSH_PERIOD == 0):
-                with open(args_path, "ab") as f:
-                    pickle.dump(self.samples, f)
-                    self.samples = list() # clear list  
+            if history and args_path: self.pickle_samples(args_path, k_samples, ki)
 
             # compare with best
             if temp_rmse < best_rmse:
                 best_matrix = temp_matrix
+                best_sum = temp_sum
                 best_rmse = temp_rmse
                 best_matrix_args = det_param_li 
 
-        best_sample = Sample(sum(best_matrix), best_matrix, best_matrix_args)
+        best_sample = Sample(best_sum, best_matrix, best_matrix_args)
         self.samples.append(best_sample) # TODO: for backwards compatibility -> purify func 
         return best_sample
-    
-    def random_hybrid(self) -> None:
-        """generate k-signals which are a sum of n-oscillators
-        only accept an oscillator into a sum if it decreases RMSE
-        """
-        mod_args = copy.deepcopy(self.rand_args)
-        mod_args.n_osc = 1
-        # TODO: hacky solution to draw 1 oscillator from sum_atomic signals
-        for _ in tqdm(range(self.k_samples)):
-            # init empty sample
-            det_param_li = list()
-            signal_matrix = np.zeros((self.rand_args.n_osc, self.rand_args.samples))
-            zeros = np.zeros(self.rand_args.samples)
-            sample = Sample(zeros, signal_matrix, det_param_li)
-            sample.rmse_sum = np.inf
-
-            i = 0 # number of added oscillators
-            j = 0 # number of loops
-            while i < self.rand_args.n_osc:
-                # draw an oscillator
-                signal, det_param = gen_signal_python.sum_atomic_signals(mod_args)
-                signal = signal.flatten()
-                # compute rmse with new oscillator
-                temp_sum = sample.sum_y + signal
-                temp_rmse = data_analysis.compute_rmse(temp_sum, self.target)
-
-                # accept oscillators when they lower the RMSE
-                if temp_rmse < sample.rmse_sum:
-                    sample.det_param_li.append(det_param[0])
-                    sample.sum_y = temp_sum
-                    sample.rmse_sum = temp_rmse
-                    sample.matrix_y[i,:] = signal
-                    i += 1
-                j += 1
-            
-            self.samples.append(sample)
-            print(f"\nj={j}\n")
     
     def random_weight_hybrid(self) -> None:
         for _ in tqdm(range(self.k_samples)):
@@ -150,31 +125,56 @@ class SearchModule():
             self.samples.append(sample)
             print(f"\nj={j}\n")
 
-    def random_stateless_hybrid(self) -> Tuple[np.ndarray, float]:
+    def las_vegas(self,
+        k_samples: int,
+        store_det_args: bool = False,
+        history: bool = False,
+        args_path: Path = None) -> Tuple[Sample, int]:
         """generate k-signals which are a sum of n-oscillators
-        only accept an oscillator into a sum if it decreases RMSE
-        for k samples, return only that with lowest RMSE
+        model is constructed by aggregation
+        oscillator candidates are accepted into the model when they lower RMSE
+
+        param:
+            k_samples: number of times to draw a matrix
+            store_det_args: whether to store the deterministic parameters underlying each oscillator in a model
+            history: whether to store all generated samples, may run out of RAM
+            args_path: when not none, write history to disk instead of RAM at specified path
+
+        return:
+            best_sample, best_model_j
         """
+        if history and args_path: args_path.unlink(missing_ok=True) # delete file if it exists
+
         # TODO: hacky solution to draw 1 oscillator from sum_atomic signals
         mod_args = copy.deepcopy(self.rand_args)
         mod_args.n_osc = 1
 
         best_model = None
-        best_rmse = np.inf
-        best_model_j = np.inf
-        for _ in tqdm(range(self.k_samples)):
+        best_sum = np.inf # sum over all rows of the model
+        best_rmse = np.inf # rmse(best_sum, target)
+        best_model_args = list() # list of parameters for each signal in matrix
+        best_model_j = np.inf # the number of draws used by the best model
+        
+        for ki in tqdm(range(k_samples)):
             # init empty sample            
             model = np.zeros((self.rand_args.n_osc, self.rand_args.samples))
             rmse = np.inf
+            det_args_li = list() # args for each accepted oscillator
 
             i = 0 # number of added oscillators
             j = 0 # number of iterations
-            while i < self.rand_args.n_osc: # TODO: non-deterministic runtime
+            temp_sum = 0
+            while i < self.rand_args.n_osc: # construct a model
+                
                 # draw an oscillator
-                signal, _ = gen_signal_python.sum_atomic_signals(mod_args)
+                signal, det_args = gen_signal_python.sum_atomic_signals(mod_args, store_det_args)
                 signal = signal.flatten()
+                if store_det_args or history:
+                    det_args = det_args[0]
+                    det_args_li.append(det_args)
+
                 # compute rmse with new oscillator
-                temp_sum = model.sum(axis=0) + signal
+                temp_sum = np.sum(model, axis=0) + signal
                 temp_rmse = data_analysis.compute_rmse(temp_sum, self.target)
 
                 # accept oscillators when they lower the RMSE
@@ -183,14 +183,23 @@ class SearchModule():
                     rmse = temp_rmse
                     i += 1
                 j += 1
-            
+
+            if history: self.samples.append(Sample(temp_sum, model, det_args_li))
+            if history and args_path: self.pickle_samples(args_path, k_samples, ki)
+
             # evaluate model against k models
             if rmse < best_rmse:
                 best_model = model
+                best_sum = temp_sum
                 best_rmse = rmse
                 best_model_j = j
+                best_model_args = det_args_li
         
-        return best_model, best_rmse, j  
+        best_sample = Sample(best_sum, best_model, best_model_args)
+        best_sample.rmse_sum = best_rmse
+        self.samples.append(best_sample)
+
+        return best_sample, best_model_j
     
     def random_exploit(self, j_exploits: int, zero_model: bool = False) -> None:
         """generate an ensemble of n-oscillators
@@ -341,12 +350,11 @@ def main():
     #search.random_hybrid()
     #search.random_weight_exploit(search.rand_args.n_osc*30)
     #search.random_weight_hybrid()
-    best_sample = search.random_stateless_one_shot(10, store_det_args=True,
+    # best_sample = search.random_one_shot(10, store_det_args=True,
+    #     history=True, args_path=Path("data/test_args.pickle"))
+    best_sample, j = search.random_stateless_hybrid(5, store_det_args=True,
         history=True, args_path=Path("data/test_args.pickle"))
-    
-    print(data_io.load_pickled_samples(Path("data/test_args.pickle")))
 
-    exit()
     # without random phase shifts between 0 and 2 pi
     # signals will overlap at the first sample
     if False:
