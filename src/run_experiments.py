@@ -15,6 +15,31 @@ import search_module
 import numpy as np
 import matplotlib.pyplot as plt
 
+"""
+experiments:
+
+    algorithms[
+        # metric is n-drawn and discarded oscillators
+        # not rmse comparisons, because one shot doesn't do that
+        random_one_shot,
+        random_one_shot_weights(weight_init=zeros, ones, uniform, dist),
+        las_vegas_aggregate,
+        las_vegas_weight(weight_init=zeros, ones, uniform, dist),
+        # version: pass over a single matrix/weights multiple times
+        iterative,
+        iterative_weight(weight_init=zeros, ones, uniform, dist),
+        annealing (lower num-osc replaced),
+        annealing weight(weight_init=zeros, ones, uniform, dist),
+        las_vegas_purge:
+            draw n oscillators
+            loop over each oscillator and remove it if removing lowers the rmse
+            remaining n-oscillators is non-deterministic
+        genetic,
+        genetic weight(weight_init=zeros, ones, uniform, dist)],
+
+
+"""
+
 def n_dependency(rand_args: PythonSignalRandArgs,
     target: np.ndarray,
     visual: bool = True) -> None:

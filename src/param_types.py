@@ -11,20 +11,20 @@ class Dist:
             # rng1.uniform != rng2.uniform, therefore must use name
             assert dist.__name__ in [rng.uniform.__name__, rng.normal.__name__], "unsupported distribution"
             
-            self.__dist = dist
-            self.__args = args
-            self.__kwargs = kwargs
+            self.dist = dist
+            self.args = args
+            self.kwargs = kwargs
         elif isinstance(dist, int|float):
-            self.__dist = self.__callable_const
-            self.__args = (float(dist),)
-            self.__kwargs = kwargs  # {"const": float(dist)}
+            self.dist = self.callable_const
+            self.args = (float(dist),)
+            self.kwargs = kwargs  # {"const": float(dist)}
                                     # either args or kwargs could be used here
-    
-    def __callable_const(self, const) -> float:
+
+    def callable_const(self, const) -> float:
         return const
 
     def draw(self) -> float:
-        return self.__dist(*self.__args, **self.__kwargs)
+        return self.dist(*self.args, **self.kwargs)
 
 @dataclass
 class PythonSignalRandArgs:
