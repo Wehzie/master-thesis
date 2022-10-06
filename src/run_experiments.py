@@ -17,10 +17,12 @@ import matplotlib.pyplot as plt
 
 """
 experiments:
+        # z_ops measures z initialized, drawn, discarded - oscillators or weights
+        # zero initialized oscillators or weights are not measured
+        # maybe it would have been smarter to only optimize weights
+        # not rmse comparisons, because one shot doesn't do that
 
     algorithms[
-        # metric is n-drawn and discarded oscillators
-        # not rmse comparisons, because one shot doesn't do that
         random_one_shot,
         random_one_shot_weights(weight_init=zeros, ones, uniform, dist),
         las_vegas_aggregate,

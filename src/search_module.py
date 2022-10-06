@@ -21,9 +21,8 @@ from run_experiments import k_dependency_hybrid, k_dependency_one_shot, n_depend
 
 class SearchModule():
 
-    def __init__(self, rand_args: PythonSignalRandArgs, k_samples: int, target: np.ndarray, start: np.ndarray = None):
+    def __init__(self, rand_args: PythonSignalRandArgs, target: np.ndarray, start: np.ndarray = None):
         self.rand_args = rand_args # search parameters
-        self.k_samples = k_samples # number of samples
         self.target = target # target function to approximate
         self.start = start # a matrix to start search
         
@@ -31,12 +30,11 @@ class SearchModule():
     
     def __str__(self) -> str:
         rand_args = f"rand_args: {self.rand_args}\n"
-        k_samples = f"k_samples: {self.k_samples}\n"
         sig_gen_func = f"sig_gen_func: {self.sig_gen_func.__name__}\n"
         samples = ""
         for s in self.samples:
             samples += str(s) + "\n"
-        return rand_args + k_samples + sig_gen_func + samples
+        return rand_args + sig_gen_func + samples
 
     def pickle_samples(self, args_path: Path, k_samples: int, ki: int):
         """pickle samples in RAM to disk in order to free RAM
@@ -68,7 +66,7 @@ class SearchModule():
         k_samples: int,
         store_det_args: bool = False,
         history: bool = False,
-        args_path: Path = None) -> Sample:
+        args_path: Path = None) -> Tuple[Sample, int]:
         """generate k-signals which are a sum of n-oscillators
         on each iteration draw a new full model (matrix of n-oscillators)
         
@@ -80,28 +78,22 @@ class SearchModule():
         """
         if history and args_path: args_path.unlink(missing_ok=True) # delete file if it exists
 
-        best_matrix = None # the model generating the lowest rmse when summed
-        best_sum = np.inf # row-summed model
-        best_rmse = np.inf # the lowest rmse
-        best_matrix_args = None # list of parameters for each signal in matrix
+        best_sample = Sample(None, None, None, 0, np.inf, list())
         for ki in tqdm(range(k_samples)):
             # compose a matrix
-            temp_matrix, det_param_li = gen_signal_python.sum_atomic_signals(self.rand_args, store_det_args)
-            temp_sum = np.sum(temp_matrix, axis=0)
-            temp_rmse = data_analysis.compute_rmse(temp_sum, self.target)
-            if history: self.samples.append(Sample(temp_matrix, None, temp_sum, 0, temp_rmse, det_param_li))
+            temp_signal_matrix, temp_signal_args = gen_signal_python.sum_atomic_signals(self.rand_args, store_det_args)
+            temp_sample = Sample(temp_signal_matrix, None, None, 0, np.inf, temp_signal_args)
+            temp_sample.update(self.target)
+            if history: self.samples.append(temp_sample)
             if history and args_path: self.pickle_samples(args_path, k_samples, ki)
 
             # compare with best
-            if temp_rmse < best_rmse:
-                best_matrix = temp_matrix
-                best_sum = temp_sum
-                best_rmse = temp_rmse
-                best_matrix_args = det_param_li 
+            if temp_sample.rmse < best_sample.rmse:
+                best_sample = temp_sample
 
-        best_sample = Sample(best_matrix, None, best_sum, None, best_rmse, best_matrix_args)
+        z_ops = k_samples*self.rand_args.n_osc
         self.samples.append(best_sample) # TODO: for backwards compatibility -> purify func 
-        return best_sample
+        return best_sample, z_ops
 
     def init_las_vegas(self, weight_init: Union[None, str], store_det_args: bool) -> Sample:
         if weight_init is None: # in this mode, weights are not adapted
@@ -172,6 +164,7 @@ class SearchModule():
 
         best_sample = self.init_las_vegas(weight_init, store_det_args)
         best_sample_j = None
+        z_ops = 0
         for ki in tqdm(range(k_samples)):
             base_sample = self.init_las_vegas(weight_init, store_det_args) # build up a signal_matrix in here
             i, j = 0, 0 # number of accepted and drawn weights respectively
@@ -179,13 +172,16 @@ class SearchModule():
                 temp_sample = self.draw_las_vegas_candidate(base_sample, i, mod_args, store_det_args, history)
                 base_sample, i, _ = self.eval_las_vegas(temp_sample, base_sample, i, None, None)
                 j += 1
+            
+            z_ops += j
 
             self.manage_state(base_sample, k_samples, ki, history, args_path)
             best_sample, _, best_sample_j = self.eval_las_vegas(base_sample, best_sample, 0, j, best_sample_j)
+            
         
         self.samples.append(best_sample)
 
-        return best_sample, best_sample_j
+        return best_sample, z_ops
 
     def draw_weight(self, weights: np.ndarray, i: int):
         w = self.rand_args.weight_dist.draw()
@@ -199,10 +195,17 @@ class SearchModule():
         temp_sample.rmse = data_analysis.compute_rmse(temp_sample.signal_sum, self.target)
         return temp_sample
 
-    def las_vegas_weight(self, weight_init: str, store_det_args: bool) -> None:
+    def las_vegas_weight(self,
+        k_samples: int,
+        weight_init: Union[None, str],
+        store_det_args: bool = False,
+        history: bool = False,
+        args_path: Path = None) -> Tuple[Sample, int]:
+
         best_sample = self.init_las_vegas(weight_init, store_det_args)
         best_sample_j = None
-        for _ in tqdm(range(self.k_samples)):
+        z_ops = 0
+        for _ in tqdm(range(k_samples)):
             base_sample = self.init_las_vegas(weight_init, store_det_args)
             i, j = 0, 0 # number of accepted and drawn weights respectively
             while i < self.rand_args.n_osc:
@@ -210,13 +213,42 @@ class SearchModule():
                 base_sample, i, _ = self.eval_las_vegas(base_sample, temp_sample, i, None, None)
                 j += 1
 
+            z_ops += j
             best_sample, _, best_sample_j = self.eval_las_vegas(base_sample, best_sample, 0, j, best_sample_j)
             
         best_sample.signal_matrix = (best_sample.signal_matrix.T * best_sample.weights).T # TODO: change sample type
         self.samples.append(best_sample)
-        return best_sample
+        return best_sample, z_ops
     
-    def random_exploit(self, j_exploits: int, zero_model: bool = False) -> None:
+    def init_random_exploit(self, zero_model: bool) -> Sample:
+        if zero_model:
+            signal_matrix, signal_args = np.zeros((self.rand_args.n_osc, self.rand_args.samples)), list()
+        else:
+            signal_matrix, signal_args = gen_signal_python.sum_atomic_signals(self.rand_args)
+        base_sample = Sample(signal_matrix, None, None, 0, None, signal_args)
+        base_sample.update(self.target)
+        return base_sample
+
+    def draw_exploit_candidate(self, base_sample: Sample, mod_args: PythonSignalRandArgs, store_det_args: bool, history: bool):
+        temp_sample = copy.deepcopy(base_sample)
+        signal, signal_args = gen_signal_python.sum_atomic_signals(mod_args, store_det_args)
+        signal = signal.flatten()
+        temp_sample.signal_matrix[i,:] = signal
+        if store_det_args or history:
+            signal_args = signal_args[0]
+            temp_sample.signal_args.append(signal_args)
+        temp_sample.signal_sum = np.sum(temp_sample.signal_matrix, axis=0)
+        temp_sample.rmse = data_analysis.compute_rmse(temp_sample.signal_sum, self.target)
+        return temp_sample
+
+    def compute_z_ops(self, k_samples: int, zero_init: bool, j_exploits: int) -> int:
+        if zero_init:
+            z_ops = k_samples * j_exploits
+        else:
+            z_ops = k_samples * (self.rand_args.n_osc + j_exploits)
+        return z_ops
+
+    def random_exploit(self, k_samples: int, j_exploits: int, zero_model: bool = False) -> None:
         """generate an ensemble of n-oscillators
         reduce loss by iteratively replacing oscillators in the ensemble
         
@@ -227,22 +259,14 @@ class SearchModule():
         # TODO: hacky solution to draw l-oscillators from sum_atomic signals
         mod_args = copy.deepcopy(self.rand_args)
         mod_args.n_osc = 1
-
         rng = np.random.default_rng(params.GLOBAL_SEED)
 
-        best_model = None
-        best_rmse = np.inf
-        for _ in tqdm(range(self.k_samples)):
+        best_sample = Sample(None, None, None, 0, np.inf, list())
+        for _ in tqdm(range(k_samples)):
             # generate initial model
-            # TODO: det_param_li is not updated
-            model, det_param_li = gen_signal_python.sum_atomic_signals(self.rand_args)
-            signal_sum = sum(model)
-            if zero_model:
-                model = np.zeros((self.rand_args.n_osc, self.rand_args.samples))
-                signal_sum = sum(model)
-            temp_rmse = data_analysis.compute_rmse(sample.sum_y, self.target)
-            sample = Sample(model, None, signal_sum, 0, temp_rmse, det_param_li)
-            for _ in tqdm(range(j_exploits)):
+            
+            base_sample = self.init_random_exploit(zero_model)
+            for _ in range(j_exploits):
                 # draw 1 oscillator
                 signal, _ = gen_signal_python.sum_atomic_signals(mod_args)
                 signal = signal.flatten()
@@ -250,22 +274,29 @@ class SearchModule():
                 # replace random oscillator in the model
                 i = rng.integers(0, self.rand_args.n_osc)
                 # TODO: debug whether this works as expected or whether deepcopy is needed
-                temp_sum = sum(sample.matrix_y[0:i,:]) + signal + sum(sample.matrix_y[1+i:,:])
+                temp_sum = np.sum(base_sample.signal_matrix[0:i,:], axis=0) + signal + np.sum(base_sample.signal_matrix[1+i:,:], axis=0)
                 temp_rmse = data_analysis.compute_rmse(temp_sum, self.target)
 
                 # evaluate replacement
-                if temp_rmse < sample.rmse_sum:
-                    sample.matrix_y[i,:] = signal
-                    sample.rmse_sum = temp_rmse
-                    sample.sum_y = temp_sum
+                if temp_rmse < base_sample.rmse:
+                    base_sample.signal_matrix[i,:] = signal
+                    base_sample.rmse = temp_rmse
+                    base_sample.signal_sum = temp_sum
 
-            self.samples.append(sample)
-            
-            if self.samples[-1].rmse_sum < best_rmse:
-                best_rmse = self.samples[-1].rmse_sum
-                best_model = self.samples[-1].matrix_y
+            if base_sample.rmse < best_sample.rmse:
+                best_sample = base_sample
+
+        self.samples.append(best_sample)
         
-    def random_weight_exploit(self, j_exploits: int) -> None:
+        return best_sample, self.compute_z_ops(k_samples, zero_model, j_exploits)
+        
+    def random_weight_exploit(self,
+        k_samples: int,
+        j_exploits: int,
+        weight_init: str,
+        store_det_args: bool = False,
+        history: bool = False,
+        args_path: Path = None) -> Tuple[Sample, int]:
         """generate an ensemble of n-oscillators and a vector of weights
         reduce loss by iteratively replacing weights
         
@@ -275,43 +306,22 @@ class SearchModule():
         # TODO: hacky solution to draw l-oscillators from sum_atomic signals
         rng = np.random.default_rng(params.GLOBAL_SEED)
 
-        best_model = None
-        best_rmse = np.inf
-        for _ in range(self.k_samples):
-            # generate initial model
-            # TODO: det_param_li is not updated
-            model, det_param_li = gen_signal_python.sum_atomic_signals(self.rand_args)
-            weights = np.ones(self.rand_args.n_osc)
-            #weights = rng.uniform(0.1, 100, (self.rand_args.n_osc))
-            w_sum = Sample.predict(model, weights, 0) # weighted sum
+        best_sample = Sample(None, None, None, 0, np.inf, list())
+        for _ in range(k_samples):
 
-            temp_rmse = data_analysis.compute_rmse(sample.sum_y, self.target)
-            sample = Sample(model, weights, w_sum, 0, temp_rmse, det_param_li)
-            
-            for _ in tqdm(range(j_exploits)):
-                # TODO: efficiency improvements
-                temp_weights = copy.deepcopy(weights)
-                # replace random oscillator in the model
+            base_sample = self.init_las_vegas(weight_init, store_det_args)
+            for _ in range(j_exploits):
                 i = rng.integers(0, self.rand_args.n_osc)
-                # draw 1 weight
-                w = self.rand_args.weight_dist.draw()
-                temp_weights[i] = w
-                temp_sum = Sample.predict(model, temp_weights, 0)
-                temp_rmse = data_analysis.compute_rmse(temp_sum, self.target)
+                temp_sample = self.draw_las_vegas_weight_candidate(base_sample, i)
+                base_sample, _, _ = self.eval_las_vegas(temp_sample, base_sample, 0, 0, 0)
 
-                # evaluate replacement
-                if temp_rmse < sample.rmse_sum:
-                    sample.rmse_sum = temp_rmse
-                    sample.sum_y = temp_sum
-                    weights = temp_weights
+            if base_sample.rmse < best_sample.rmse:
+                best_sample = base_sample
 
-            # for compatibility, use best weights
-            sample.matrix_y = (model.T * weights).T
-            self.samples.append(sample)
-            
-            if self.samples[-1].rmse_sum < best_rmse:
-                best_rmse = self.samples[-1].rmse_sum
-                best_model = self.samples[-1].matrix_y
+        best_sample.signal_matrix = (best_sample.signal_matrix.T * best_sample.weights).T # TODO: change sample type
+        self.samples.append(best_sample)
+        zero_init = True if weight_init == "zeros" else False
+        return best_sample, self.compute_z_ops(k_samples, zero_init, j_exploits)
         
     def gather_samples(self) -> tuple[Sample, list]:
         """find the sample with the lowest root mean square error
@@ -355,7 +365,6 @@ def main():
     #print(f"time elapsed: {time_elapsed}")
 
     search = SearchModule(
-                k_samples=1, # number of generated sum-signals
                 rand_args=rand_args,
                 target=target)
     #search.random_one_shot()
@@ -369,7 +378,9 @@ def main():
     # best_sample, j = search.random_stateless_hybrid(5, store_det_args=True,
     #     history=True, args_path=Path("data/test_args.pickle"))
 
-    best_sample: Sample = search.las_vegas_weight(weight_init="dist", store_det_args=False)
+    # best_sample: Sample = search.las_vegas_weight(weight_init="dist", store_det_args=False)
+    best_sample: Sample = search.random_weight_exploit(k_samples = 3, j_exploits = 100, weight_init="dist")
+    
 
 
     # find best sample and save

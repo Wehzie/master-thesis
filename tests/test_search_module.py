@@ -13,7 +13,9 @@ from data_analysis import compute_rmse, hist_rmse, plot_n, plot_pred_target, plo
 from data_preprocessor import norm1d, sample_down, sample_down_int, take_middle_third
 from data_io import DATA_PATH, load_data, load_data_numpy, save_signal_to_wav
 import gen_signal_python
-import params
+import test_params as params
+import data_io
+import data_analysis
 
 import numpy as np
 from sklearn.linear_model import LinearRegression
@@ -23,9 +25,9 @@ from tqdm import tqdm
 from param_types import PythonSignalDetArgs, PythonSignalRandArgs
 from search_module import Sample, SearchModule
 
-def test_main() -> None:
+def init_search():
     # loading and manipulating the target signal
-    raw_sampling_rate, raw_target, raw_dtype = load_data()
+    raw_sampling_rate, raw_target, raw_dtype = data_io.load_data()
     scale_factor = 0.01
     target_full_len: Final = sample_down_int(raw_target, scale_factor)
     # shorten the target
@@ -34,79 +36,65 @@ def test_main() -> None:
     target_norm: Final = norm1d(target)
     # save to wav
     sampling_rate = int(scale_factor*raw_sampling_rate)
-    save_signal_to_wav(target, sampling_rate, raw_dtype, Path("data/target_downsampled.wav"))
-    
-    # initialize and start search
+    data_io.save_signal_to_wav(target, sampling_rate, raw_dtype, Path("data/target_downsampled.wav"))
+    # init search params
     rand_args = params.py_rand_args_uniform
     rand_args.samples = len(target) # generated signals match length of target
+                                    # NOTE: the sampling rate could also be set lower instead
+    return target, rand_args
 
-    kwargs = {
-        "target": target,
-        "target_norm": target_norm,
-        "sampling_rate": sampling_rate,
-        "raw_dtype": raw_dtype
-    }
+def run_all_algs(search: SearchModule) -> None:
+    best_sample, dradels = search.random_one_shot(params.k_samples, False, False, None)
+    # best_sample = search.random_one_shot_weight()
+    #   zero, ones, uniform, dist
+    best_sample, dradels = search.las_vegas(params.k_samples, None, False, False, None)
+    for w in params.weight_inits: #   zero, ones, uniform, dist
+        best_sample, dradels = search.las_vegas_weight(params.k_samples, w, False, False, None)
+    best_sample, dradels = search.random_exploit(params.k_samples, params.j_exploits)
+    best_sample, dradels = search.random_exploit(params.k_samples, params.j_exploits, zero_model=True)
+    for w in params.weight_inits: #   zero, ones, uniform, dist
+        best_sample, dradels = search.random_weight_exploit(params.k_samples, params.j_exploits, w, False, False, None)
 
-    search = SearchModule(
-        k_samples=10,
-        rand_args=rand_args,
-        target=target)
-    search.random_one_shot()
-    main(search, **kwargs)
+def eval_alg(search: SearchModule, best_sample: Sample) -> None:
+        # find best sample and save
+    print(f"mean: {np.mean(best_sample.signal_sum)}")
+    data_io.save_sample(best_sample)
+    data_io.save_signal_to_wav(best_sample.signal_sum, sampling_rate, raw_dtype, Path("data/best_sample.wav"))
 
-    search = SearchModule(
-    k_samples=10,
-    rand_args=rand_args,
-    target=target)
-    search.random_one_shot()
-    main(search, **kwargs)
-    
-    search = SearchModule(
-    k_samples=10,
-    rand_args=rand_args,
-    target=target)
-    search.random_one_shot()
-    main(search, **kwargs)
-
-def main(search: SearchModule, target: np.ndarray, target_norm: np.ndarray, sampling_rate: int, raw_dtype: np.dtype) -> None:
-    
-    # without random phase shifts between 0 and 2 pi
-    # signals will overlap at the first sample
-    if True:
-        for s in search.samples:
-            s.sum_y[0] = 0 # set first point to 0
-            s.rmse_sum = compute_rmse(s.sum_y, target)
-            s.rmse_norm = compute_rmse(norm1d(s.sum_y), target_norm)
-
-    # find best sample and save
-    best_sample, rmse_list, rmse_norm_list = search.gather_samples()
-    best_sample.save()
-    save_signal_to_wav(best_sample.sum_y, sampling_rate, raw_dtype, Path("data/best_sample.wav"))
-
-    # normalize best sample
-    norm_sum = norm1d(best_sample.sum_y)
-    norm_rmse = compute_rmse(norm_sum, target_norm)
+    norm_sample = Sample.norm_sample(best_sample, target_norm)
     
     # compute regression against target
-    reg = Sample.regress_linear(best_sample.matrix_y, target, verbose=False)
-    pred = Sample.predict(best_sample.matrix_y, reg.coef_, reg.intercept_)
-    best_sample.fit_y = pred
-    save_signal_to_wav(best_sample.fit_y, sampling_rate, raw_dtype, Path("data/fit.wav"))
-    best_sample.rmse_fit = compute_rmse(pred, target)
+    reg_sample = Sample.regress_sample(best_sample, target)
+    data_io.save_signal_to_wav(reg_sample.signal_sum, sampling_rate, raw_dtype, Path("data/fit.wav"))
     
     # norm regression after fit (good enough)
-    norm_reg = norm1d(best_sample.fit_y)
-    norm_reg_rmse = compute_rmse(norm_reg, target_norm)
-    
+    norm_reg_sample = Sample.norm_sample(reg_sample, target_norm)
+
     # plots
     if True: # time-domain
         #hist_rmse(rmse_list, title="sum distribution")
         #hist_rmse(rmse_norm_list, title="norm-sum distribution")
-        plot_pred_target(best_sample.sum_y, target, title="sum")
-        plot_pred_target(best_sample.fit_y, target, title="regression")
-        plot_pred_target(norm_sum, target_norm, title="norm-sum")
-        plot_pred_target(norm_reg, target_norm, title="norm after fit")
+        data_analysis.plot_pred_target(best_sample.signal_sum, target, title="sum")
+        data_analysis.plot_pred_target(reg_sample.signal_sum, target, title="regression")
+        data_analysis.plot_pred_target(norm_sample.signal_sum, target_norm, title="norm-sum")
+        data_analysis.plot_pred_target(norm_reg_sample.signal_sum, target_norm, title="norm after fit")
     if True: # frequency-domain
-        plot_fourier(target, title="target")
-        plot_fourier(best_sample.sum_y, title="sum")
-        plot_fourier(best_sample.fit_y, title="regression")
+        data_analysis.plot_fourier(target, title="target")
+        data_analysis.plot_fourier(best_sample.signal_sum, title="sum")
+        data_analysis.plot_fourier(reg_sample.signal_sum, title="regression")
+
+    print(f"best_sample.rmse_sum {best_sample.rmse}")
+    print(f"best_sample.rmse_sum-norm {norm_sample.rmse}")
+    print(f"best_sample.rmse_fit {reg_sample.rmse}")
+    print(f"best_sample.rmse_fit-norm {norm_reg_sample.rmse}")
+    
+
+def test_main():
+    target, rand_args = init_search()
+    search = SearchModule(
+                rand_args=rand_args,
+                target=target)
+    run_all_algs(search)
+    
+
+    
