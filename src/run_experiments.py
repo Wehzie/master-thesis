@@ -9,7 +9,7 @@
 from pathlib import Path
 import pickle
 
-from param_types import PythonSignalRandArgs
+import param_types as party
 import search_module
 
 import numpy as np
@@ -42,10 +42,10 @@ experiments:
 
 """
 
-def n_dependency(rand_args: PythonSignalRandArgs,
+def n_dependency(rand_args: party.PythonSignalRandArgs,
     target: np.ndarray,
     visual: bool = True) -> None:
-    """visualize k-dependency for different values of n-oscillators"""
+    """given one algorithm visualize k-dependency for different values of n-oscillators"""
     k_params = [5, 20,]# 50, 100, 200, 300, 500, 1000, 2000]
     m_averages = 3
     n_osc = [25, 50,]# 100, 200, 500, 1000]
@@ -69,12 +69,11 @@ def n_dependency(rand_args: PythonSignalRandArgs,
         plt.legend(title="n oscillators")
         plt.savefig(Path("data/n_dependency"), dpi=300)
         plt.show()
-        
 
 def k_dependency_one_shot(
     k_params: list[int],
     m_averages: int,
-    rand_args: PythonSignalRandArgs,
+    rand_args: party.PythonSignalRandArgs,
     target: np.ndarray, visual: bool = False) -> tuple:
     """visualize the k-dependency of random one-shot search
     
@@ -112,7 +111,7 @@ def k_dependency_one_shot(
 def k_dependency_hybrid(
     k_params: list[int],
     m_averages: int,
-    rand_args: PythonSignalRandArgs,
+    rand_args: party.PythonSignalRandArgs,
     target: np.ndarray,
     visual: bool = False) -> tuple:
     """visualize the k-dependency of random hybrid search"""

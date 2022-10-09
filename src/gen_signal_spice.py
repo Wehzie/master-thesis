@@ -1,7 +1,7 @@
 from data_analysis import compute_rmse, plot_fourier, plot_pred_target, plot_signal
 from data_io import find_dir_name, json_to_df, load_data, load_sim_data
 from data_preprocessor import clean_signal, sample_down
-from param_types import SpiceSingleDetArgs, SpiceSumDetArgs, SpiceSumRandArgs
+import param_types as party
 from params import bird_params
 from netlist_generator import build_single_netlist, build_sum_netlist, run_ngspice, select_netlist_generator
 
@@ -9,7 +9,6 @@ from typing import Callable, List, Tuple
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
 
 import search_module as sm
@@ -18,7 +17,7 @@ PARAM = bird_params["magpie_single_oscillator"]
     
 # ability to generate single oscillator in ngspice
 # ability to generate k oscillators and sum them in ngspice
-def gen_random_spice_signal(netlist_generator: Callable, param: SpiceSingleDetArgs) -> np.ndarray:
+def gen_random_spice_signal(netlist_generator: Callable, param: party.SpiceSingleDetArgs) -> np.ndarray:
     """generate a single signal which is a composition
     of oscillators in ngspice.
     
@@ -49,7 +48,7 @@ def gen_random_spice_signal(netlist_generator: Callable, param: SpiceSingleDetAr
     return pred
 
 
-def draw_params_random(args: SpiceSumRandArgs) -> SpiceSingleDetArgs:
+def draw_params_random(args: party.SpiceSumRandArgs) -> party.SpiceSingleDetArgs:
     """draw randomly from parameter pool"""
     assert args.c_max <= 1, "Randomly generating capacitors with >1 Farad is not implemented!"
 
@@ -58,7 +57,7 @@ def draw_params_random(args: SpiceSumRandArgs) -> SpiceSingleDetArgs:
     r = np.random.randint(args.r_min, 1 + args.r_max)
     c = np.random.uniform(args.c_min, args.c_max)
 
-    return SpiceSingleDetArgs(args.n_osc, args.v_in,
+    return party.SpiceSingleDetArgs(args.n_osc, args.v_in,
     r, args.r_last, args.r_control, c,
     args.time_step, args.time_stop, args.time_start)
 
@@ -66,7 +65,7 @@ def handle_sim_failure(single_signal: np.ndarray, samples: int):
     """handle simulation failures by return an array of zeros"""
     return np.zeros(samples) if len(single_signal) < samples else single_signal
 
-def sum_atomic_signals(args: SpiceSumRandArgs) -> Tuple[np.ndarray, List[SpiceSingleDetArgs]]:
+def sum_atomic_signals(args: party.SpiceSumRandArgs) -> Tuple[np.ndarray, List[party.SpiceSingleDetArgs]]:
     """compose a signal of single oscillators"""
     # TODO: is this how samples actually works? check this
     samples = int((args.time_stop - args.time_start) // args.time_step)
@@ -88,7 +87,7 @@ def sum_atomic_signals(args: SpiceSumRandArgs) -> Tuple[np.ndarray, List[SpiceSi
     return signal_matrix, det_arg_li
 
 def main():
-    args = SpiceSumRandArgs()
+    args = party.SpiceSumRandArgs()
     atomic_signals, det_arg_li = sum_atomic_signals(args)
     sig_sum = sum(atomic_signals)
     plot_signal(sig_sum, show=True)

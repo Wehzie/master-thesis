@@ -1,6 +1,7 @@
 from dataclasses import dataclass
-from typing import Callable, Final, Union
+from typing import Callable, Final, List, Union
 import numpy as np
+import algo
 
 # "|", for example int|float requires python 3.10 or greater
 class Dist:
@@ -25,10 +26,20 @@ class Dist:
 
     def draw(self) -> float:
         return self.dist(*self.args, **self.kwargs)
+    
+    def __repr__(self) -> str:
+        dist = str(self.dist)
+        args = str(self.args)
+        kwargs = str(self.kwargs)
+        return dist + args + kwargs + "\n"
 
 @dataclass
 class PythonSignalRandArgs:
-    """define the distribution from which deterministic parameters are drawn"""
+    """define the distribution from which deterministic parameters are drawn
+    
+    produces a signal matrix as a result
+    a signal matrix is a circuit of n oscillators
+    """
     n_osc: int # number of oscillators
 
     # NOTE: specify either duration or samples while the other is none
@@ -46,7 +57,10 @@ class PythonSignalRandArgs:
 
 @dataclass
 class PythonSignalDetArgs:
-    """define a python signal with deterministic parameters"""
+    """define a python signal with deterministic parameters
+    
+    produces a single oscillator as result
+    """
     duration: float # specify either duration OR samples, let other be None
     samples: int
     freq: float # frequency
@@ -57,7 +71,41 @@ class PythonSignalDetArgs:
                         # defining some offset
     sampling_rate: int
 
-# TODO: type for algorithm and it's parameters
+@dataclass
+class AlgoArgs:
+    """
+    produces a best sample and the number of operations used as a result
+    
+    a single sample is an optimized signal matrix and array of weights
+    z_ops measures z initialized, drawn, discarded - oscillators or weights
+    """
+    rand_args: int      # arguments to init a signal matrix
+    k_samples: int
+    j_exploit: int      # within-model exploit iterations for monte-carlo algorithms
+    target: np.ndarray  # the target to optimize for
+
+@dataclass
+class SweepConstTimeArgs:
+    """sweeps of PythonRandSignalArgs where time complexity between experiments is constant"""
+    f_dist: List[Dist]
+    amplitude: List[float]
+    weight_dist: List[Dist]
+    phase_dist: List[Dist]
+
+@dataclass
+class SweepExpoTimeArgs:
+    """sweeps of PythonRandSignalArgs where time complexity between experiments is worse then constant, mostly exponential"""
+    n_osc: List[int]                    # number of oscillators
+    sampling_rate_factor: List[float]   # factors to downsample the target signal 
+
+@dataclass
+class SweepAlgos:
+    """repeat experiments over multiple algorithms
+    
+    produces a mean rmse, standard deviation and number of operations (z_ops) for a given configuration"""
+    algo: List    # list of algorithms
+    algo_args = List[AlgoArgs]  # list of arguments for each algorithm, in order with algos
+    m_averages = int            # number of averages for each experimental configuration
 
 @dataclass
 class SpiceSumRandArgs:

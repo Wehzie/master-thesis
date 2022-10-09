@@ -1,10 +1,11 @@
 from __future__ import annotations
 import csv
+import pickle
 import numpy as np
 from pathlib import Path
 from typing import List, Final, Union
 import data_analysis
-from param_types import PythonSignalDetArgs
+import param_types as party
 from sklearn.linear_model import LinearRegression
 import data_preprocessor
 
@@ -12,7 +13,7 @@ class Sample():
     """a sample consists of n-oscillators with constant parameters
     the sum of oscillators approximates a target signal"""
     def __init__(self, signal_matrix: np.ndarray, weights: Union(None, np.ndarray), signal_sum: np.ndarray,
-        offset: Union(None, float), rmse: float, signal_args: List[PythonSignalDetArgs]) -> Sample:
+        offset: Union(None, float), rmse: float, signal_args: List[party.PythonSignalDetArgs]) -> Sample:
         """
         initialize a sample
 
@@ -57,6 +58,11 @@ class Sample():
             # write data
             for osc in self.signal_args:
                 writer.writerow(osc.__dict__.values())
+
+    def save_sample(self, data_path: Path = "data/best_sample.pickle") -> None:
+        """serialize a sample and save to file"""
+        with open(data_path, "wb") as f:
+            pickle.dump(self, f)
 
     def update(self, target: np.ndarray) -> None:
         """recompute sum and rmse"""

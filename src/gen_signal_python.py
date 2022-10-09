@@ -1,16 +1,14 @@
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Final, List, Tuple
-from data_analysis import plot_pred_target, plot_signal
-from data_io import load_data
-from gen_signal_spice import load_sim_data
+from typing import List, Tuple
+from data_analysis import  plot_signal
+from data_io import load_sim_data
 
 import numpy as np
 from scipy.interpolate import interp1d
 from scipy import signal
 import matplotlib.pyplot as plt
 
-from param_types import Dist, PythonSignalDetArgs, PythonSignalRandArgs
+import param_types as party
 import params
 
 def gen_inv_sawtooth(
@@ -52,7 +50,8 @@ def gen_inv_sawtooth(
         plot_signal(y, x_samples, title="x-samples")
     return x_samples, y
 
-def sum_atomic_signals(args: PythonSignalRandArgs, store_det_args: bool = False) -> Tuple[np.ndarray, List[PythonSignalDetArgs]]:
+def sum_atomic_signals(args: party.PythonSignalRandArgs, store_det_args: bool = False
+) -> Tuple[np.ndarray, List[party.PythonSignalDetArgs]]:
     """compose a signal of single oscillators
 
     param:
@@ -71,7 +70,7 @@ def sum_atomic_signals(args: PythonSignalRandArgs, store_det_args: bool = False)
         _, signal_matrix[i,:] = single_signal
     return signal_matrix, det_arg_li
 
-def draw_params_random(args: PythonSignalRandArgs) -> PythonSignalDetArgs:
+def draw_params_random(args: party.PythonSignalRandArgs) -> party.PythonSignalDetArgs:
     """draw randomly from parameter pool"""
     duration = args.duration
     samples = args.samples
@@ -82,7 +81,7 @@ def draw_params_random(args: PythonSignalRandArgs) -> PythonSignalDetArgs:
     offset_fctr = args.offset_dist.draw()
     sampling_rate = args.sampling_rate
 
-    return PythonSignalDetArgs(duration, samples, freq, amplitude, weight, phase, offset_fctr, sampling_rate)
+    return party.PythonSignalDetArgs(duration, samples, freq, amplitude, weight, phase, offset_fctr, sampling_rate)
 
 def gen_custom_inv_sawtooth(
     duration: float,
@@ -126,10 +125,10 @@ def main():
         plt.show()
 
     # generate a single signal from deterministic arguments
-    args = PythonSignalDetArgs(duration=10, samples=None,
+    args = party.PythonSignalDetArgs(duration=10, samples=None,
         freq=0.5,
         amplitude=1, weight=1,
-        phase=-1/3,
+        phase=2,
         offset_fctr=-10,
         sampling_rate=11025)
 
