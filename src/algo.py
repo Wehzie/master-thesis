@@ -1,22 +1,33 @@
 from abc import ABC
+import copy
 import pickle
-import sample
 from typing import List
-from abc import ABC
-
-import data_analysis
-import const
-
 from pathlib import Path
 
-import numpy as np
+import sample
+import data_analysis
+import const
+import param_types as party
 
 class SearchAlgo(ABC):
 
-    def __init__(self):#, rand_args, target: np.ndarray):
-        #self.rand_args = rand_args # search parameters
-        #self.target = target # target function to approximate
+    def __init__(self, algo_args):
+        self.rand_args = algo_args.rand_args                # signal generation parameters
+        self.target = algo_args.target                       # target function to approximate
+        self.weight_init = algo_args.weight_init
+        self.max_z_ops = algo_args.max_z_ops
+        self.k_samples = algo_args.k_samples
+        self.j_exploit = algo_args.j_exploit
+
+        self.store_det_args = algo_args.store_det_args
+        self.history = algo_args.history
+        self.args_path = algo_args.args_path
+
         self.samples: List[sample.Sample] = list() # list of samples and results
+  
+        # TODO: hacky solution to draw 1 oscillator from sum_atomic signals
+        single_osc_args = copy.deepcopy(self.rand_args)
+        single_osc_args.n_osc = 1
     
     def __str__(self) -> str:
         rand_args = f"rand_args: {self.rand_args}\n"
@@ -66,3 +77,11 @@ class SearchAlgo(ABC):
                 best_sample = s
         
         return best_sample, rmse_li, rmse_norm_li
+
+    def eval_z_ops(self, z_ops: int, max_z_ops: int, verbose: bool = True) -> bool:
+        """return true when an algorithm exceeds the maximum number of allowed operations"""
+        if z_ops >= max_z_ops:
+            if verbose:
+                print("z_ops: {z_ops} > max_z_ops: {max_z_ops}")
+            return True
+        return False

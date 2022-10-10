@@ -89,6 +89,7 @@ class AlgoArgs:
     rand_args: int                  # arguments to init a signal matrix
     target: np.ndarray              # the target to optimize for
     weight_init: Union[None, str]   # initialization of weight array
+    max_z_ops: int                  # maximum number of operations until learning is aborted
     k_samples: int                  # number of times to re-run base algorithm
     j_exploit: Union[None, int]     # within-model exploit iterations for monte-carlo algorithms
     store_det_args: bool            # whether to store det_args for each k

@@ -60,6 +60,7 @@ class LasVegas(algo.SearchAlgo):
     def search(self,
         k_samples: int,
         weight_init: Union[None, str],
+        max_z_ops: int = None,
         store_det_args: bool = False,
         history: bool = False,
         args_path: Path = None) -> Tuple[sample.Sample, int]:
@@ -78,13 +79,9 @@ class LasVegas(algo.SearchAlgo):
         """
         if history and args_path: args_path.unlink(missing_ok=True) # delete file if it exists
 
-        # TODO: hacky solution to draw 1 oscillator from sum_atomic signals
-        mod_args = copy.deepcopy(self.rand_args)
-        mod_args.n_osc = 1
-
         best_sample = self.init_las_vegas(weight_init, store_det_args)
         best_sample_j = None
-        z_ops = 0
+        z_ops = self.rand_args.n_osc
         for ki in tqdm(range(k_samples)):
             base_sample = self.init_las_vegas(weight_init, store_det_args) # build up a signal_matrix in here
             i, j = 0, 0 # number of accepted and drawn weights respectively
@@ -94,11 +91,11 @@ class LasVegas(algo.SearchAlgo):
                 j += 1
             
             z_ops += j
+            if self.eval_z_ops(z_ops, max_z_ops): break
 
             self.manage_state(base_sample, k_samples, ki, history, args_path)
             best_sample, _, best_sample_j = self.eval_las_vegas(base_sample, best_sample, 0, j, best_sample_j)
             
-        
         self.samples.append(best_sample)
 
         return best_sample, z_ops

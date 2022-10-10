@@ -1,7 +1,7 @@
 from pathlib import Path
-from typing import List, Tuple
-from data_analysis import  plot_signal
-from data_io import load_sim_data
+from typing import List, Tuple, Union
+import data_io
+import data_analysis
 
 import numpy as np
 from scipy.interpolate import interp1d
@@ -9,7 +9,7 @@ from scipy import signal
 import matplotlib.pyplot as plt
 
 import param_types as party
-import params
+import const
 
 def gen_inv_sawtooth(
     duration: float,
@@ -46,28 +46,35 @@ def gen_inv_sawtooth(
     offset = amplitude * weight * offset_fctr
     y = offset + weight * amplitude * signal.sawtooth(phase * np.pi + 2 * np.pi * freq * x_time, width=0.15)
     if visual:
-        plot_signal(y, x_time, title="x-time")
-        plot_signal(y, x_samples, title="x-samples")
+        data_analysis.plot_signal(y, x_time, title="x-time")
+        data_analysis.plot_signal(y, x_samples, title="x-samples")
     return x_samples, y
 
-def sum_atomic_signals(args: party.PythonSignalRandArgs, store_det_args: bool = False
-) -> Tuple[np.ndarray, List[party.PythonSignalDetArgs]]:
+def draw_single_oscillator(rand_args: party.PythonSignalRandArgs, store_det_args: bool = False
+) -> Tuple[np.ndarray, Union[None, party.PythonSignalDetArgs]]:
+    """draw a single oscillator and optionally store its parameters"""
+    # determine a set of parameters for a single oscillator
+    det_args = draw_params_random(rand_args)
+    # generate single oscillator signal, discard x-range
+    _, single_signal = gen_inv_sawtooth(**det_args.__dict__)
+    if store_det_args:
+        return single_signal, det_args
+    return single_signal, None
+
+def draw_n_signals(rand_args: party.PythonSignalRandArgs, store_det_args: bool = False
+) -> Tuple[np.ndarray, List[Union[None, party.PythonSignalDetArgs]]]:
     """compose a signal of single oscillators
 
     param:
         store_det_args: whether to store the deterministic parameters underlying each oscillator in a model
     """
-    signal_matrix = np.empty((args.n_osc, args.samples))
+    signal_matrix = np.empty((rand_args.n_osc, rand_args.samples))
     det_arg_li = list()
 
-    for i in range(args.n_osc):
-        # determine a set of parameters for a single oscillator
-        det_params = draw_params_random(args)
-        # store the parameter set
-        if store_det_args: det_arg_li.append(det_params)
-        # generate single oscillator signal and add to matrix
-        single_signal = gen_inv_sawtooth(**det_params.__dict__)
-        _, signal_matrix[i,:] = single_signal
+    for i in range(rand_args.n_osc):
+        single_signal, det_args = draw_single_oscillator(rand_args, store_det_args)
+        if store_det_args: det_arg_li.append(det_args)
+        signal_matrix[i,:] = single_signal
     return signal_matrix, det_arg_li
 
 def draw_params_random(args: party.PythonSignalRandArgs) -> party.PythonSignalDetArgs:
@@ -76,7 +83,7 @@ def draw_params_random(args: party.PythonSignalRandArgs) -> party.PythonSignalDe
     samples = args.samples
     freq = args.f_dist.draw() # frequency
     amplitude = args.amplitude
-    weight = args.weight_dist.draw()    
+    weight = args.weight_dist.draw()
     phase = args.phase_dist.draw()
     offset_fctr = args.offset_dist.draw()
     sampling_rate = args.sampling_rate
@@ -101,7 +108,7 @@ def gen_custom_inv_sawtooth(
 
 def interpolate_signal():
     """load a ngspice generated oscillation and interpolate the signal"""
-    df = load_sim_data(Path("data/example_single_oscillator/netlist0.cir.dat"))
+    df = data_io.load_sim_data(Path("data/example_single_oscillator/netlist0.cir.dat"))
     s = df.iloc[:,1] # column as series
     arr = s.to_numpy() # arr
 
@@ -124,35 +131,43 @@ def main():
         plot_signal(y)
         plt.show()
 
-    # generate a single signal from deterministic arguments
-    args = party.PythonSignalDetArgs(duration=10, samples=None,
-        freq=0.5,
-        amplitude=1, weight=1,
-        phase=2,
-        offset_fctr=-10,
-        sampling_rate=11025)
+    if False:
+        # generate a single signal from deterministic arguments
+        args = party.PythonSignalDetArgs(duration=10, samples=None,
+            freq=0.5,
+            amplitude=1, weight=1,
+            phase=2,
+            offset_fctr=-10,
+            sampling_rate=11025)
 
-    gen_inv_sawtooth(**args.__dict__, visual=True)
-    plt.show()
-    exit()
+        gen_inv_sawtooth(**args.__dict__, visual=True)
+        plt.show()
 
     # generate a sum of signals from random variables
-    rng = np.random.default_rng(params.GLOBAL_SEED)
-    args = PythonSignalRandArgs(
+    rand_args = party.PythonSignalRandArgs(
         n_osc = 3,
         duration = None,
         samples = 300,
-        f_dist = Dist(rng.uniform, low=1e5, high=1e6),
+        f_dist = party.Dist(const.RNG.uniform, low=1e5, high=1e6),
         amplitude = 0.5,
-        weight_dist = Dist(rng.uniform, low=0.1, high=1),
-        phase_dist = Dist(rng.uniform, low=0, high=2),
-        offset_dist = Dist(rng.uniform, low=-1/3, high=1/3),
+        weight_dist = party.Dist(const.RNG.uniform, low=0.1, high=1),
+        phase_dist = party.Dist(const.RNG.uniform, low=0, high=2),
+        offset_dist = party.Dist(const.RNG.uniform, low=-1/3, high=1/3),
         sampling_rate = 11025
     )
-    atomic_signals, det_arg_li = sum_atomic_signals(args)
-    sig_sum = sum(atomic_signals)
-    plot_signal(sig_sum)
-    plt.show()
+
+    if True:
+        signal_matrix, det_arg_li = draw_n_signals(rand_args)
+        sig_sum = np.sum(signal_matrix, axis=0)
+        data_analysis.plot_signal(sig_sum)
+        plt.show()
+
+    if False:
+        single_signal, y = draw_single_oscillator(rand_args)
+        print(single_signal)
+        data_analysis.plot_signal(single_signal)
+        plt.show()
+
 
 if __name__ == "__main__":
     main()
