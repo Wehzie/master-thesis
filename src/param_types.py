@@ -1,4 +1,6 @@
+from asyncore import file_dispatcher
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Callable, Final, List, Union
 import numpy as np
 import algo
@@ -28,8 +30,12 @@ class Dist:
         return self.dist(*self.args, **self.kwargs)
     
     def __repr__(self) -> str:
-        dist = str(self.dist)
-        args = str(self.args)
+        if isinstance(self.dist, Callable):
+            dist = self.dist.__name__
+        else:
+            dist = str(self.dist)
+        dist += ", "
+        args = str(self.args) + ", "
         kwargs = str(self.kwargs)
         return dist + args + kwargs + "\n"
 
@@ -79,10 +85,15 @@ class AlgoArgs:
     a single sample is an optimized signal matrix and array of weights
     z_ops measures z initialized, drawn, discarded - oscillators or weights
     """
-    rand_args: int      # arguments to init a signal matrix
-    k_samples: int
-    j_exploit: int      # within-model exploit iterations for monte-carlo algorithms
-    target: np.ndarray  # the target to optimize for
+
+    rand_args: int                  # arguments to init a signal matrix
+    target: np.ndarray              # the target to optimize for
+    weight_init: Union[None, str]   # initialization of weight array
+    k_samples: int                  # number of times to re-run base algorithm
+    j_exploit: Union[None, int]     # within-model exploit iterations for monte-carlo algorithms
+    store_det_args: bool            # whether to store det_args for each k
+    history: bool                   # whether to store each sample
+    args_path: Path                 # whether to flush samples in RAM to file at given path
 
 @dataclass
 class SweepConstTimeArgs:
@@ -104,8 +115,8 @@ class SweepAlgos:
     
     produces a mean rmse, standard deviation and number of operations (z_ops) for a given configuration"""
     algo: List    # list of algorithms
-    algo_args = List[AlgoArgs]  # list of arguments for each algorithm, in order with algos
-    m_averages = int            # number of averages for each experimental configuration
+    algo_args: List[AlgoArgs]  # list of arguments for each algorithm, in order with algos
+    m_averages: int            # number of averages for each experimental configuration
 
 @dataclass
 class SpiceSumRandArgs:

@@ -14,6 +14,7 @@ from tqdm import tqdm
 
 
 class LasVegas(algo.SearchAlgo):
+
     def init_las_vegas(self, weight_init: Union[None, str], store_det_args: bool) -> sample.Sample:
         if weight_init is None: # in this mode, weights are not adapted
             signal_matrix = np.zeros((self.rand_args.n_osc, self.rand_args.samples))
@@ -56,7 +57,7 @@ class LasVegas(algo.SearchAlgo):
             return temp_sample, i+1, j
         return base_sample, i, best_sample_j
 
-    def las_vegas(self,
+    def search(self,
         k_samples: int,
         weight_init: Union[None, str],
         store_det_args: bool = False,
@@ -102,6 +103,7 @@ class LasVegas(algo.SearchAlgo):
 
         return best_sample, z_ops
 
+class LasVegasWeight(algo.SearchAlgo):
     def draw_weight(self, weights: np.ndarray, i: int):
         w = self.rand_args.weight_dist.draw()
         weights[i] = w
@@ -114,7 +116,7 @@ class LasVegas(algo.SearchAlgo):
         temp_sample.rmse = data_analysis.compute_rmse(temp_sample.signal_sum, self.target)
         return temp_sample
 
-    def las_vegas_weight(self,
+    def search(self,
         k_samples: int,
         weight_init: Union[None, str],
         store_det_args: bool = False,

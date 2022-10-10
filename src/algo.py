@@ -1,18 +1,21 @@
+from abc import ABC
 import pickle
 import sample
+from typing import List
+from abc import ABC
+
 import data_analysis
 import const
 
-from typing import List
 from pathlib import Path
 
 import numpy as np
 
-class SearchAlgo():
+class SearchAlgo(ABC):
 
-    def __init__(self, rand_args, target: np.ndarray):
-        self.rand_args = rand_args # search parameters
-        self.target = target # target function to approximate
+    def __init__(self):#, rand_args, target: np.ndarray):
+        #self.rand_args = rand_args # search parameters
+        #self.target = target # target function to approximate
         self.samples: List[sample.Sample] = list() # list of samples and results
     
     def __str__(self) -> str:
@@ -48,3 +51,18 @@ class SearchAlgo():
         for s in self.samples:
             s.signal_sum[0] = 0 # set first point to 0
             s.rmse = data_analysis.compute_rmse(s.signal_sum, self.target)
+    
+    def gather_samples(self) -> tuple[sample.Sample, list]:
+        """find the sample with the lowest root mean square error
+        and return a list of all rmse"""
+        best_sample = self.samples[0]
+        rmse_li, rmse_norm_li = list(), list()
+
+        for s in self.samples:
+            rmse_li.append(s.rmse_sum)
+            rmse_norm_li.append(s.rmse_norm)
+        
+            if s.rmse_sum < best_sample.rmse_sum:
+                best_sample = s
+        
+        return best_sample, rmse_li, rmse_norm_li

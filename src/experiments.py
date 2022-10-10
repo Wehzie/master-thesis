@@ -6,14 +6,17 @@
 # the best value until k reflects the best RMSE for said k_param
 # time-complexity is probably one order of of magnitude less
 # there would be within-series dependency, but I don't think it matters
+from dataclasses import fields
 from pathlib import Path
 import pickle
+from typing import List, Union
+import itertools
 
 import param_types as party
-import search_module
 
 import numpy as np
 import matplotlib.pyplot as plt
+from algo import SearchAlgo
 
 """
 experiments:
@@ -41,6 +44,17 @@ experiments:
 
 
 """
+
+def sweep_const_time_args(base_args: party.PythonSignalRandArgs,
+arg_schedule: party.SweepConstTimeArgs,
+algos: Union[SearchAlgo, List[SearchAlgo]]):
+
+    for val_schedule in fields(arg_schedule):                       # for example frequency distribution
+        for algo in algos:                                          # for example monte carlo search
+            for val in getattr(arg_schedule, val_schedule.name):    # for example normal vs uniform frequency distribution
+                print(val)
+                setattr(base_args, val_schedule.name, val)
+                algo.search(base_args)
 
 def n_dependency(rand_args: party.PythonSignalRandArgs,
     target: np.ndarray,

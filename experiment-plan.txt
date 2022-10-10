@@ -1,0 +1,67 @@
+
+
+experiment1: algo comp
+sweep algos with same 
+    rand args (repeat with 3 sets)
+        nosc
+        freq
+        amp
+        phase
+        weights
+    target
+    
+    stop each run if zops exceeds threshold
+
+    repeat each experiment 20 times
+    -> rmse, stderr, zops
+
+experiment2: time dep rand args: nosc
+sweep algos with const rand args
+    change nosc
+    stop each run if zops exceeds threshold
+
+    repeat each experiment 20 times
+    -> rmse, stderr, zops
+
+
+experiment3: time dep rand args: target samples
+sweep algos with const rand args
+    change target samples
+    stop each run if zops exceeds threshold
+
+    repeat each experiment 20 times
+    -> rmse, stderr, zops
+
+experiment4: const time rand args: freq
+sweep algos with const rand args
+    change freq band
+    stop each run if zops exceeds threshold
+
+    repeat each experiment 20 times
+    -> rmse, stderr, zops
+
+experiment5: const time rand_args: weights
+sweep algos with const rand args
+    change weight dist
+    stop each run if zops exceeds threshold
+
+    repeat each experiment 20 times
+    -> rmse, stderr, zops
+
+experiment6: const time rand args: phase
+sweep algos with const rand args
+    change phase dist
+    stop each run if zops exceeds threshold
+
+    repeat each experiment 20 times
+    -> rmse, stderr, zops
+
+experiment7: const time rand args: offset
+sweep alogs with const rand args
+    change offset dist
+    stop each run if zops exceeds threshold
+
+    repeat each experiment 20 times
+    -> rmse, stderr, zops
+
+repeat experiments where possible with SPICE

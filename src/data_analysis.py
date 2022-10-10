@@ -1,7 +1,10 @@
+from typing import Callable
 import data_io
 import data_preprocessor
 
 from pathlib import Path
+from functools import wraps
+import time
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -132,6 +135,20 @@ def compute_rmse(p: np.ndarray, t: np.ndarray, verbose: bool = False, pad: bool 
     if verbose:
         print(f"RMSE: {rmse}")
     return rmse
+
+
+def print_time(func: Callable) -> Callable:
+    @wraps(func)
+    def wrap(*args, **kwargs):
+        t0 = time.time()
+        result = func(*args, **kwargs)
+        time_elapsed = time.time() - t0
+        print(f"time elapsed: {time_elapsed:.2f} s")
+        print(f"func:{func.__name__}")
+        print(f"args:{args}")
+        print(f"kwargs:{kwargs}")
+        return result
+    return wrap
 
 def main():
     sampling_rate, data = data_io.load_data()

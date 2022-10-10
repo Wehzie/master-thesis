@@ -1,3 +1,5 @@
+from algo import SearchAlgo
+from algo_las_vegas import LasVegas, LasVegasWeight
 import param_types as party
 from typing import List
 import const
@@ -99,8 +101,7 @@ bird_params = {
     }
 }
 
-
-def init_py_timeless_sweep_args() -> List: #List[party.Dist]
+def init_py_timeless_sweep_args() -> List[party.Dist]:
     li = list()
     # compare uniform and normal distribution
     for d in [rng.uniform, rng.normal]:
@@ -125,6 +126,42 @@ def append_normal(li: List) -> List: #List[party.Dist]
     except:
         print(len(li))
         print(li[0].kwargs)
+
+
+py_rand_args_uniform = party.PythonSignalRandArgs(
+    n_osc = 100,
+    duration = None,
+    samples = 300,
+    f_dist = party.Dist(rng.uniform, low=1e5, high=1e6),
+    amplitude = 0.5,                                    # resembling 0.5 V amplitude of V02
+    weight_dist = party.Dist(rng.uniform, low=0.1, high=100),   # resistor doesn't amplify so not > 1
+    phase_dist = party.Dist(rng.uniform, low=-1/3, high=1/3), # uniform 0 to 2 pi phase shift seems too wild
+    offset_dist = party.Dist(rng.uniform, low=0, high=0),    # offset should be reasonable and bounded by amplitude*weight
+    sampling_rate = 11025                               # the sampling rate of the Magpie signal
+)
+
+py_rand_args_normal = party.PythonSignalRandArgs(
+    n_osc = 3000,
+    duration = None,
+    samples = 300,
+    f_dist = party.Dist(rng.normal, loc=5e5, scale=4e5),
+    amplitude = 0.5,                                    # resembling 0.5 V amplitude of V02
+    weight_dist = party.Dist(rng.normal, loc=0.5, scale=0.5),   # resistor doesn't amplify so not > 1
+    phase_dist = party.Dist(rng.normal, loc=0, scale=1/3), # uniform 0 to 2 pi phase shift seems too wild
+    offset_dist = party.Dist(rng.normal, loc=0, scale=100/3),    # offset should be reasonable and bounded by amplitude*weight
+    sampling_rate = 11025                               # the sampling rate of the Magpie signal
+)
+
+def init_sweep_algos():
+    algo = [
+        LasVegas,
+        LasVegasWeight,
+    ]
+    algo_args = [py_rand_args_uniform]*len(algo)
+    m_averages = 2
+    return party.SweepAlgos(algo, algo_args, m_averages)
+
+sweep_algos = init_sweep_algos
 
 sweep_py_const_time_args = party.SweepConstTimeArgs(
     f_dist = init_py_timeless_sweep_args(),
@@ -151,27 +188,13 @@ sweep_py_expo_time_args = party.SweepExpoTimeArgs(
     sampling_rate_factor=[0.01, 0.1, 0.5, 1],
 )
 
-
-py_rand_args_uniform = party.PythonSignalRandArgs(
-    n_osc = 100,
-    duration = None,
-    samples = 300,
-    f_dist = party.Dist(rng.uniform, low=1e5, high=1e6),
-    amplitude = 0.5,                                    # resembling 0.5 V amplitude of V02
-    weight_dist = party.Dist(rng.uniform, low=0.1, high=100),   # resistor doesn't amplify so not > 1
-    phase_dist = party.Dist(rng.uniform, low=-1/3, high=1/3), # uniform 0 to 2 pi phase shift seems too wild
-    offset_dist = party.Dist(rng.uniform, low=0, high=0),    # offset should be reasonable and bounded by amplitude*weight
-    sampling_rate = 11025                               # the sampling rate of the Magpie signal
+sweep_algo_args = party.AlgoArgs(
+    py_rand_args_uniform,
+    None,
+    None,
+    1,
+    1,
+    False, False, False
 )
 
-py_rand_args_normal = party.PythonSignalRandArgs(
-    n_osc = 3000,
-    duration = None,
-    samples = 300,
-    f_dist = party.Dist(rng.normal, loc=5e5, scale=4e5),
-    amplitude = 0.5,                                    # resembling 0.5 V amplitude of V02
-    weight_dist = party.Dist(rng.normal, loc=0.5, scale=0.5),   # resistor doesn't amplify so not > 1
-    phase_dist = party.Dist(rng.normal, loc=0, scale=1/3), # uniform 0 to 2 pi phase shift seems too wild
-    offset_dist = party.Dist(rng.normal, loc=0, scale=100/3),    # offset should be reasonable and bounded by amplitude*weight
-    sampling_rate = 11025                               # the sampling rate of the Magpie signal
-)
+algo_list: List[SearchAlgo] = [LasVegas, LasVegasWeight]
