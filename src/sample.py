@@ -12,7 +12,7 @@ import data_preprocessor
 class Sample():
     """a sample consists of n-oscillators with constant parameters
     the sum of oscillators approximates a target signal"""
-    def __init__(self, signal_matrix: np.ndarray, weights: Union(None, np.ndarray), signal_sum: np.ndarray,
+    def __init__(self, signal_matrix: np.ndarray, weights: Union(None, np.ndarray), weighted_sum: np.ndarray,
         offset: Union(None, float), rmse: float, signal_args: List[party.PythonSignalDetArgs]) -> Sample:
         """
         initialize a sample
@@ -31,7 +31,7 @@ class Sample():
         """
         self.signal_matrix = signal_matrix
         self.weights = weights
-        self.signal_sum = signal_sum
+        self.weighted_sum = weighted_sum
         self.offset = offset
         self.rmse = rmse
         self.signal_args = signal_args
@@ -40,13 +40,13 @@ class Sample():
     def __str__(self) -> str:
         signal_matrix = f"signal_matrix:\n{self.signal_matrix}\n"
         weights = f"weights:\n{self.weights}\n"
-        signal_sum = f"signal_sum:\n{self.signal_sum}\n"
+        weighted_sum = f"weighted_sum:\n{self.weighted_sum}\n"
         offset = f"offset:\n{self.offset}\n"
         rmse = f"rmse: {self.rmse}\n"
         signal_args = "signal_args:\n"
         for args in self.signal_args:
             signal_args += str(args) + "\n"
-        return signal_matrix + signal_args + signal_sum + offset + weights + rmse
+        return signal_matrix + signal_args + weighted_sum + offset + weights + rmse
 
     def save_signal_args(self, path: Path = "data/best_sample.csv") -> None:
         """save the determined parameters of a sample to a CSV"""
@@ -97,7 +97,7 @@ class Sample():
         return reg
 
     @staticmethod
-    def predict(X: np.ndarray, coef: np.ndarray, intercept: float) -> np.ndarray:
+    def compute_weighted_sum(X: np.ndarray, coef: np.ndarray, intercept: float = 0) -> np.ndarray:
         """generate approximation of target, y"""
         fit = np.sum(X.T * coef, axis=1) + intercept
         return fit
@@ -129,6 +129,6 @@ class Sample():
         signal_matrix = sample.signal_matrix
         weights = reg.coef_
         offset = reg.intercept_
-        signal_sum = Sample.predict(signal_matrix, weights, offset)
+        signal_sum = Sample.compute_weighted_sum(signal_matrix, weights, offset)
         rmse = data_analysis.compute_rmse(signal_sum, target)
         return Sample(signal_matrix, weights, signal_sum, offset, rmse, sample.signal_args)

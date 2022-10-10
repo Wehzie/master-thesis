@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 
 import param_types as party
 import const
+import sample
 
 def gen_inv_sawtooth(
     duration: float,
@@ -43,8 +44,9 @@ def gen_inv_sawtooth(
     
     x_time = np.linspace(0, ceil_duration, ceil_samples)[0:samples]
     x_samples = range(len(x_time))
-    offset = amplitude * weight * offset_fctr
-    y = offset + weight * amplitude * signal.sawtooth(phase * np.pi + 2 * np.pi * freq * x_time, width=0.15)
+    #offset = amplitude * weight * offset_fctr
+    #y = offset + weight * amplitude * signal.sawtooth(phase * np.pi + 2 * np.pi * freq * x_time, width=0.15)
+    y = amplitude * signal.sawtooth(phase * np.pi + 2 * np.pi * freq * x_time, width=0.15)
     if visual:
         data_analysis.plot_signal(y, x_time, title="x-time")
         data_analysis.plot_signal(y, x_samples, title="x-samples")
@@ -77,6 +79,15 @@ def draw_n_signals(rand_args: party.PythonSignalRandArgs, store_det_args: bool =
         signal_matrix[i,:] = single_signal
     return signal_matrix, det_arg_li
 
+def draw_single_weight(rand_args: party.PythonSignalRandArgs) -> float:
+    return rand_args.weight_dist.draw()
+
+def draw_n_weights(rand_args: party.PythonSignalRandArgs) -> np.ndarray:
+    return rand_args.weight_dist.draw_n()
+
+def draw_offset(rand_args: party.PythonSignalRandArgs) -> float:
+    return rand_args.offset_dist.draw()
+
 def draw_params_random(args: party.PythonSignalRandArgs) -> party.PythonSignalDetArgs:
     """draw randomly from parameter pool"""
     duration = args.duration
@@ -89,6 +100,14 @@ def draw_params_random(args: party.PythonSignalRandArgs) -> party.PythonSignalDe
     sampling_rate = args.sampling_rate
 
     return party.PythonSignalDetArgs(duration, samples, freq, amplitude, weight, phase, offset_fctr, sampling_rate)
+
+def draw_sample(rand_args: party.PythonSignalRandArgs, target: Union[None, np.ndarray] = None,
+store_det_args: bool = False) -> sample.Sample:
+    signal_matrix, det_args = draw_n_signals(rand_args, store_det_args)
+    weights = draw_n_weights(rand_args)
+    weighted_sum = sample.Sample.compute_weighted_sum(signal_matrix, weights)
+    offset = draw_offset(rand_args)
+    return sample.Sample(signal_matrix, weights, weighted_sum, offset, target, det_args)
 
 def gen_custom_inv_sawtooth(
     duration: float,
@@ -150,7 +169,7 @@ def main():
         samples = 300,
         f_dist = party.Dist(const.RNG.uniform, low=1e5, high=1e6),
         amplitude = 0.5,
-        weight_dist = party.Dist(const.RNG.uniform, low=0.1, high=1),
+        weight_dist = party.Dist(const.RNG.uniform, low=0.1, high=1, n=3),
         phase_dist = party.Dist(const.RNG.uniform, low=0, high=2),
         offset_dist = party.Dist(const.RNG.uniform, low=-1/3, high=1/3),
         sampling_rate = 11025
@@ -162,22 +181,17 @@ def main():
         data_analysis.plot_signal(sig_sum)
         plt.show()
 
-    if False:
+    if True:
         single_signal, y = draw_single_oscillator(rand_args)
-        print(single_signal)
         data_analysis.plot_signal(single_signal)
+        plt.show()
+
+    if True:
+        sample = draw_sample(rand_args)
+        data_analysis.plot_signal(sample.weighted_sum)
         plt.show()
 
 
 if __name__ == "__main__":
     main()
-
-
-def test_sum_signals():
-    """sum two signals"""
-    s1 = gen_inv_sawtooth(1, 10)
-    s2 = gen_inv_sawtooth(2, 10)
-    s3 = (s1[0], s1[1] + s2[1])
-    plt.plot(s1[0], s1[1], s2[0], s2[1], s3[0], s3[1])
-    plt.show()
 
