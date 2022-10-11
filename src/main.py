@@ -33,7 +33,7 @@ def init_main() -> Tuple[party.PythonSignalRandArgs, Tuple]:
     return rand_args, (sampling_rate, target, raw_dtype)
 
 def post_main(best_sample: Sample, sampling_rate: int, target: np.ndarray, raw_dtype: np.dtype,
-    plot_time: bool = True, plot_freq: bool = False) -> None:
+    z_ops: int, plot_time: bool = True, plot_freq: bool = False) -> None:
     # normalize target to range 0 1
     target_norm = norm1d(target)
 
@@ -64,6 +64,7 @@ def post_main(best_sample: Sample, sampling_rate: int, target: np.ndarray, raw_d
         data_analysis.plot_fourier(best_sample.weighted_sum, title="sum")
         data_analysis.plot_fourier(reg_sample.weighted_sum, title="regression")
 
+    print(f"z_ops: {z_ops}")
     print(f"best_sample.rmse_sum {best_sample.rmse}")
     print(f"best_sample.rmse_sum-norm {norm_sample.rmse}")
     print(f"best_sample.rmse_fit {reg_sample.rmse}")
@@ -74,14 +75,14 @@ def post_main(best_sample: Sample, sampling_rate: int, target: np.ndarray, raw_d
 def main():
     rand_args, meta_target = init_main()
     #search = algo_las_vegas.LasVegas(rand_args=rand_args, target=meta_target[1])
-    algo_args = party.AlgoArgs(rand_args, meta_target[1], k_samples=10)
+    algo_args = party.AlgoArgs(rand_args, meta_target[1], k_samples=1000)
     search_alg = algo_monte_carlo.MCOneShot(algo_args)
 
     @data_analysis.print_time
-    def decorated(): return search_alg.search()
-    best_sample, z_op = decorated()
-    
-    post_main(best_sample, *meta_target)
+    def decorated(): return search_alg.search_weights()
+    best_sample, z_ops = decorated()
+
+    post_main(best_sample, *meta_target, z_ops)
 
 if __name__ == "__main__":
     main()

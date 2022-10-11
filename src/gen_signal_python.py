@@ -1,3 +1,4 @@
+import copy
 from pathlib import Path
 from typing import List, Tuple, Union
 import data_io
@@ -103,14 +104,26 @@ def draw_params_random(args: party.PythonSignalRandArgs) -> party.PythonSignalDe
 
 def draw_sample(rand_args: party.PythonSignalRandArgs, target: Union[None, np.ndarray] = None,
 store_det_args: bool = False) -> sample.Sample:
+    """draw a sample from scratch and compute available metrics"""
     signal_matrix, det_args = draw_n_signals(rand_args, store_det_args)
     weights = draw_n_weights(rand_args)
     weighted_sum = sample.Sample.compute_weighted_sum(signal_matrix, weights)
     offset = draw_offset(rand_args)
     rmse = None
     if target is not None:
-        rmse = data_analysis.compute_rmse(weighted_sum, target)        
+        rmse = data_analysis.compute_rmse(weighted_sum, target)
     return sample.Sample(signal_matrix, weights, weighted_sum, offset, rmse, det_args)
+
+def draw_sample_weights(base_sample: sample.Sample, rand_args: party.PythonSignalRandArgs, target: Union[None, np.ndarray] = None) -> sample.Sample:
+    """copy the base sample but add different weights and recompute metrics"""
+    updated_sample = copy.deepcopy(base_sample)
+    updated_sample.weights = draw_n_weights(rand_args)
+    updated_sample.weighted_sum = sample.Sample.compute_weighted_sum(updated_sample.signal_matrix, updated_sample.weights)
+    updated_sample.rmse = None
+    if target is not None:
+        updated_sample.rmse = data_analysis.compute_rmse(updated_sample.weighted_sum, target)   
+    return updated_sample
+
 
 def gen_custom_inv_sawtooth(
     duration: float,

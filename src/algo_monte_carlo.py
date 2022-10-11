@@ -41,6 +41,23 @@ class MCOneShot(algo.SearchAlgo):
         z_ops = self.get_z_ops()
         return best_sample, z_ops
 
+    def get_z_ops_weight(self) -> int:
+        """first draw both a matrix and weights, then only draw weights"""
+        return self.rand_args.n_osc*2 + self.k_samples*self.rand_args.n_osc
+
+    def search_weight(self) -> Tuple[sample.Sample, int]:
+        """same as monte carlo one shot but after first k, only weights are updated"""
+        self.clear_state()
+
+        best_sample = gen_signal_python.draw_sample(self.rand_args, self.target, self.store_det_args)
+        for k in tqdm(range(self.k_samples)):
+            temp_sample = gen_signal_python.draw_sample_weights(best_sample, self.rand_args, self.target)
+            self.manage_state(temp_sample, k)
+            best_sample = self.comp_samples(best_sample, temp_sample)
+        
+        z_ops = self.get_z_ops_weight()
+        return best_sample, z_ops
+
 class MCExploit(algo.SearchAlgo):
     """monte carlo algorithm exploiting a single sample by iterative re-draws"""
     def init_random_exploit(self, zero_model: bool) -> sample.Sample:
