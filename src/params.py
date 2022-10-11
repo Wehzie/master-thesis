@@ -188,13 +188,16 @@ sweep_py_expo_time_args = party.SweepExpoTimeArgs(
     sampling_rate_factor=[0.01, 0.1, 0.5, 1],
 )
 
-sweep_algo_args = party.AlgoArgs(
-    py_rand_args_uniform,
-    None,
-    None,
-    1,
-    1,
-    False, False, False
+las_vegas_args = party.AlgoArgs(
+    rand_args=py_rand_args_uniform,
+    target=None,
+    weight_init=None,
+    max_z_ops=None,
+    k_samples=1,
+    j_exploits=None,
+    store_det_args=False,
+    history=False,
+    args_path=False,
 )
 
 algo_list: List[SearchAlgo] = [LasVegas, LasVegasWeight]

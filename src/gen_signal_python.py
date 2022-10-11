@@ -107,7 +107,10 @@ store_det_args: bool = False) -> sample.Sample:
     weights = draw_n_weights(rand_args)
     weighted_sum = sample.Sample.compute_weighted_sum(signal_matrix, weights)
     offset = draw_offset(rand_args)
-    return sample.Sample(signal_matrix, weights, weighted_sum, offset, target, det_args)
+    rmse = None
+    if target is not None:
+        rmse = data_analysis.compute_rmse(weighted_sum, target)        
+    return sample.Sample(signal_matrix, weights, weighted_sum, offset, rmse, det_args)
 
 def gen_custom_inv_sawtooth(
     duration: float,

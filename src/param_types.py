@@ -91,15 +91,15 @@ class AlgoArgs:
     z_ops measures z initialized, drawn, discarded - oscillators or weights
     """
 
-    rand_args: int                  # arguments to init a signal matrix
-    target: np.ndarray              # the target to optimize for
-    weight_init: Union[None, str]   # initialization of weight array
-    max_z_ops: int                  # maximum number of operations until learning is aborted
-    k_samples: int                  # number of times to re-run base algorithm
-    j_exploit: Union[None, int]     # within-model exploit iterations for monte-carlo algorithms
-    store_det_args: bool            # whether to store det_args for each k
-    history: bool                   # whether to store each sample
-    args_path: Path                 # whether to flush samples in RAM to file at given path
+    rand_args: PythonSignalRandArgs         # arguments to init a signal matrix
+    target: np.ndarray                      # the target to optimize for
+    weight_init: Union[None, str]   = None  # initialization of weight array
+    max_z_ops: Union[None, int]     = None  # maximum number of operations until learning is aborted
+    k_samples: int                  = 1     # number of times to re-run base algorithm
+    j_exploits: Union[None, int]    = None  # within-model exploit iterations for monte-carlo algorithms
+    store_det_args: bool            = False # whether to store det_args for each k
+    history: bool                   = False # whether to store each sample
+    args_path: Path                 = None  # whether to flush samples in RAM to file at given path
 
 @dataclass
 class SweepConstTimeArgs:

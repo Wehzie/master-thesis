@@ -15,12 +15,12 @@ from tqdm import tqdm
 
 class MCOneShot(algo.SearchAlgo):
     """monte carlo algorithm for samples consisting of independent oscillators"""
-    
-    def random_one_shot(self,
-        k_samples: int,
-        store_det_args: bool = False,
-        history: bool = False,
-        args_path: Path = None) -> Tuple[sample.Sample, int]:
+
+    def get_z_ops(self) -> int:
+        """compute number of operations, where we consider each drawn oscillator and each drawn weight"""
+        return self.k_samples*(self.rand_args.n_osc*2)
+
+    def search(self) -> Tuple[sample.Sample, int]:
         """generate k-signals which are a sum of n-oscillators
         on each iteration draw a new full model (matrix of n-oscillators)
         
@@ -30,23 +30,15 @@ class MCOneShot(algo.SearchAlgo):
             history: whether to store all generated samples, may run out of RAM
             args_path: when not none, write history to disk instead of RAM at specified path
         """
-        if history and args_path: args_path.unlink(missing_ok=True) # delete file if it exists
+        self.clear_state()
 
-        best_sample = sample.Sample(None, None, None, 0, np.inf, list())
-        for ki in tqdm(range(k_samples)):
-            # compose a matrix
-            temp_signal_matrix, temp_signal_args = gen_signal_python.sum_atomic_signals(self.rand_args, store_det_args)
-            temp_sample = sample.Sample(temp_signal_matrix, None, None, 0, np.inf, temp_signal_args)
-            temp_sample.update(self.target)
-            if history: self.samples.append(temp_sample)
-            if history and args_path: self.pickle_samples(args_path, k_samples, ki)
+        best_sample = algo.SearchAlgo.gen_empty_sample()
+        for k in tqdm(range(self.k_samples)):
+            temp_sample = gen_signal_python.draw_sample(self.rand_args, self.target, self.store_det_args)
+            self.manage_state(temp_sample, k)
+            best_sample = self.comp_samples(best_sample, temp_sample)
 
-            # compare with best
-            if temp_sample.rmse < best_sample.rmse:
-                best_sample = temp_sample
-
-        z_ops = k_samples*self.rand_args.n_osc
-        self.samples.append(best_sample) # TODO: for backwards compatibility -> purify func 
+        z_ops = self.get_z_ops()
         return best_sample, z_ops
 
 class MCExploit(algo.SearchAlgo):

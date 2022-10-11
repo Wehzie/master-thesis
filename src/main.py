@@ -8,6 +8,7 @@ import params
 from sample import Sample
 from data_preprocessor import norm1d, sample_down, sample_down_int, take_middle_third
 import algo_las_vegas
+import algo_monte_carlo
 import param_types as party
 import experiments
 
@@ -32,36 +33,36 @@ def init_main() -> Tuple[party.PythonSignalRandArgs, Tuple]:
     return rand_args, (sampling_rate, target, raw_dtype)
 
 def post_main(best_sample: Sample, sampling_rate: int, target: np.ndarray, raw_dtype: np.dtype,
-    time: bool = True, freq: bool = False) -> None:
+    plot_time: bool = True, plot_freq: bool = False) -> None:
     # normalize target to range 0 1
     target_norm = norm1d(target)
 
     # find best sample and save
-    print(f"signal_sum mean: {np.mean(best_sample.signal_sum)}")
+    print(f"signal_sum mean: {np.mean(best_sample.weighted_sum)}")
     best_sample.save_sample()
-    data_io.save_signal_to_wav(best_sample.signal_sum, sampling_rate, raw_dtype, Path("data/best_sample.wav"))
+    data_io.save_signal_to_wav(best_sample.weighted_sum, sampling_rate, raw_dtype, Path("data/best_sample.wav"))
 
     norm_sample = Sample.norm_sample(best_sample, target_norm)
     
     # compute regression against target
     reg_sample = Sample.regress_sample(best_sample, target)
-    data_io.save_signal_to_wav(reg_sample.signal_sum, sampling_rate, raw_dtype, Path("data/fit.wav"))
+    data_io.save_signal_to_wav(reg_sample.weighted_sum, sampling_rate, raw_dtype, Path("data/fit.wav"))
     
     # norm regression after fit (good enough)
     norm_reg_sample = Sample.norm_sample(reg_sample, target_norm)
 
     # plots
-    if time: # time-domain
+    if plot_time: # time-domain
         #hist_rmse(rmse_list, title="sum distribution")
         #hist_rmse(rmse_norm_list, title="norm-sum distribution")
-        data_analysis.plot_pred_target(best_sample.signal_sum, target, title="sum")
-        data_analysis.plot_pred_target(reg_sample.signal_sum, target, title="regression")
-        data_analysis.plot_pred_target(norm_sample.signal_sum, target_norm, title="norm-sum")
-        data_analysis.plot_pred_target(norm_reg_sample.signal_sum, target_norm, title="norm after fit")
-    if freq: # frequency-domain
+        data_analysis.plot_pred_target(best_sample.weighted_sum, target, title="sum")
+        data_analysis.plot_pred_target(reg_sample.weighted_sum, target, title="regression")
+        data_analysis.plot_pred_target(norm_sample.weighted_sum, target_norm, title="norm-sum")
+        data_analysis.plot_pred_target(norm_reg_sample.weighted_sum, target_norm, title="norm after fit")
+    if plot_freq: # frequency-domain
         data_analysis.plot_fourier(target, title="target")
-        data_analysis.plot_fourier(best_sample.signal_sum, title="sum")
-        data_analysis.plot_fourier(reg_sample.signal_sum, title="regression")
+        data_analysis.plot_fourier(best_sample.weighted_sum, title="sum")
+        data_analysis.plot_fourier(reg_sample.weighted_sum, title="regression")
 
     print(f"best_sample.rmse_sum {best_sample.rmse}")
     print(f"best_sample.rmse_sum-norm {norm_sample.rmse}")
@@ -73,43 +74,14 @@ def post_main(best_sample: Sample, sampling_rate: int, target: np.ndarray, raw_d
 def main():
     rand_args, meta_target = init_main()
     #search = algo_las_vegas.LasVegas(rand_args=rand_args, target=meta_target[1])
-    
-    const_time_args = params.sweep_py_const_time_args
-    algos = params.algo_list
-    
-    experiments.sweep_const_time_args(rand_args, const_time_args, algos)
+    algo_args = party.AlgoArgs(rand_args, meta_target[1], k_samples=10)
+    search_alg = algo_monte_carlo.MCOneShot(algo_args)
 
-    exit()
-    @data_analysis.print_timee
-    def decorated(): return search.las_vegas(1, None)
-    best_sample, j = decorated()
+    @data_analysis.print_time
+    def decorated(): return search_alg.search()
+    best_sample, z_op = decorated()
     
     post_main(best_sample, *meta_target)
-
-    #k_dependency_one_shot([1, 10, 100, 500, 1000, 2000], 20, rand_args, target, visual=True)
-    #n_dependency(rand_args, target, visual=True)
-    #time_elapsed=time.time()-t0
-    #print(f"time elapsed: {time_elapsed}")
-
-    # search = SearchModule(
-    #             rand_args=rand_args,
-    #             target=target)
-
-    #search.random_one_shot()
-    #search.random_exploit(search.rand_args.n_osc*5, zero_model=True)
-    #best_sample, j = search.las_vegas(5, None)
-    #print(f"j: {j}")
-    #search.random_weight_exploit(search.rand_args.n_osc*30)
-    #search.random_weight_hybrid()
-    # best_sample = search.random_one_shot(10, store_det_args=True,
-    #     history=True, args_path=Path("data/test_args.pickle"))
-    # best_sample, j = search.random_stateless_hybrid(5, store_det_args=True,
-    #     history=True, args_path=Path("data/test_args.pickle"))
-
-    # best_sample: Sample = search.las_vegas_weight(weight_init="dist", store_det_args=False)
-    #best_sample: Sample = search.random_weight_exploit(k_samples = 3, j_exploits = 100, weight_init="dist")
-    
-
 
 if __name__ == "__main__":
     main()

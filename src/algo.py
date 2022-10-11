@@ -1,4 +1,4 @@
-from abc import ABC
+from abc import ABC, abstractmethod
 import copy
 import pickle
 from typing import List
@@ -9,15 +9,17 @@ import data_analysis
 import const
 import param_types as party
 
+import numpy as np
+
 class SearchAlgo(ABC):
 
-    def __init__(self, algo_args):
+    def __init__(self, algo_args: party.AlgoArgs):
         self.rand_args = algo_args.rand_args                # signal generation parameters
         self.target = algo_args.target                       # target function to approximate
         self.weight_init = algo_args.weight_init
         self.max_z_ops = algo_args.max_z_ops
         self.k_samples = algo_args.k_samples
-        self.j_exploit = algo_args.j_exploit
+        self.j_exploits = algo_args.j_exploits
 
         self.store_det_args = algo_args.store_det_args
         self.history = algo_args.history
@@ -37,23 +39,33 @@ class SearchAlgo(ABC):
             samples += str(s) + "\n"
         return rand_args + sig_gen_func + samples
 
-    def pickle_samples(self, args_path: Path, k_samples: int, ki: int):
+    @staticmethod
+    def gen_empty_sample() -> sample.Sample:
+        return sample.Sample(None, None, None, 0, np.inf, list())
+
+
+    def pickle_samples(self, k: int) -> None:
         """pickle samples in RAM to disk in order to free RAM
         
         param:
             args_path:  where to store pickle
             k_samples:  total number of samples to draw
-            ki:         current k index
+            k:          current k out of k_samples
         """
-        if (ki == k_samples-1 or ki % const.SAMPLE_FLUSH_PERIOD == 0):
-            with open(args_path, "ab") as f:
+        if (k == self.k_samples-1 or k % const.SAMPLE_FLUSH_PERIOD == 0):
+            with open(self.args_path, "ab") as f:
                 pickle.dump(self.samples, f)
                 self.samples = list() # clear list
 
-    def manage_state(self, base_sample: sample.Sample, k_samples: int, ki: int, history: bool, args_path: Path) -> None:
+    def clear_state(self) -> None:
+        """delete file to which samples are written if it exists"""
+        if self.history and self.args_path:
+            self.args_path.unlink(missing_ok=True) 
+
+    def manage_state(self, base_sample: sample.Sample, k: int) -> None:
         """save samples to RAM or file if desired"""
-        if history: self.samples.append(base_sample)
-        if history and args_path: self.pickle_samples(args_path, k_samples, ki)
+        if self.history: self.samples.append(base_sample)
+        if self.history and self.args_path: self.pickle_samples(k)
 
     def set_first_point_to_zero(self) -> None:
         """set the first point in each sample to 0 and recompute rmse
@@ -85,3 +97,13 @@ class SearchAlgo(ABC):
                 print("z_ops: {z_ops} > max_z_ops: {max_z_ops}")
             return True
         return False
+
+    def comp_samples(self, base_sample: sample.Sample, temp_sample: sample.Sample) -> sample.Sample:
+        """compare two samples and return the one with lower rmse"""
+        if temp_sample.rmse < base_sample.rmse:
+            return temp_sample
+        return base_sample
+
+    @abstractmethod
+    def search(self):
+        NotImplementedError

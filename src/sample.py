@@ -110,7 +110,7 @@ class Sample():
             norm_weights = data_preprocessor.norm1d(sample.weights)
         else:
             norm_weights = None
-        norm_signal_sum = data_preprocessor.norm1d(sample.signal_sum)
+        norm_signal_sum = data_preprocessor.norm1d(sample.weighted_sum)
         norm_offset = 0
         norm_rmse = data_analysis.compute_rmse(norm_signal_sum, target)
         norm_signal_args = sample.signal_args
@@ -129,6 +129,6 @@ class Sample():
         signal_matrix = sample.signal_matrix
         weights = reg.coef_
         offset = reg.intercept_
-        signal_sum = Sample.compute_weighted_sum(signal_matrix, weights, offset)
-        rmse = data_analysis.compute_rmse(signal_sum, target)
-        return Sample(signal_matrix, weights, signal_sum, offset, rmse, sample.signal_args)
+        weighted_sum = Sample.compute_weighted_sum(signal_matrix, weights, offset)
+        rmse = data_analysis.compute_rmse(weighted_sum, target)
+        return Sample(signal_matrix, weights, weighted_sum, offset, rmse, sample.signal_args)
