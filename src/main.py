@@ -79,7 +79,7 @@ def main():
     search_alg = algo_monte_carlo.MCOneShot(algo_args)
 
     @data_analysis.print_time
-    def decorated(): return search_alg.search_weights()
+    def decorated(): return search_alg.search_weight()
     best_sample, z_ops = decorated()
 
     post_main(best_sample, *meta_target, z_ops)

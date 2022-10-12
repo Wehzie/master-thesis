@@ -16,10 +16,6 @@ from tqdm import tqdm
 class MCOneShot(algo.SearchAlgo):
     """monte carlo algorithm for samples consisting of independent oscillators"""
 
-    def get_z_ops(self) -> int:
-        """compute number of operations, where we consider each drawn oscillator and each drawn weight"""
-        return self.k_samples*(self.rand_args.n_osc*2)
-
     def search(self) -> Tuple[sample.Sample, int]:
         """generate k-signals which are a sum of n-oscillators
         on each iteration draw a new full model (matrix of n-oscillators)
@@ -34,29 +30,25 @@ class MCOneShot(algo.SearchAlgo):
 
         best_sample = algo.SearchAlgo.gen_empty_sample()
         for k in tqdm(range(self.k_samples)):
-            temp_sample = gen_signal_python.draw_sample(self.rand_args, self.target, self.store_det_args)
+            temp_sample = self.draw_sample()
             self.manage_state(temp_sample, k)
             best_sample = self.comp_samples(best_sample, temp_sample)
+            if self.eval_z_ops(): return best_sample, self.z_ops
 
-        z_ops = self.get_z_ops()
-        return best_sample, z_ops
-
-    def get_z_ops_weight(self) -> int:
-        """first draw both a matrix and weights, then only draw weights"""
-        return self.rand_args.n_osc*2 + self.k_samples*self.rand_args.n_osc
+        return best_sample, self.z_ops
 
     def search_weight(self) -> Tuple[sample.Sample, int]:
         """same as monte carlo one shot but after first k, only weights are updated"""
         self.clear_state()
 
-        best_sample = gen_signal_python.draw_sample(self.rand_args, self.target, self.store_det_args)
+        best_sample = self.draw_sample()
         for k in tqdm(range(self.k_samples)):
-            temp_sample = gen_signal_python.draw_sample_weights(best_sample, self.rand_args, self.target)
+            temp_sample = self.draw_sample_weights(best_sample)
             self.manage_state(temp_sample, k)
             best_sample = self.comp_samples(best_sample, temp_sample)
+            if self.eval_z_ops(): return best_sample, self.z_ops
         
-        z_ops = self.get_z_ops_weight()
-        return best_sample, z_ops
+        return best_sample, self.z_ops
 
 class MCExploit(algo.SearchAlgo):
     """monte carlo algorithm exploiting a single sample by iterative re-draws"""

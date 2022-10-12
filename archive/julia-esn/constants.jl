@@ -1,0 +1,9 @@
+const NUM_NODES = 10
+const NUM_IN_NODES = 2
+const NUM_OUT_NODES = 1
+const SIGNAL_LENGTH = 7
+
+const NORMAL_MU = 0
+const NORMAL_SIGMA = 0.5
+const MIN_NODE_WEIGHT = 0
+const MAX_NODE_WEIGHT = 10

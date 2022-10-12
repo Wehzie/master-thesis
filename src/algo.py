@@ -8,6 +8,7 @@ import sample
 import data_analysis
 import const
 import param_types as party
+import gen_signal_python
 
 import numpy as np
 
@@ -25,11 +26,9 @@ class SearchAlgo(ABC):
         self.history = algo_args.history
         self.args_path = algo_args.args_path
 
+        # state
         self.samples: List[sample.Sample] = list() # list of samples and results
-  
-        # TODO: hacky solution to draw 1 oscillator from sum_atomic signals
-        single_osc_args = copy.deepcopy(self.rand_args)
-        single_osc_args.n_osc = 1
+        self.z_ops: int = 0                        # number of operations
     
     def __str__(self) -> str:
         rand_args = f"rand_args: {self.rand_args}\n"
@@ -58,7 +57,12 @@ class SearchAlgo(ABC):
                 self.samples = list() # clear list
 
     def clear_state(self) -> None:
-        """delete file to which samples are written if it exists"""
+        """reset state
+        1. delete file to which samples are written if it exists
+        2. reset z_ops
+        3. reset samples list"""
+        self.z_ops = 0
+        self.samples = list()
         if self.history and self.args_path:
             self.args_path.unlink(missing_ok=True) 
 
@@ -90,9 +94,9 @@ class SearchAlgo(ABC):
         
         return best_sample, rmse_li, rmse_norm_li
 
-    def eval_z_ops(self, z_ops: int, max_z_ops: int, verbose: bool = True) -> bool:
+    def eval_z_ops(self, verbose: bool = True) -> bool:
         """return true when an algorithm exceeds the maximum number of allowed operations"""
-        if z_ops >= max_z_ops:
+        if self.z_ops >= self.max_z_ops:
             if verbose:
                 print("z_ops: {z_ops} > max_z_ops: {max_z_ops}")
             return True
@@ -103,6 +107,16 @@ class SearchAlgo(ABC):
         if temp_sample.rmse < base_sample.rmse:
             return temp_sample
         return base_sample
+
+    def draw_sample(self) -> sample.Sample:
+        """draw a sample and update z_ops"""
+        self.z_ops += self.rand_args.n_osc * 2 # weights and oscillators are counted separately
+        return gen_signal_python.draw_sample(self.rand_args, self.target, self.store_det_args)
+
+    def draw_sample_weights(self, base_sample: sample.Sample):
+        """update z_ops, draw new weights for the sample and recompute metrics"""
+        self.z_ops += self.rand_args.n_osc
+        return gen_signal_python.draw_sample_weights(base_sample, self.rand_args, self.target)
 
     @abstractmethod
     def search(self):
