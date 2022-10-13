@@ -1,8 +1,6 @@
 from abc import ABC, abstractmethod
-import copy
 import pickle
 from typing import List
-from pathlib import Path
 
 import sample
 import data_analysis
@@ -15,6 +13,7 @@ import numpy as np
 class SearchAlgo(ABC):
 
     def __init__(self, algo_args: party.AlgoArgs):
+        self.algo_args = algo_args                          # for storage with algorithm results
         self.rand_args = algo_args.rand_args                # signal generation parameters
         self.target = algo_args.target                       # target function to approximate
         self.weight_mode = algo_args.weight_mode
@@ -132,5 +131,5 @@ class SearchAlgo(ABC):
         return self.draw_sample()
 
     @abstractmethod
-    def search(self):
+    def search(self, *args, **kwargs): # *args needed to use with map(), not sure why
         NotImplementedError

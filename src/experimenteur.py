@@ -10,9 +10,10 @@ from dataclasses import fields
 from pathlib import Path
 import pickle
 from typing import List, Union
-import itertools
 
 import param_types as party
+import sweep_types as sweety
+import result_types as resty
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -45,8 +46,21 @@ experiments:
 
 """
 
+def run_algo_sweep(algo_sweep: sweety.AlgoSweep) -> List[resty.ResultAlgoSweep]:
+    results = list()
+    for Algo, algo_args in zip(algo_sweep.algo, algo_sweep.algo_args):
+        search_alg = Algo(algo_args)
+        samples_z_ops = map(search_alg.search, range(algo_sweep.m_averages))        
+        rmses_z_ops = [(s.rmse, z_ops) for s, z_ops in samples_z_ops]           # List[Tuples[rmse, z_ops]]
+        unzipped = zip(*rmses_z_ops)                                            # unzip to List[rmse], List[z_ops]
+        mean_rmse, mean_z_ops = map(np.mean, unzipped)
+        std_rmse, std_z_ops = map(np.std, unzipped)
+        result = resty.ResultAlgoSweep(search_alg.__class__.__name__, search_alg.algo_args, mean_rmse, std_rmse, mean_z_ops, std_z_ops)
+        results.append(result)
+    return results
+
 def sweep_const_time_args(base_args: party.PythonSignalRandArgs,
-arg_schedule: party.SweepConstTimeArgs,
+arg_schedule: sweety.ConstTimeSweep,
 algos: Union[SearchAlgo, List[SearchAlgo]]):
 
     for val_schedule in fields(arg_schedule):                       # for example frequency distribution
@@ -112,6 +126,17 @@ def k_dependency_one_shot(
         k_rmse[ki] = np.mean(m_rmse)
         k_std[ki] = np.std(m_rmse) # standard deviation over the m repetitions
 
+
+        import result_types as resty
+        res_li = list()
+        for alg in algos:
+            rmse_arr = np.array(map(algo.search(), range(m_averages)))
+            mean_rmse = np.mean(rmse_arr)
+            std_rmse = np.std(rmse_arr)
+            res = resty.ResultAlgoSweep(algo.__name__, algo.algo_args, mean_rmse, std_rmse)
+            res_li.append(res)
+
+
     if visual:
         plt.errorbar(k_params, k_rmse, k_std, elinewidth=1, capsize=5, capthick=1, markeredgewidth=1)
         plt.title(f"mean over {m_averages}")
@@ -152,3 +177,4 @@ def k_dependency_hybrid(
         plt.show()
     
     return k_rmse, k_std
+

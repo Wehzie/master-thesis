@@ -1,6 +1,10 @@
+import numpy as np
+
 from algo import SearchAlgo
 from algo_las_vegas import LasVegas, LasVegasWeight
+from algo_monte_carlo import MCExploit, MCOneShot
 import param_types as party
+import sweep_types as sweety
 from typing import List
 import const
 rng = const.RNG
@@ -127,14 +131,13 @@ def append_normal(li: List) -> List: #List[party.Dist]
         print(len(li))
         print(li[0].kwargs)
 
-
 py_rand_args_uniform = party.PythonSignalRandArgs(
     n_osc = 100,
     duration = None,
     samples = 300,
     f_dist = party.Dist(rng.uniform, low=1e5, high=1e6),
     amplitude = 0.5,                                                    # resembling 0.5 V amplitude of V02
-    weight_dist = party.Dist(rng.uniform, low=0, high=10, n=100),   # resistor doesn't amplify so not > 1
+    weight_dist = party.WeightDist(rng.uniform, low=0, high=10, n=100),   # resistor doesn't amplify so not > 1
     phase_dist = party.Dist(rng.uniform, low=-1/3, high=1/3), # uniform 0 to 2 pi phase shift seems too wild
     offset_dist = party.Dist(rng.uniform, low=0, high=0),    # offset should be reasonable and bounded by amplitude*weight
     sampling_rate = 11025                               # the sampling rate of the Magpie signal
@@ -146,33 +149,23 @@ py_rand_args_normal = party.PythonSignalRandArgs(
     samples = 300,
     f_dist = party.Dist(rng.normal, loc=5e5, scale=4e5),
     amplitude = 0.5,                                    # resembling 0.5 V amplitude of V02
-    weight_dist = party.Dist(rng.normal, loc=0.5, scale=0.5, n=3000),   # resistor doesn't amplify so not > 1
+    weight_dist = party.WeightDist(rng.normal, loc=0.5, scale=0.5, n=3000),   # resistor doesn't amplify so not > 1
     phase_dist = party.Dist(rng.normal, loc=0, scale=1/3), # uniform 0 to 2 pi phase shift seems too wild
     offset_dist = party.Dist(rng.normal, loc=0, scale=100/3),    # offset should be reasonable and bounded by amplitude*weight
     sampling_rate = 11025                               # the sampling rate of the Magpie signal
 )
 
-def init_sweep_algos():
-    algo = [
-        LasVegas,
-        LasVegasWeight,
-    ]
-    algo_args = [py_rand_args_uniform]*len(algo)
-    m_averages = 2
-    return party.SweepAlgos(algo, algo_args, m_averages)
-
-sweep_algos = init_sweep_algos
-
-sweep_py_const_time_args = party.SweepConstTimeArgs(
+def init_const_time_sweep(rand_args: party.PythonSignalRandArgs) -> sweety.ConstTimeSweep:
+    return sweety.ConstTimeSweep(
     f_dist = init_py_timeless_sweep_args(),
     amplitude = [0.5, 5e0, 5e1, 5e2, 5e3, 5e4, 5e5, 5e6],
     weight_dist = append_normal([
-        party.Dist(rng.uniform, low=0, high=1),
-        party.Dist(rng.uniform, low=0, high=1e1),
-        party.Dist(rng.uniform, low=0, high=1e2),
-        party.Dist(rng.uniform, low=0, high=1e3),
-        party.Dist(rng.uniform, low=0, high=1e4),
-        party.Dist(rng.uniform, low=0, high=1e5),
+        party.WeightDist(rng.uniform, low=0, high=1, n=rand_args.n_osc),
+        party.WeightDist(rng.uniform, low=0, high=1e1, n=rand_args.n_osc),
+        party.WeightDist(rng.uniform, low=0, high=1e2, n=rand_args.n_osc),
+        party.WeightDist(rng.uniform, low=0, high=1e3, n=rand_args.n_osc),
+        party.WeightDist(rng.uniform, low=0, high=1e4, n=rand_args.n_osc),
+        party.WeightDist(rng.uniform, low=0, high=1e5, n=rand_args.n_osc),
     ]),
     phase_dist = [party.Dist(0)] + append_normal([
         party.Dist(rng.uniform, low=-1/5, high=1/5),
@@ -181,9 +174,10 @@ sweep_py_const_time_args = party.SweepConstTimeArgs(
         party.Dist(rng.uniform, low=-1, high=1),
         party.Dist(rng.uniform, low=-2, high=2),
         ])
-)
+    )
+cost_time_sweep = init_const_time_sweep(py_rand_args_uniform)
 
-sweep_py_expo_time_args = party.SweepExpoTimeArgs(
+sweep_py_expo_time_args = sweety.ExpoTimeSweep(
     n_osc=[100, 200, 300, 500, 1000, 2000],
     sampling_rate_factor=[0.01, 0.1, 0.5, 1],
 )
@@ -200,4 +194,19 @@ las_vegas_args = party.AlgoArgs(
     args_path=False,
 )
 
-algo_list: List[SearchAlgo] = [LasVegas, LasVegasWeight]
+algo_list: List[SearchAlgo] = [
+    MCOneShot,
+    MCOneShot, # weight mode
+    # LasVegas,
+    # LasVegas,
+    # MCExploit,
+    # MCExploit,
+]
+
+def init_algo_sweep(target: np.ndarray) -> sweety.AlgoSweep:
+    rand_args = py_rand_args_uniform
+    algo_args = [
+        party.AlgoArgs(rand_args, target, k_samples=10, weight_mode=False),
+        party.AlgoArgs(rand_args, target, k_samples=100, weight_mode=True),
+    ]
+    return sweety.AlgoSweep(algo_list, algo_args, m_averages=2)

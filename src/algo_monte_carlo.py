@@ -17,7 +17,7 @@ class MCOneShot(algo.SearchAlgo):
     """monte carlo algorithm for samples consisting of independent oscillators"""
 
     @data_analysis.print_time
-    def search(self) -> Tuple[sample.Sample, int]:
+    def search(self, *args, **kwargs) -> Tuple[sample.Sample, int]:
         """generate k-signals which are a sum of n-oscillators
         on each iteration draw a new full model (matrix of n-oscillators)
         

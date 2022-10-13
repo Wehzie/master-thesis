@@ -1,3 +1,4 @@
+import copy
 from functools import wraps
 from pathlib import Path
 from typing import Callable, Final, List, Tuple
@@ -10,10 +11,14 @@ from data_preprocessor import norm1d, sample_down, sample_down_int, take_middle_
 import algo_las_vegas
 import algo_monte_carlo
 import param_types as party
-import experiments
+import experimenteur
+import result_types as resty
+
 
 import numpy as np
 import matplotlib.pyplot as plt
+
+from sweep_types import AlgoSweep
 
 def init_main() -> Tuple[party.PythonSignalRandArgs, Tuple]:
     """load target and define rand_args"""
@@ -72,12 +77,21 @@ def post_main(best_sample: sample.Sample, sampling_rate: int, target: np.ndarray
     
     plt.show()
 
+def simple_algo_sweep(algo_sweep: AlgoSweep, sampling_rate: int, target: np.ndarray, raw_dtype: np.dtype,) -> None:
+    """algo sweep without averaging or collecting results"""
+    for Algo, algo_args in zip(algo_sweep.algo, algo_sweep.algo_args):
+        search_alg = Algo(algo_args)
+        best_sample, z_ops = search_alg.search()
+        post_main(best_sample, sampling_rate, target, raw_dtype, z_ops)
+
 def main():
     rand_args, meta_target = init_main()
-    algo_args = party.AlgoArgs(rand_args, meta_target[1], k_samples=1000, weight_mode=False)
-    search_alg = algo_monte_carlo.MCOneShot(algo_args)
-    best_sample, z_ops = search_alg.search()
-    post_main(best_sample, *meta_target, z_ops)
+    algo_sweep = params.init_algo_sweep(meta_target[1])
+
+
+    # TODO: callbacks for k
+    # TODO: functionalize everything (especially in here)
+    # TODO: dynamic args (related to in here funcs)
 
 if __name__ == "__main__":
     main()

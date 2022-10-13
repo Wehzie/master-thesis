@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Final, List, Union
 import numpy as np
+
 import algo
 
 # "|", for example int|float requires python 3.10 or greater
@@ -14,7 +15,7 @@ class Dist:
             assert dist.__name__ in [rng.uniform.__name__, rng.normal.__name__], "unsupported distribution"
             
             self.dist = dist
-            self.n = n          # draw n instead of 1, for weight drawing
+            self.n = n
             self.args = args
             self.kwargs = kwargs
         elif isinstance(dist, int|float):
@@ -44,6 +45,21 @@ class Dist:
         kwargs = str(self.kwargs)
         return dist + args + kwargs + "\n"
 
+class WeightDist(Dist):
+    def __init__(self, dist: Union[int, float, Callable], n: int, *args, **kwargs):
+        if isinstance(dist, Callable):
+            rng = np.random.default_rng()
+            assert dist.__name__ in [rng.uniform.__name__, rng.normal.__name__], "unsupported distribution"
+            self.dist = dist
+            self.n = n                  # draw n instead of 1, for weight drawing
+            self.args = args
+            self.kwargs = kwargs
+        elif isinstance(dist, int|float):
+            self.dist = self.callable_const
+            self.n = n
+            self.args = (float(dist),)
+            self.kwargs = kwargs
+
 @dataclass
 class PythonSignalRandArgs:
     """define the distribution from which deterministic parameters are drawn
@@ -60,7 +76,7 @@ class PythonSignalRandArgs:
 
     f_dist: Dist # frequency distribution
     amplitude: float # shared by all oscillators in a sum
-    weight_dist: Dist # amplitude=weight_dist*default_amplitude
+    weight_dist: WeightDist # amplitude=weight_dist*default_amplitude
                      
     phase_dist: Dist # phase=phase_dist.draw()*pi
     offset_dist: Dist # offset=offset_dist.draw()*amplitude*weight
@@ -101,28 +117,6 @@ class AlgoArgs:
     history: bool                   = False # whether to store each sample
     args_path: Path                 = None  # whether to flush samples in RAM to file at given path
 
-@dataclass
-class SweepConstTimeArgs:
-    """sweeps of PythonRandSignalArgs where time complexity between experiments is constant"""
-    f_dist: List[Dist]
-    amplitude: List[float]
-    weight_dist: List[Dist]
-    phase_dist: List[Dist]
-
-@dataclass
-class SweepExpoTimeArgs:
-    """sweeps of PythonRandSignalArgs where time complexity between experiments is worse then constant, mostly exponential"""
-    n_osc: List[int]                    # number of oscillators
-    sampling_rate_factor: List[float]   # factors to downsample the target signal 
-
-@dataclass
-class SweepAlgos:
-    """repeat experiments over multiple algorithms
-    
-    produces a mean rmse, standard deviation and number of operations (z_ops) for a given configuration"""
-    algo: List    # list of algorithms
-    algo_args: List[AlgoArgs]  # list of arguments for each algorithm, in order with algos
-    m_averages: int            # number of averages for each experimental configuration
 
 @dataclass
 class SpiceSumRandArgs:
