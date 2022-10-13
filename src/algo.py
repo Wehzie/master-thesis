@@ -17,7 +17,7 @@ class SearchAlgo(ABC):
     def __init__(self, algo_args: party.AlgoArgs):
         self.rand_args = algo_args.rand_args                # signal generation parameters
         self.target = algo_args.target                       # target function to approximate
-        self.weight_init = algo_args.weight_init
+        self.weight_mode = algo_args.weight_mode
         self.max_z_ops = algo_args.max_z_ops
         self.k_samples = algo_args.k_samples
         self.j_exploits = algo_args.j_exploits
@@ -96,6 +96,7 @@ class SearchAlgo(ABC):
 
     def eval_z_ops(self, verbose: bool = True) -> bool:
         """return true when an algorithm exceeds the maximum number of allowed operations"""
+        if self.max_z_ops is None: return False
         if self.z_ops >= self.max_z_ops:
             if verbose:
                 print("z_ops: {z_ops} > max_z_ops: {max_z_ops}")
@@ -117,6 +118,18 @@ class SearchAlgo(ABC):
         """update z_ops, draw new weights for the sample and recompute metrics"""
         self.z_ops += self.rand_args.n_osc
         return gen_signal_python.draw_sample_weights(base_sample, self.rand_args, self.target)
+
+    def init_best_sample(self) -> sample.Sample:
+        """initialize best sample in matrix+weight or weight-only optimization mode"""
+        if self.weight_mode: # apply algorithm over weights only
+            return self.draw_sample()
+        return self.gen_empty_sample()
+    
+    def draw_temp_sample(self, base_sample: sample.Sample) -> sample.Sample:
+        """draw temp sample in matrix+weight or weight-only optimization mode"""
+        if self.weight_mode: # apply algorithm over weights only
+            return self.draw_sample_weights(base_sample)
+        return self.draw_sample()
 
     @abstractmethod
     def search(self):

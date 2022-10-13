@@ -16,6 +16,7 @@ from tqdm import tqdm
 class MCOneShot(algo.SearchAlgo):
     """monte carlo algorithm for samples consisting of independent oscillators"""
 
+    @data_analysis.print_time
     def search(self) -> Tuple[sample.Sample, int]:
         """generate k-signals which are a sum of n-oscillators
         on each iteration draw a new full model (matrix of n-oscillators)
@@ -28,26 +29,13 @@ class MCOneShot(algo.SearchAlgo):
         """
         self.clear_state()
 
-        best_sample = algo.SearchAlgo.gen_empty_sample()
+        best_sample = self.init_best_sample()
         for k in tqdm(range(self.k_samples)):
-            temp_sample = self.draw_sample()
+            temp_sample = self.draw_temp_sample(best_sample)
             self.manage_state(temp_sample, k)
             best_sample = self.comp_samples(best_sample, temp_sample)
             if self.eval_z_ops(): return best_sample, self.z_ops
 
-        return best_sample, self.z_ops
-
-    def search_weight(self) -> Tuple[sample.Sample, int]:
-        """same as monte carlo one shot but after first k, only weights are updated"""
-        self.clear_state()
-
-        best_sample = self.draw_sample()
-        for k in tqdm(range(self.k_samples)):
-            temp_sample = self.draw_sample_weights(best_sample)
-            self.manage_state(temp_sample, k)
-            best_sample = self.comp_samples(best_sample, temp_sample)
-            if self.eval_z_ops(): return best_sample, self.z_ops
-        
         return best_sample, self.z_ops
 
 class MCExploit(algo.SearchAlgo):

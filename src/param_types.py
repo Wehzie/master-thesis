@@ -93,7 +93,7 @@ class AlgoArgs:
 
     rand_args: PythonSignalRandArgs         # arguments to init a signal matrix
     target: np.ndarray                      # the target to optimize for
-    weight_init: Union[None, str]   = None  # initialization of weight array
+    weight_mode: bool               = False # whether to only optimize weights
     max_z_ops: Union[None, int]     = None  # maximum number of operations until learning is aborted
     k_samples: int                  = 1     # number of times to re-run base algorithm
     j_exploits: Union[None, int]    = None  # within-model exploit iterations for monte-carlo algorithms

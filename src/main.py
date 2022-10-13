@@ -1,11 +1,11 @@
+from functools import wraps
 from pathlib import Path
-import time
-from typing import Final, List, Tuple
+from typing import Callable, Final, List, Tuple
 
 import data_analysis
 import data_io
 import params
-from sample import Sample
+import sample
 from data_preprocessor import norm1d, sample_down, sample_down_int, take_middle_third
 import algo_las_vegas
 import algo_monte_carlo
@@ -32,7 +32,7 @@ def init_main() -> Tuple[party.PythonSignalRandArgs, Tuple]:
                                     # NOTE: the sampling rate could also be set lower instead
     return rand_args, (sampling_rate, target, raw_dtype)
 
-def post_main(best_sample: Sample, sampling_rate: int, target: np.ndarray, raw_dtype: np.dtype,
+def post_main(best_sample: sample.Sample, sampling_rate: int, target: np.ndarray, raw_dtype: np.dtype,
     z_ops: int, plot_time: bool = True, plot_freq: bool = False) -> None:
     # normalize target to range 0 1
     target_norm = norm1d(target)
@@ -42,14 +42,14 @@ def post_main(best_sample: Sample, sampling_rate: int, target: np.ndarray, raw_d
     best_sample.save_sample()
     data_io.save_signal_to_wav(best_sample.weighted_sum, sampling_rate, raw_dtype, Path("data/best_sample.wav"))
 
-    norm_sample = Sample.norm_sample(best_sample, target_norm)
+    norm_sample = sample.Sample.norm_sample(best_sample, target_norm)
     
     # compute regression against target
-    reg_sample = Sample.regress_sample(best_sample, target)
+    reg_sample = sample.Sample.regress_sample(best_sample, target)
     data_io.save_signal_to_wav(reg_sample.weighted_sum, sampling_rate, raw_dtype, Path("data/fit.wav"))
     
     # norm regression after fit (good enough)
-    norm_reg_sample = Sample.norm_sample(reg_sample, target_norm)
+    norm_reg_sample = sample.Sample.norm_sample(reg_sample, target_norm)
 
     # plots
     if plot_time: # time-domain
@@ -74,14 +74,9 @@ def post_main(best_sample: Sample, sampling_rate: int, target: np.ndarray, raw_d
 
 def main():
     rand_args, meta_target = init_main()
-    #search = algo_las_vegas.LasVegas(rand_args=rand_args, target=meta_target[1])
-    algo_args = party.AlgoArgs(rand_args, meta_target[1], k_samples=1000)
+    algo_args = party.AlgoArgs(rand_args, meta_target[1], k_samples=1000, weight_mode=False)
     search_alg = algo_monte_carlo.MCOneShot(algo_args)
-
-    @data_analysis.print_time
-    def decorated(): return search_alg.search_weight()
-    best_sample, z_ops = decorated()
-
+    best_sample, z_ops = search_alg.search()
     post_main(best_sample, *meta_target, z_ops)
 
 if __name__ == "__main__":
