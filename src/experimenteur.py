@@ -6,18 +6,23 @@
 # the best value until k reflects the best RMSE for said k_param
 # time-complexity is probably one order of of magnitude less
 # there would be within-series dependency, but I don't think it matters
+import copy
 from dataclasses import fields
 from pathlib import Path
 import pickle
-from typing import List, Union
+from re import search
+from typing import Iterable, List, Union
+from multiprocessing import Pool, cpu_count
+from functools import partial
 
 import param_types as party
 import sweep_types as sweety
 import result_types as resty
+from algo import SearchAlgo
 
 import numpy as np
 import matplotlib.pyplot as plt
-from algo import SearchAlgo
+from tqdm import tqdm
 
 """
 experiments:
@@ -46,18 +51,43 @@ experiments:
 
 """
 
-def run_algo_sweep(algo_sweep: sweety.AlgoSweep) -> List[resty.ResultAlgoSweep]:
-    results = list()
-    for Algo, algo_args in zip(algo_sweep.algo, algo_sweep.algo_args):
-        search_alg = Algo(algo_args)
-        samples_z_ops = map(search_alg.search, range(algo_sweep.m_averages))        
-        rmses_z_ops = [(s.rmse, z_ops) for s, z_ops in samples_z_ops]           # List[Tuples[rmse, z_ops]]
-        unzipped = zip(*rmses_z_ops)                                            # unzip to List[rmse], List[z_ops]
-        mean_rmse, mean_z_ops = map(np.mean, unzipped)
-        std_rmse, std_z_ops = map(np.std, unzipped)
-        result = resty.ResultAlgoSweep(search_alg.__class__.__name__, search_alg.algo_args, mean_rmse, std_rmse, mean_z_ops, std_z_ops)
-        results.append(result)
-    return results
+class Experimenteur:
+    def __init__(self, mp: bool) -> None:
+        """
+        args:
+            mp: if true use multiple CPUs for processing
+        """
+        self.mp = mp
+        self.cpu_count = cpu_count()
+        self.seeds = range(0, self.cpu_count)
+        #self.rngs = [np.random.rng(seed) for seed in self.seeds]
+
+    @staticmethod
+    def mean_std():
+        return np.mean, np.std
+
+    def invoke_search(self, search_alg: SearchAlgo, algo_sweep: sweety.AlgoSweep) -> Iterable:
+        if self.mp:
+            with Pool(self.cpu_count) as p:
+                mapfunc = partial(search_alg.search, mp=self.mp) # pass mp in kwargs to search
+                samples_z_ops = p.map(mapfunc, range(algo_sweep.m_averages))
+        else:
+            samples_z_ops = map(search_alg.search, range(algo_sweep.m_averages))
+        return samples_z_ops
+
+    def run_algo_sweep(self, algo_sweep: sweety.AlgoSweep) -> List[resty.ResultAlgoSweep]:
+        results = list()
+        for Algo, algo_args in zip(algo_sweep.algo, algo_sweep.algo_args):
+            search_alg = Algo(algo_args)
+            samples_z_ops = self.invoke_search(search_alg, algo_sweep)
+            m_rmse_z_ops = [(s.rmse, z_ops) for s, z_ops in samples_z_ops] # List[Tuples[rmse, z_ops]]
+            unzipped1 = zip(*m_rmse_z_ops) # unzip to List[rmse], List[z_ops]
+            unzipped2 = copy.deepcopy(unzipped1)
+            mean_rmse, mean_z_ops = map(np.mean, unzipped1)                           # map has effects and two functions per map are too ugly
+            std_rmse, std_z_ops = map(np.std, unzipped2)
+            result = resty.ResultAlgoSweep(search_alg.__class__.__name__, search_alg.algo_args, mean_rmse, std_rmse, mean_z_ops, std_z_ops)
+            results.append(result)
+        return results
 
 def sweep_const_time_args(base_args: party.PythonSignalRandArgs,
 arg_schedule: sweety.ConstTimeSweep,

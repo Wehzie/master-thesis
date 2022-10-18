@@ -16,7 +16,6 @@ from tqdm import tqdm
 class MCOneShot(algo.SearchAlgo):
     """monte carlo algorithm for samples consisting of independent oscillators"""
 
-    @data_analysis.print_time
     def search(self, *args, **kwargs) -> Tuple[sample.Sample, int]:
         """generate k-signals which are a sum of n-oscillators
         on each iteration draw a new full model (matrix of n-oscillators)
@@ -28,13 +27,14 @@ class MCOneShot(algo.SearchAlgo):
             args_path: when not none, write history to disk instead of RAM at specified path
         """
         self.clear_state()
+        self.handle_mp(kwargs)
 
         best_sample = self.init_best_sample()
         for k in tqdm(range(self.k_samples)):
             temp_sample = self.draw_temp_sample(best_sample)
-            self.manage_state(temp_sample, k)
             best_sample = self.comp_samples(best_sample, temp_sample)
-            if self.eval_z_ops(): return best_sample, self.z_ops
+            self.manage_state(temp_sample, k)
+            if self.eval_max_z_ops(): return best_sample, self.z_ops
 
         return best_sample, self.z_ops
 

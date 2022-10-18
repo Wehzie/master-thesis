@@ -4,6 +4,7 @@ from typing import Callable, Final, List, Union
 import numpy as np
 
 import algo
+import const
 
 # "|", for example int|float requires python 3.10 or greater
 class Dist:
@@ -12,7 +13,7 @@ class Dist:
         if isinstance(dist, Callable):
             rng = np.random.default_rng() # no seed needed since not used to draw
             # rng1.uniform != rng2.uniform, therefore must use name
-            assert dist.__name__ in [rng.uniform.__name__, rng.normal.__name__], "unsupported distribution"
+            assert dist.__name__ in const.LEGAL_DISTS, "unsupported distribution"
             
             self.dist = dist
             self.n = n
@@ -113,9 +114,10 @@ class AlgoArgs:
     max_z_ops: Union[None, int]     = None  # maximum number of operations until learning is aborted
     k_samples: int                  = 1     # number of times to re-run base algorithm
     j_exploits: Union[None, int]    = None  # within-model exploit iterations for monte-carlo algorithms
+    z_ops_callbacks: Union[None, List[int]] = None # at each value of z_ops store the best sample up to that point
     store_det_args: bool            = False # whether to store det_args for each k
     history: bool                   = False # whether to store each sample
-    args_path: Path                 = None  # whether to flush samples in RAM to file at given path
+    args_path: Union[None, Path]    = None  # whether to flush samples in RAM to file at given path
 
 
 @dataclass

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 import pickle
-from typing import List
+from typing import Callable, List, Tuple
 
 import sample
 import data_analysis
@@ -21,26 +21,31 @@ class SearchAlgo(ABC):
         self.k_samples = algo_args.k_samples
         self.j_exploits = algo_args.j_exploits
 
+        self.z_ops_callbacks = algo_args.z_ops_callbacks
         self.store_det_args = algo_args.store_det_args
         self.history = algo_args.history
         self.args_path = algo_args.args_path
 
         # state
-        self.samples: List[sample.Sample] = list() # list of samples and results
-        self.z_ops: int = 0                        # number of operations
+        self.all_samples: List[sample.Sample] = list()              # list of samples and results
+        self.best_samples: List[Tuple[sample.Sample, int]] = list() # list of samples and z_ops for intermediate results
+        self.z_ops: int = 0                                         # current number of operations
     
     def __str__(self) -> str:
         rand_args = f"rand_args: {self.rand_args}\n"
         sig_gen_func = f"sig_gen_func: {self.sig_gen_func.__name__}\n"
-        samples = ""
-        for s in self.samples:
-            samples += str(s) + "\n"
-        return rand_args + sig_gen_func + samples
+        all_samples = ""
+        for s in self.all_samples:
+            all_samples += str(s) + "\n"
+        best_samples = ""
+        for s, z in self.best_samples:
+            best_samples += str(s) + f" z_ops: {z}" + "\n"
+        z_ops = f"z_ops: {z_ops}"
+        return rand_args + sig_gen_func + "all_samples: " + all_samples + "best_samples: " + best_samples + z_ops
 
     @staticmethod
     def gen_empty_sample() -> sample.Sample:
         return sample.Sample(None, None, None, 0, np.inf, list())
-
 
     def pickle_samples(self, k: int) -> None:
         """pickle samples in RAM to disk in order to free RAM
@@ -65,8 +70,17 @@ class SearchAlgo(ABC):
         if self.history and self.args_path:
             self.args_path.unlink(missing_ok=True) 
 
+    def eval_z_ops_callback():
+        """store a sample and current z_ops when the callback schedule says so"""
+        NotImplemented
+        # TODO: this is a bit difficult/ugly because we don't know which z_ops we will get exactly
+        # therefore we must interpret the list of z_ops_callbacks as ranges
+        # so we check whether the current z_ops is in a z_ops range
+        # and then, if no sample has been added within this range, add the sample to the 
+
     def manage_state(self, base_sample: sample.Sample, k: int) -> None:
         """save samples to RAM or file if desired"""
+        # if self.z_ops_callbacks: self.eval_z_ops_callback()
         if self.history: self.samples.append(base_sample)
         if self.history and self.args_path: self.pickle_samples(k)
 
@@ -93,7 +107,7 @@ class SearchAlgo(ABC):
         
         return best_sample, rmse_li, rmse_norm_li
 
-    def eval_z_ops(self, verbose: bool = True) -> bool:
+    def eval_max_z_ops(self, verbose: bool = True) -> bool:
         """return true when an algorithm exceeds the maximum number of allowed operations"""
         if self.max_z_ops is None: return False
         if self.z_ops >= self.max_z_ops:
@@ -129,6 +143,27 @@ class SearchAlgo(ABC):
         if self.weight_mode: # apply algorithm over weights only
             return self.draw_sample_weights(base_sample)
         return self.draw_sample()
+
+    def handle_mp(self, sup_func_kwargs: dict) -> None:
+        """handle multi processing by modifying numpy the random number generator
+        args:
+            sup_func_kwargs: the kwargs of the calling function
+        """
+        # each process needs a unique seed
+        if "mp" in sup_func_kwargs and sup_func_kwargs["mp"] == True:
+            rng = np.random.default_rng(None)
+            #self.rand_args.weight_dist = party.WeightDist(rng.uniform, low=0, high=10, n=100)
+            dist = self.rand_args.weight_dist.dist
+            # __name__ is used to identify the function
+            # this is incredibly ugly
+            if isinstance(dist, Callable):
+                # if dist is a uniform function, initialise it anew
+                if dist.__name__ == rng.uniform.__name__:
+                    # can't do
+                    # dist = rng.uniform
+                    self.rand_args.weight_dist.dist = rng.uniform
+                elif dist.__name__ == rng.normal.__name__:
+                    self.rand_args.weight_dist.dist = rng.normal
 
     @abstractmethod
     def search(self, *args, **kwargs): # *args needed to use with map(), not sure why

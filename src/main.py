@@ -86,12 +86,12 @@ def simple_algo_sweep(algo_sweep: AlgoSweep, sampling_rate: int, target: np.ndar
 
 def main():
     rand_args, meta_target = init_main()
-    algo_sweep = params.init_algo_sweep(meta_target[1])
-
-
-    # TODO: callbacks for k
-    # TODO: functionalize everything (especially in here)
-    # TODO: dynamic args (related to in here funcs)
+    target = meta_target[1]
+    algo_sweep = params.init_algo_sweep(target)
+    #simple_algo_sweep(algo_sweep, *meta_target)
+    exp = experimenteur.Experimenteur(mp = True)
+    results = exp.run_algo_sweep(algo_sweep)
+    print(results)
 
 if __name__ == "__main__":
     main()
