@@ -90,7 +90,8 @@ def main():
     algo_sweep = params.init_algo_sweep(target)
     #simple_algo_sweep(algo_sweep, *meta_target)
     exp = experimenteur.Experimenteur(mp = True)
-    results = exp.run_algo_sweep(algo_sweep)
+    #results = exp.run_algo_sweep(algo_sweep)
+    results = exp.run_const_time_sweep(algo_sweep, params.const_time_sweep, params.py_rand_args_uniform)
     print(results)
 
 if __name__ == "__main__":

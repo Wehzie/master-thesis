@@ -67,6 +67,7 @@ class Experimenteur:
         return np.mean, np.std
 
     def invoke_search(self, search_alg: SearchAlgo, algo_sweep: sweety.AlgoSweep) -> Iterable:
+        """call an algorithm's search function for a given number of times"""
         if self.mp:
             with Pool(self.cpu_count) as p:
                 mapfunc = partial(search_alg.search, mp=self.mp) # pass mp in kwargs to search
@@ -75,30 +76,45 @@ class Experimenteur:
             samples_z_ops = map(search_alg.search, range(algo_sweep.m_averages))
         return samples_z_ops
 
+    def produce_result(self, samples_z_ops: Iterable, search_alg: SearchAlgo) -> resty.ResultAlgoSweep:
+        m_rmse_z_ops = [(s.rmse, z_ops) for s, z_ops in samples_z_ops] # List[Tuples[rmse, z_ops]]
+        unzipped1 = zip(*m_rmse_z_ops) # unzip to List[rmse], List[z_ops]
+        unzipped2 = copy.deepcopy(unzipped1)
+        mean_rmse, mean_z_ops = map(np.mean, unzipped1) # map has effects and two functions per map are too ugly
+        std_rmse, std_z_ops = map(np.std, unzipped2)
+        return resty.ResultAlgoSweep(search_alg.__class__.__name__, search_alg.algo_args, mean_rmse, std_rmse, mean_z_ops, std_z_ops)
+
     def run_algo_sweep(self, algo_sweep: sweety.AlgoSweep) -> List[resty.ResultAlgoSweep]:
+        """run an experiment comparing multiple algorithms on their rmse and operations"""
         results = list()
         for Algo, algo_args in zip(algo_sweep.algo, algo_sweep.algo_args):
             search_alg = Algo(algo_args)
             samples_z_ops = self.invoke_search(search_alg, algo_sweep)
-            m_rmse_z_ops = [(s.rmse, z_ops) for s, z_ops in samples_z_ops] # List[Tuples[rmse, z_ops]]
-            unzipped1 = zip(*m_rmse_z_ops) # unzip to List[rmse], List[z_ops]
-            unzipped2 = copy.deepcopy(unzipped1)
-            mean_rmse, mean_z_ops = map(np.mean, unzipped1)                           # map has effects and two functions per map are too ugly
-            std_rmse, std_z_ops = map(np.std, unzipped2)
-            result = resty.ResultAlgoSweep(search_alg.__class__.__name__, search_alg.algo_args, mean_rmse, std_rmse, mean_z_ops, std_z_ops)
+            result = self.produce_result(samples_z_ops, search_alg)
             results.append(result)
         return results
-
-def sweep_const_time_args(base_args: party.PythonSignalRandArgs,
-arg_schedule: sweety.ConstTimeSweep,
-algos: Union[SearchAlgo, List[SearchAlgo]]):
-
-    for val_schedule in fields(arg_schedule):                       # for example frequency distribution
-        for algo in algos:                                          # for example monte carlo search
-            for val in getattr(arg_schedule, val_schedule.name):    # for example normal vs uniform frequency distribution
-                print(val)
-                setattr(base_args, val_schedule.name, val)
-                algo.search(base_args)
+    
+    def run_const_time_sweep(self, algo_sweep: sweety.AlgoSweep, sweep_args: sweety.ConstTimeSweep, base_args: party.PythonSignalRandArgs) -> resty.ResultAlgoSweep: # TODO: return type ResultConstTimeSweep
+        """
+        args:
+            algo_sweep: a list of algorithms and algorithm arguments, the algorithm arguments will be modified
+            sweep_args: a attributes within a rand_args type, for each attribute a list of values is tested"""
+        print(f"inital rand_args: {base_args}")
+        temp_args = copy.deepcopy(base_args)
+        results = list()
+        for val_schedule in fields(sweep_args): # for example frequency distribution
+            for Algo, algo_args in zip(algo_sweep.algo, algo_sweep.algo_args): # for example monte carlo search
+                for val in getattr(sweep_args, val_schedule.name):    # for example normal vs uniform frequency distribution
+                    setattr(temp_args, val_schedule.name, val)        # for example, for field frequency in base_args set value 10 Hz
+                    print(f"temp rand_args: {temp_args}")
+                    algo_args.rand_args = temp_args                   # inject rand_args
+                    search_alg = Algo(algo_args)
+                    samples_z_ops = self.invoke_search(search_alg, algo_sweep)
+                    result = self.produce_result(samples_z_ops, search_alg)
+                    results.append(result)
+            temp_args = copy.deepcopy(base_args)                              # reset the temp_args after completing a set of values, for example sweeping all frequencies
+        # TODO: flush and pickle results
+        return results
 
 def n_dependency(rand_args: party.PythonSignalRandArgs,
     target: np.ndarray,
