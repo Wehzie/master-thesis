@@ -1,6 +1,0 @@
-loading file: resources/magpie. 35k, mono, 8-bit, 11025 Hz, 3.3 seconds.wav
-convert uint8 to int16 to remove y-offset
-sampling rate: 11025
-data type: int16
-data shape: (35831,)
-
