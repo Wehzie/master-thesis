@@ -214,7 +214,7 @@ las_vegas_args = party.AlgoArgs(
 
 algo_list: List[SearchAlgo] = [
     MCOneShot,
-    #MCOneShot, # weight mode
+    MCOneShot, # weight mode
     # LasVegas,
     # LasVegas,
     # MCExploit,
@@ -225,7 +225,7 @@ def init_algo_sweep(target: np.ndarray) -> sweety.AlgoSweep:
     rand_args = py_rand_args_uniform
     algo_args = [
         party.AlgoArgs(rand_args, target, k_samples=10, weight_mode=False),
-        #party.AlgoArgs(rand_args, target, k_samples=100, weight_mode=True),
+        party.AlgoArgs(rand_args, target, k_samples=100, weight_mode=True),
     ]
     return sweety.AlgoSweep(algo_list, algo_args, m_averages=2)
 

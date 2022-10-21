@@ -4,7 +4,7 @@ import param_types as party
 import sample
 
 @dataclass
-class ResultAlgoSweep:
+class ResultSweep:
     """running an experiment with AlgoSweep args produces a list of ResultAlgoSweep"""
     algo_name: str
     algo_args: party.AlgoArgs       # to track what's going on at any point in time

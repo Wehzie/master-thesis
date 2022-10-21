@@ -20,10 +20,12 @@ import sweep_types as sweety
 import result_types as resty
 from algo import SearchAlgo
 import params
+from util import add_str2keys
 
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+import pandas as pd
 
 """
 experiments:
@@ -60,8 +62,6 @@ class Experimenteur:
         """
         self.mp = mp
         self.cpu_count = cpu_count()
-        self.seeds = range(0, self.cpu_count)
-        #self.rngs = [np.random.rng(seed) for seed in self.seeds]
 
     @staticmethod
     def mean_std():
@@ -77,15 +77,15 @@ class Experimenteur:
             samples_z_ops = map(search_alg.search, range(algo_sweep.m_averages))
         return samples_z_ops
 
-    def produce_result(self, samples_z_ops: Iterable, search_alg: SearchAlgo) -> resty.ResultAlgoSweep:
+    def produce_result(self, samples_z_ops: Iterable, search_alg: SearchAlgo) -> resty.ResultSweep:
         m_rmse_z_ops = [(s.rmse, z_ops) for s, z_ops in samples_z_ops] # List[Tuples[rmse, z_ops]]
         unzipped1 = zip(*m_rmse_z_ops) # unzip to List[rmse], List[z_ops]
         unzipped2 = copy.deepcopy(unzipped1)
         mean_rmse, mean_z_ops = map(np.mean, unzipped1) # map has effects and two functions per map are too ugly
         std_rmse, std_z_ops = map(np.std, unzipped2)
-        return resty.ResultAlgoSweep(search_alg.__class__.__name__, search_alg.algo_args, mean_rmse, std_rmse, mean_z_ops, std_z_ops)
+        return resty.ResultSweep(search_alg.__class__.__name__, search_alg.algo_args, mean_rmse, std_rmse, mean_z_ops, std_z_ops)
 
-    def run_algo_sweep(self, algo_sweep: sweety.AlgoSweep) -> List[resty.ResultAlgoSweep]:
+    def run_algo_sweep(self, algo_sweep: sweety.AlgoSweep) -> List[resty.ResultSweep]:
         """run an experiment comparing multiple algorithms on their rmse and operations"""
         results = list()
         for Algo, algo_args in zip(algo_sweep.algo, algo_sweep.algo_args):
@@ -97,7 +97,7 @@ class Experimenteur:
     
     def run_rand_args_sweep(self, algo_sweep: sweety.AlgoSweep,
     sweep_args: Union[sweety.ConstTimeSweep, sweety.ExpoTimeSweep],
-    base_args: party.PythonSignalRandArgs) -> resty.ResultAlgoSweep: # TODO: return type ResultRandArgSweep
+    base_args: party.PythonSignalRandArgs) -> resty.ResultSweep: # TODO: return type ResultRandArgSweep
         """
         args:
             algo_sweep: a list of algorithms and algorithm arguments, the algorithm arguments will be modified
@@ -119,7 +119,8 @@ class Experimenteur:
         # TODO: flush and pickle results
         return results
     
-    def run_sampling_rate_sweep(self, sweep_args: sweety.SamplingRateSweep) -> resty.ResultAlgoSweep:
+    def run_sampling_rate_sweep(self, sweep_args: sweety.SamplingRateSweep) -> resty.ResultSweep:
+        """run all algorithms at different sampling rates of a target"""
         results = list()
         for sf in sweep_args.sampling_rate_factor:
             rand_args, meta_target = params.init_target2rand_args(scale_factor=sf)
@@ -128,6 +129,23 @@ class Experimenteur:
             results += self.run_algo_sweep(algo_sweep)
         return results
 
+    @staticmethod
+    def conv_results_to_pd(results: List[resty.ResultSweep]) -> pd.DataFrame:
+        """convert ResultSweep to a pandas dataframe for further processing"""
+        # the chosen approach here is not great
+        # there are more loops here over the data than should be necessary
+        res_df = pd.DataFrame(results).drop("algo_args", axis=1)
+        algo_args_df = pd.DataFrame([r.algo_args for r in results]).drop(["rand_args", "target"], axis=1)
+        rand_args = [r.algo_args.rand_args for r in results]
+        rand_args_df = pd.DataFrame(rand_args).drop(["f_dist", "weight_dist", "phase_dist", "offset_dist"], axis=1)
+        # attributes
+        f_dist_df = pd.DataFrame([add_str2keys("f_dist", ra.f_dist.kwargs) for ra in rand_args])
+        weight_dist_df = pd.DataFrame([add_str2keys("weight_dist", ra.weight_dist.kwargs) for ra in rand_args])
+        phase_dist_df = pd.DataFrame([add_str2keys("phase_dist", ra.phase_dist.kwargs) for ra in rand_args])
+        offset_dist_df = pd.DataFrame([add_str2keys("offset_dist", ra.offset_dist.kwargs) for ra in rand_args])
+        return pd.concat([res_df, algo_args_df, rand_args_df,
+            f_dist_df, weight_dist_df, phase_dist_df, offset_dist_df], axis=1)
+        
 def n_dependency(rand_args: party.PythonSignalRandArgs,
     target: np.ndarray,
     visual: bool = True) -> None:

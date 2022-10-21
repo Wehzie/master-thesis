@@ -75,11 +75,13 @@ def main():
     algo_sweep = params.init_algo_sweep(target)
     # simple_algo_sweep(algo_sweep, *meta_target)
     exp = experimenteur.Experimenteur(mp = False)
-    # results = exp.run_algo_sweep(algo_sweep)
+    results = exp.run_algo_sweep(algo_sweep)
     # results = exp.run_rand_args_sweep(algo_sweep, params.const_time_sweep, params.py_rand_args_uniform)
     # results = exp.run_rand_args_sweep(algo_sweep, params.expo_time_sweep, params.py_rand_args_uniform)
-    results = exp.run_sampling_rate_sweep(params.sampling_rate_sweep)
-    print(results)
+    # results = exp.run_sampling_rate_sweep(params.sampling_rate_sweep)
+    df = exp.conv_results_to_pd(results)
+    print(df.columns)
+    print(df)
 
 if __name__ == "__main__":
     main()
