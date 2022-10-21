@@ -15,7 +15,10 @@ class ConstTimeSweep:
 class ExpoTimeSweep:
     """sweeps of PythonRandSignalArgs where time complexity between experiments is worse then constant, mostly exponential"""
     n_osc: List[int]                    # number of oscillators
-    sampling_rate_factor: List[float]   # factors to downsample the target signal 
+
+@dataclass
+class SamplingRateSweep:
+    sampling_rate_factor: List[float]   # factors to downsample the target signal
 
 @dataclass
 class AlgoSweep:

@@ -19,6 +19,7 @@ import param_types as party
 import sweep_types as sweety
 import result_types as resty
 from algo import SearchAlgo
+import params
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -94,19 +95,21 @@ class Experimenteur:
             results.append(result)
         return results
     
-    def run_const_time_sweep(self, algo_sweep: sweety.AlgoSweep, sweep_args: sweety.ConstTimeSweep, base_args: party.PythonSignalRandArgs) -> resty.ResultAlgoSweep: # TODO: return type ResultConstTimeSweep
+    def run_rand_args_sweep(self, algo_sweep: sweety.AlgoSweep,
+    sweep_args: Union[sweety.ConstTimeSweep, sweety.ExpoTimeSweep],
+    base_args: party.PythonSignalRandArgs) -> resty.ResultAlgoSweep: # TODO: return type ResultRandArgSweep
         """
         args:
             algo_sweep: a list of algorithms and algorithm arguments, the algorithm arguments will be modified
             sweep_args: a attributes within a rand_args type, for each attribute a list of values is tested"""
-        print(f"inital rand_args: {base_args}")
         temp_args = copy.deepcopy(base_args)
         results = list()
         for val_schedule in fields(sweep_args): # for example frequency distribution
             for Algo, algo_args in zip(algo_sweep.algo, algo_sweep.algo_args): # for example monte carlo search
                 for val in getattr(sweep_args, val_schedule.name):    # for example normal vs uniform frequency distribution
                     setattr(temp_args, val_schedule.name, val)        # for example, for field frequency in base_args set value 10 Hz
-                    print(f"temp rand_args: {temp_args}")
+                    if val_schedule.name == "n_osc":                  # when n_osc changes
+                        temp_args.weight_dist.n = val                 #    update n also in weight_dist
                     algo_args.rand_args = temp_args                   # inject rand_args
                     search_alg = Algo(algo_args)
                     samples_z_ops = self.invoke_search(search_alg, algo_sweep)
@@ -114,6 +117,15 @@ class Experimenteur:
                     results.append(result)
             temp_args = copy.deepcopy(base_args)                              # reset the temp_args after completing a set of values, for example sweeping all frequencies
         # TODO: flush and pickle results
+        return results
+    
+    def run_sampling_rate_sweep(self, sweep_args: sweety.SamplingRateSweep) -> resty.ResultAlgoSweep:
+        results = list()
+        for sf in sweep_args.sampling_rate_factor:
+            rand_args, meta_target = params.init_target2rand_args(scale_factor=sf)
+            target = meta_target[1]
+            algo_sweep = params.init_algo_sweep(target)
+            results += self.run_algo_sweep(algo_sweep)
         return results
 
 def n_dependency(rand_args: party.PythonSignalRandArgs,

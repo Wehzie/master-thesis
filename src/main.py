@@ -20,22 +20,6 @@ import matplotlib.pyplot as plt
 
 from sweep_types import AlgoSweep
 
-def init_main() -> Tuple[party.PythonSignalRandArgs, Tuple]:
-    """load target and define rand_args"""
-    # loading and manipulating the target signal
-    raw_sampling_rate, raw_target, raw_dtype = data_io.load_data()
-    scale_factor = 0.01
-    target_full_len: Final = sample_down_int(raw_target, scale_factor)
-    # shorten the target
-    target: Final = take_middle_third(target_full_len)
-    # save to wav
-    sampling_rate = int(scale_factor*raw_sampling_rate)
-    data_io.save_signal_to_wav(target, sampling_rate, raw_dtype, Path("data/target_downsampled.wav"))
-    # init search params
-    rand_args = params.py_rand_args_uniform
-    rand_args.samples = len(target) # generated signals match length of target
-                                    # NOTE: the sampling rate could also be set lower instead
-    return rand_args, (sampling_rate, target, raw_dtype)
 
 def post_main(best_sample: sample.Sample, sampling_rate: int, target: np.ndarray, raw_dtype: np.dtype,
     z_ops: int, plot_time: bool = True, plot_freq: bool = False) -> None:
@@ -84,14 +68,17 @@ def simple_algo_sweep(algo_sweep: AlgoSweep, sampling_rate: int, target: np.ndar
         best_sample, z_ops = search_alg.search()
         post_main(best_sample, sampling_rate, target, raw_dtype, z_ops)
 
+@data_analysis.print_time
 def main():
-    rand_args, meta_target = init_main()
+    rand_args, meta_target = params.init_target2rand_args()
     target = meta_target[1]
     algo_sweep = params.init_algo_sweep(target)
-    #simple_algo_sweep(algo_sweep, *meta_target)
-    exp = experimenteur.Experimenteur(mp = True)
-    #results = exp.run_algo_sweep(algo_sweep)
-    results = exp.run_const_time_sweep(algo_sweep, params.const_time_sweep, params.py_rand_args_uniform)
+    # simple_algo_sweep(algo_sweep, *meta_target)
+    exp = experimenteur.Experimenteur(mp = False)
+    # results = exp.run_algo_sweep(algo_sweep)
+    # results = exp.run_rand_args_sweep(algo_sweep, params.const_time_sweep, params.py_rand_args_uniform)
+    # results = exp.run_rand_args_sweep(algo_sweep, params.expo_time_sweep, params.py_rand_args_uniform)
+    results = exp.run_sampling_rate_sweep(params.sampling_rate_sweep)
     print(results)
 
 if __name__ == "__main__":

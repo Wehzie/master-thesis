@@ -1,3 +1,4 @@
+from pathlib import Path
 from random import uniform
 import numpy as np
 
@@ -6,7 +7,9 @@ from algo_las_vegas import LasVegas, LasVegasWeight
 from algo_monte_carlo import MCExploit, MCOneShot
 import param_types as party
 import sweep_types as sweety
-from typing import List
+import data_preprocessor
+import data_io
+from typing import Final, List, Tuple
 import const
 rng = const.RNG
 
@@ -191,10 +194,11 @@ def init_const_time_sweep(rand_args: party.PythonSignalRandArgs) -> sweety.Const
     )
 const_time_sweep = init_const_time_sweep(py_rand_args_uniform)
 
-sweep_py_expo_time_args = sweety.ExpoTimeSweep(
+expo_time_sweep = sweety.ExpoTimeSweep(
     n_osc=[100, 200, 300, 500, 1000, 2000],
-    sampling_rate_factor=[0.01, 0.1, 0.5, 1],
 )
+
+sampling_rate_sweep = sweety.SamplingRateSweep([0.01, 0.1, 0.5, 1])
 
 las_vegas_args = party.AlgoArgs(
     rand_args=py_rand_args_uniform,
@@ -224,3 +228,19 @@ def init_algo_sweep(target: np.ndarray) -> sweety.AlgoSweep:
         #party.AlgoArgs(rand_args, target, k_samples=100, weight_mode=True),
     ]
     return sweety.AlgoSweep(algo_list, algo_args, m_averages=2)
+
+def init_target2rand_args(scale_factor: float = 0.5) -> Tuple[party.PythonSignalRandArgs, Tuple]:
+    """load, downsample target and inject number of samples into rand_args"""
+    # loading and manipulating the target signal
+    raw_sampling_rate, raw_target, raw_dtype = data_io.load_data()
+    target_full_len: Final = data_preprocessor.sample_down_int(raw_target, scale_factor)
+    # shorten the target
+    target: Final = data_preprocessor.take_middle_third(target_full_len)
+    # save to wav
+    sampling_rate = int(scale_factor*raw_sampling_rate)
+    data_io.save_signal_to_wav(target, sampling_rate, raw_dtype, Path("data/target_downsampled.wav"))
+    # init search params
+    rand_args = py_rand_args_uniform
+    rand_args.samples = len(target) # generated signals match length of target
+                                    # NOTE: the sampling rate could also be set lower instead
+    return rand_args, (sampling_rate, target, raw_dtype)
