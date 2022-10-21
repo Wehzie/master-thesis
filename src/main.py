@@ -5,7 +5,7 @@ from typing import Callable, Final, List, Tuple
 
 import data_analysis
 import data_io
-import params
+import test_params as params
 import sample
 from data_preprocessor import norm1d, sample_down, sample_down_int, take_middle_third
 import algo_las_vegas
@@ -75,13 +75,13 @@ def main():
     algo_sweep = params.init_algo_sweep(target)
     # simple_algo_sweep(algo_sweep, *meta_target)
     exp = experimenteur.Experimenteur(mp = False)
-    results = exp.run_algo_sweep(algo_sweep)
+    # results = exp.run_algo_sweep(algo_sweep)
     # results = exp.run_rand_args_sweep(algo_sweep, params.const_time_sweep, params.py_rand_args_uniform)
     # results = exp.run_rand_args_sweep(algo_sweep, params.expo_time_sweep, params.py_rand_args_uniform)
-    # results = exp.run_sampling_rate_sweep(params.sampling_rate_sweep)
+    results = exp.run_sampling_rate_sweep(params.sampling_rate_sweep)
+    data_io.pickle_results(results, Path("data/results.pickle"))
     df = exp.conv_results_to_pd(results)
-    print(df.columns)
-    print(df)
+    df.to_csv(Path("data/experiment.csv"))
 
 if __name__ == "__main__":
     main()

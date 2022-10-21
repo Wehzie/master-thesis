@@ -1,5 +1,5 @@
+"""parameters documented in code for reproducibility"""
 from pathlib import Path
-from random import uniform
 import numpy as np
 
 from algo import SearchAlgo

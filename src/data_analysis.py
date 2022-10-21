@@ -136,17 +136,13 @@ def compute_rmse(p: np.ndarray, t: np.ndarray, verbose: bool = False, pad: bool 
         print(f"RMSE: {rmse}")
     return rmse
 
-
 def print_time(func: Callable) -> Callable:
     @wraps(func)
     def wrap(*args, **kwargs):
         t0 = time.time()
         result = func(*args, **kwargs)
         time_elapsed = time.time() - t0
-        print(f"time elapsed: {time_elapsed:.2f} s")
-        print(f"func:{func.__name__}")
-        print(f"args:{args}")
-        print(f"kwargs:{kwargs}")
+        print(f"\ntime elapsed for func '{func.__name__}': {time_elapsed:.2f} s\n")
         return result
     return wrap
 

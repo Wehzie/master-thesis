@@ -103,7 +103,7 @@ def load_pickled_fig(data_path: Path) -> None:
     """load a pickled matplotlib figure and display it"""
     _ = plt.figure()
     plt.close()
-    with (open("data_path", "rb")) as file:
+    with (open(data_path, "rb")) as file:
         pickle.load(file)
     plt.show()
 
@@ -120,8 +120,13 @@ def load_pickled_samples(data_path: Path) -> List: # List[Sample]
 
     flat = functools.reduce(operator.iconcat, obj_li, [])
     return flat
-    
 
+                            # List[resty.ResultSweep] (gives circular import)
+def pickle_results(results: List, data_path: Path) -> None:
+    """pickle the result of a sweep"""
+    with open(data_path, "wb") as f:
+        pickle.dump(results, f)
+    
 def main():
     sampling_rate, data, dtype = load_data()
     save_signal_to_wav(data, sampling_rate, dtype)
