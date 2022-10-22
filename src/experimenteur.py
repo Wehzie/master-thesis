@@ -11,7 +11,7 @@ from dataclasses import fields
 from pathlib import Path
 import pickle
 from re import search
-from typing import Iterable, List, Union
+from typing import Final, Iterable, List, Union
 from multiprocessing import Pool, cpu_count
 from functools import partial
 
@@ -20,13 +20,9 @@ import sweep_types as sweety
 import result_types as resty
 from algo import SearchAlgo
 import params
-from util import add_str2keys
 
 import numpy as np
 import matplotlib.pyplot as plt
-from tqdm import tqdm
-import pandas as pd
-
 """
 experiments:
         # z_ops measures z initialized, drawn, discarded - oscillators or weights
@@ -77,13 +73,13 @@ class Experimenteur:
             samples_z_ops = map(search_alg.search, range(algo_sweep.m_averages))
         return samples_z_ops
 
-    def produce_result(self, samples_z_ops: Iterable, search_alg: SearchAlgo) -> resty.ResultSweep:
+    def produce_result(self, samples_z_ops: Iterable, search_alg: SearchAlgo, algo_sweep: sweety.AlgoSweep) -> resty.ResultSweep:
         m_rmse_z_ops = [(s.rmse, z_ops) for s, z_ops in samples_z_ops] # List[Tuples[rmse, z_ops]]
         unzipped1 = zip(*m_rmse_z_ops) # unzip to List[rmse], List[z_ops]
         unzipped2 = copy.deepcopy(unzipped1)
         mean_rmse, mean_z_ops = map(np.mean, unzipped1) # map has effects and two functions per map are too ugly
         std_rmse, std_z_ops = map(np.std, unzipped2)
-        return resty.ResultSweep(search_alg.__class__.__name__, search_alg.algo_args, mean_rmse, std_rmse, mean_z_ops, std_z_ops)
+        return resty.ResultSweep(search_alg.__class__.__name__, search_alg.get_algo_args(), mean_rmse, std_rmse, mean_z_ops, std_z_ops, algo_sweep.m_averages)
 
     def run_algo_sweep(self, algo_sweep: sweety.AlgoSweep) -> List[resty.ResultSweep]:
         """run an experiment comparing multiple algorithms on their rmse and operations"""
@@ -91,31 +87,33 @@ class Experimenteur:
         for Algo, algo_args in zip(algo_sweep.algo, algo_sweep.algo_args):
             search_alg = Algo(algo_args)
             samples_z_ops = self.invoke_search(search_alg, algo_sweep)
-            result = self.produce_result(samples_z_ops, search_alg)
+            result = self.produce_result(samples_z_ops, search_alg, algo_sweep)
             results.append(result)
         return results
     
-    def run_rand_args_sweep(self, algo_sweep: sweety.AlgoSweep,
+    def run_rand_args_sweep(self,
+    algo_sweep: sweety.AlgoSweep,
     sweep_args: Union[sweety.ConstTimeSweep, sweety.ExpoTimeSweep],
-    base_args: party.PythonSignalRandArgs) -> resty.ResultSweep: # TODO: return type ResultRandArgSweep
+    base_args: party.PythonSignalRandArgs) -> resty.ResultSweep:
         """
         args:
             algo_sweep: a list of algorithms and algorithm arguments, the algorithm arguments will be modified
             sweep_args: a attributes within a rand_args type, for each attribute a list of values is tested"""
-        temp_args = copy.deepcopy(base_args)
-        results = list()
+        results = []
         for val_schedule in fields(sweep_args): # for example frequency distribution
             for Algo, algo_args in zip(algo_sweep.algo, algo_sweep.algo_args): # for example monte carlo search
                 for val in getattr(sweep_args, val_schedule.name):    # for example normal vs uniform frequency distribution
+                    temp_args = copy.deepcopy(base_args)              # init/reset temporary rand_args
                     setattr(temp_args, val_schedule.name, val)        # for example, for field frequency in base_args set value 10 Hz
                     if val_schedule.name == "n_osc":                  # when n_osc changes
                         temp_args.weight_dist.n = val                 #    update n also in weight_dist
-                    algo_args.rand_args = temp_args                   # inject rand_args
-                    search_alg = Algo(algo_args)
+                    algo_args.rand_args = temp_args
+                    f_algo_args: Final = copy.deepcopy(algo_args)
+                    
+                    search_alg: SearchAlgo = Algo(f_algo_args)
                     samples_z_ops = self.invoke_search(search_alg, algo_sweep)
-                    result = self.produce_result(samples_z_ops, search_alg)
+                    result = self.produce_result(samples_z_ops, search_alg, algo_sweep)
                     results.append(result)
-            temp_args = copy.deepcopy(base_args)                              # reset the temp_args after completing a set of values, for example sweeping all frequencies
         # TODO: flush and pickle results
         return results
     
@@ -129,23 +127,6 @@ class Experimenteur:
             results += self.run_algo_sweep(algo_sweep)
         return results
 
-    @staticmethod
-    def conv_results_to_pd(results: List[resty.ResultSweep]) -> pd.DataFrame:
-        """convert ResultSweep to a pandas dataframe for further processing"""
-        # the chosen approach here is not great
-        # there are more loops here over the data than should be necessary
-        res_df = pd.DataFrame(results).drop("algo_args", axis=1)
-        algo_args_df = pd.DataFrame([r.algo_args for r in results]).drop(["rand_args", "target"], axis=1)
-        rand_args = [r.algo_args.rand_args for r in results]
-        rand_args_df = pd.DataFrame(rand_args).drop(["f_dist", "weight_dist", "phase_dist", "offset_dist"], axis=1)
-        # attributes
-        f_dist_df = pd.DataFrame([add_str2keys("f_dist", ra.f_dist.kwargs) for ra in rand_args])
-        weight_dist_df = pd.DataFrame([add_str2keys("weight_dist", ra.weight_dist.kwargs) for ra in rand_args])
-        phase_dist_df = pd.DataFrame([add_str2keys("phase_dist", ra.phase_dist.kwargs) for ra in rand_args])
-        offset_dist_df = pd.DataFrame([add_str2keys("offset_dist", ra.offset_dist.kwargs) for ra in rand_args])
-        return pd.concat([res_df, algo_args_df, rand_args_df,
-            f_dist_df, weight_dist_df, phase_dist_df, offset_dist_df], axis=1)
-        
 def n_dependency(rand_args: party.PythonSignalRandArgs,
     target: np.ndarray,
     visual: bool = True) -> None:

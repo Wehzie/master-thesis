@@ -13,6 +13,7 @@ import algo_monte_carlo
 import param_types as party
 import experimenteur
 import result_types as resty
+import experiment_analysis as expan
 
 
 import numpy as np
@@ -76,12 +77,17 @@ def main():
     # simple_algo_sweep(algo_sweep, *meta_target)
     exp = experimenteur.Experimenteur(mp = False)
     # results = exp.run_algo_sweep(algo_sweep)
-    # results = exp.run_rand_args_sweep(algo_sweep, params.const_time_sweep, params.py_rand_args_uniform)
-    # results = exp.run_rand_args_sweep(algo_sweep, params.expo_time_sweep, params.py_rand_args_uniform)
-    results = exp.run_sampling_rate_sweep(params.sampling_rate_sweep)
+    #results = exp.run_rand_args_sweep(algo_sweep, params.const_time_sweep, params.py_rand_args_uniform)
+    results = exp.run_rand_args_sweep(algo_sweep, params.expo_time_sweep, params.py_rand_args_uniform)
+    # results = exp.run_sampling_rate_sweep(params.sampling_rate_sweep)
+    for r in results:
+        print(f"{r}\n")
     data_io.pickle_results(results, Path("data/results.pickle"))
-    df = exp.conv_results_to_pd(results)
+
+    df = expan.conv_results_to_pd(results)
     df.to_csv(Path("data/experiment.csv"))
+    
+    expan.plot_results_expo_time(df)
 
 if __name__ == "__main__":
     main()

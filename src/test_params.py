@@ -8,7 +8,7 @@ import numpy as np
 
 from algo import SearchAlgo
 from algo_las_vegas import LasVegas, LasVegasWeight
-from algo_monte_carlo import MCExploit, MCOneShot
+from algo_monte_carlo import MCExploit, MCOneShot, MCOneShotWeight
 import param_types as party
 import sweep_types as sweety
 import data_preprocessor
@@ -75,7 +75,7 @@ def init_const_time_sweep(rand_args: party.PythonSignalRandArgs) -> sweety.Const
 const_time_sweep = init_const_time_sweep(py_rand_args_uniform)
 
 expo_time_sweep = sweety.ExpoTimeSweep(
-    n_osc=[50, 100],
+    n_osc=[20, 40, 80],
 )
 
 sampling_rate_sweep = sweety.SamplingRateSweep([0.01, 0.1])
@@ -94,20 +94,25 @@ las_vegas_args = party.AlgoArgs(
 
 algo_list: List[SearchAlgo] = [
     MCOneShot,
-    MCOneShot, # weight mode
+    MCOneShotWeight,
     # LasVegas,
-    # LasVegas,
+    # LasVegasWeight,
     # MCExploit,
-    # MCExploit,
+    # MCExploitWeight,
 ]
 
+def init_algo_args_for_sweep(rand_args: party.PythonSignalRandArgs,
+target: np.ndarray,
+max_z_ops: int) -> List[party.AlgoArgs]:
+    return ([
+        party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=False),
+        party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True),
+    ])
+    
 def init_algo_sweep(target: np.ndarray) -> sweety.AlgoSweep:
     rand_args = py_rand_args_uniform
-    algo_args = [
-        party.AlgoArgs(rand_args, target, k_samples=3, weight_mode=False),
-        party.AlgoArgs(rand_args, target, k_samples=3, weight_mode=True),
-    ]
-    return sweety.AlgoSweep(algo_list, algo_args, m_averages=2)
+    algo_args = init_algo_args_for_sweep(rand_args, target, max_z_ops=5e3)
+    return sweety.AlgoSweep(algo_list, algo_args, m_averages=1)
 
 def init_target2rand_args(scale_factor: float = 0.5) -> Tuple[party.PythonSignalRandArgs, Tuple]:
     """load, downsample target and inject number of samples into rand_args"""

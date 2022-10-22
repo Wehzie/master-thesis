@@ -1,7 +1,6 @@
 import numpy as np
 import const
 from typing import List, Union, Callable
-from util import add_str2keys
 
 # "|", for example int|float requires python 3.10 or greater
 class Dist:
@@ -32,35 +31,15 @@ class Dist:
     
     def draw_n(self) -> np.ndarray:
         return self.dist(*self.args, **self.kwargs, size=self.n)
-    
 
-    
     def __repr__(self) -> str:
-        if "attr_name" in self.kwargs:
-            attr_name = self.kwargs["attr_name"] # attribute relate to the distribution, e.g. frequency
-        else:
-            attr_name = "yolo" # TODO: for testing only
-
         if isinstance(self.dist, Callable):
-            dist = self.dist.__name__        # e.g. uniform
+            dist = self.dist.__name__       # e.g. uniform
         else:
-            dist = str(self.dist)            # e.g. 42
-
-        kwargs = add_str2keys(attr_name, self.kwargs)
-
-        return kwargs
-
-    # def __repr__(self) -> str:
-    #     if isinstance(self.dist, Callable):
-    #         dist = self.dist.__name__
-    #     else:
-    #         dist = str(self.dist)
-    #     dist += ", "
-    #     args = str(self.args) + ", "
-    #     kwargs = str(self.kwargs)
-    #     return dist + args + kwargs + "\n"
-    
-
+            dist = str(self.dist)           # e.g. 42
+        dist += " with "
+        kwargs = "kwargs=" + str(self.kwargs)
+        return dist + kwargs
 
 class WeightDist(Dist):
     def __init__(self, dist: Union[int, float, Callable], n: int, *args, **kwargs):

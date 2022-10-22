@@ -16,6 +16,7 @@ class ResultSweep:
     std_rmse: float
     mean_z_ops: float
     std_z_ops: float
+    m_averages: int                 # number of averages taken
 
 @dataclass
 class ResultAlgoCallback:

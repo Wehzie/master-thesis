@@ -34,9 +34,11 @@ class MCOneShot(algo.SearchAlgo):
             temp_sample = self.draw_temp_sample(best_sample)
             best_sample = self.comp_samples(best_sample, temp_sample)
             self.manage_state(temp_sample, k)
-            if self.eval_max_z_ops(): return best_sample, self.z_ops
 
         return best_sample, self.z_ops
+
+class MCOneShotWeight(MCOneShot):
+    """wrapper around MCOneShot for easier recognition when weight mode is used"""
 
 class MCExploit(algo.SearchAlgo):
     """monte carlo algorithm exploiting a single sample by iterative re-draws"""

@@ -13,12 +13,11 @@ import numpy as np
 class SearchAlgo(ABC):
 
     def __init__(self, algo_args: party.AlgoArgs):
-        self.algo_args = algo_args                          # for storage with algorithm results
         self.rand_args = algo_args.rand_args                # signal generation parameters
         self.target = algo_args.target                       # target function to approximate
         self.weight_mode = algo_args.weight_mode
         self.max_z_ops = algo_args.max_z_ops
-        self.k_samples = algo_args.k_samples
+        self.k_samples = algo_args.k_samples if algo_args.k_samples is not None else self.infer_k_from_z()
         self.j_exploits = algo_args.j_exploits
 
         self.z_ops_callbacks = algo_args.z_ops_callbacks
@@ -26,6 +25,9 @@ class SearchAlgo(ABC):
         self.history = algo_args.history
         self.args_path = algo_args.args_path
 
+        self.algo_args = self.get_algo_args()                       # for storage with algorithm results
+                                                                    # this approach allows injecting from 
+        
         # state
         self.all_samples: List[sample.Sample] = list()              # list of samples and results
         self.best_samples: List[Tuple[sample.Sample, int]] = list() # list of samples and z_ops for intermediate results
@@ -112,7 +114,7 @@ class SearchAlgo(ABC):
         if self.max_z_ops is None: return False
         if self.z_ops >= self.max_z_ops:
             if verbose:
-                print("z_ops: {z_ops} > max_z_ops: {max_z_ops}")
+                print(f"z_ops: {self.z_ops} > max_z_ops: {self.max_z_ops}")
             return True
         return False
 
@@ -164,6 +166,32 @@ class SearchAlgo(ABC):
                     self.rand_args.weight_dist.dist = rng.uniform
                 elif dist.__name__ == rng.normal.__name__:
                     self.rand_args.weight_dist.dist = rng.normal
+
+    def infer_k_from_z(self) -> int:
+        """infer number of k-loops from a maximum number of operations z"""
+        if self.weight_mode:
+            z_init = self.rand_args.n_osc * 2   # weights and oscillators count separate
+            z_loop = self.rand_args.n_osc       # only weights updated on each loop
+            return int((self.max_z_ops - z_init) // z_loop)
+        
+        # z_init is zero
+        z_loop = self.rand_args.n_osc * 2   # weights and oscillators updated on each loop
+        return int(self.max_z_ops // z_loop)
+
+    def get_algo_args(self) -> party.AlgoArgs:
+        """get the current set of AlgoArgs form the search module"""
+        return party.AlgoArgs(
+            self.rand_args,
+            self.target,
+            self.weight_mode,
+            self.max_z_ops,
+            self.k_samples,
+            self.j_exploits,
+            self.z_ops_callbacks,
+            self.store_det_args,
+            self.history,
+            self.args_path,
+        )
 
     @abstractmethod
     def search(self, *args, **kwargs): # *args needed to use with map(), not sure why
