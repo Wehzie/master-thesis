@@ -69,25 +69,47 @@ def simple_algo_sweep(algo_sweep: AlgoSweep, sampling_rate: int, target: np.ndar
         best_sample, z_ops = search_alg.search()
         post_main(best_sample, sampling_rate, target, raw_dtype, z_ops)
 
+def produce_all_results():
+    """run all experiments and plot results"""
+    exp = experimenteur.Experimenteur(mp = False)
+
+    results = exp.run_rand_args_sweep(algo_sweep, params.expo_time_sweep, params.py_rand_args_uniform)
+    df = expan.conv_results_to_pd(results)
+    expan.plot_n_vs_rmse(df)
+
+    results = exp.run_z_ops_sweep(algo_sweep, params.z_ops_sweep)
+    df = expan.conv_results_to_pd(results)
+    expan.plot_z_vs_rmse(df)
+
+    results = exp.run_rand_args_sweep(algo_sweep, params.freq_sweep, params.py_rand_args_uniform)
+    df = expan.conv_results_to_pd(results)
+    expan.plot_freq_vs_rmse_uni_norm(df)
+
+    results = exp.run_rand_args_sweep(algo_sweep, params.weight_sweep, params.py_rand_args_normal)
+    df = expan.conv_results_to_pd(results)
+
 @data_analysis.print_time
 def main():
     rand_args, meta_target = params.init_target2rand_args()
     target = meta_target[1]
     algo_sweep = params.init_algo_sweep(target)
     # simple_algo_sweep(algo_sweep, *meta_target)
-    exp = experimenteur.Experimenteur(mp = False)
+    exp = experimenteur.Experimenteur(mp = True)
     # results = exp.run_algo_sweep(algo_sweep)
-    #results = exp.run_rand_args_sweep(algo_sweep, params.const_time_sweep, params.py_rand_args_uniform)
-    results = exp.run_rand_args_sweep(algo_sweep, params.expo_time_sweep, params.py_rand_args_uniform)
+    results = exp.run_rand_args_sweep(algo_sweep, params.weight_sweep, params.py_rand_args_uniform)
+    # results = exp.run_rand_args_sweep(algo_sweep, params.expo_time_sweep, params.py_rand_args_uniform)
     # results = exp.run_sampling_rate_sweep(params.sampling_rate_sweep)
+    # results = exp.run_z_ops_sweep(algo_sweep, params.z_ops_sweep)
     for r in results:
         print(f"{r}\n")
     data_io.pickle_results(results, Path("data/results.pickle"))
 
     df = expan.conv_results_to_pd(results)
     df.to_csv(Path("data/experiment.csv"))
+
+    print(df.describe())
     
-    expan.plot_results_expo_time(df)
+    expan.plot_weight_range_vs_rmse(df, len(target))
 
 if __name__ == "__main__":
     main()

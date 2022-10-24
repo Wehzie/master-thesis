@@ -21,17 +21,7 @@ class Dist:
             self.args = (float(dist),)
             self.kwargs = kwargs  # {"const": float(dist)}
                                     # either args or kwargs could be used here
-
-    def callable_const(self, const, size=None) -> Union[float, np.ndarray]:
-        if size: return np.repeat(const, size)
-        return const
-
-    def draw(self) -> float:
-        return self.dist(*self.args, **self.kwargs)
-    
-    def draw_n(self) -> np.ndarray:
-        return self.dist(*self.args, **self.kwargs, size=self.n)
-
+                                    
     def __repr__(self) -> str:
         if isinstance(self.dist, Callable):
             dist = self.dist.__name__       # e.g. uniform
@@ -41,6 +31,40 @@ class Dist:
         kwargs = "kwargs=" + str(self.kwargs)
         return dist + kwargs
 
+    def callable_const(self, const, size=None) -> Union[float, np.ndarray]:
+        """return a constant value"""
+        if size: return np.repeat(const, size)
+        return const
+
+    def draw(self) -> float:
+        """draw a single value from the distribution"""
+        return self.dist(*self.args, **self.kwargs)
+    
+    def draw_n(self) -> np.ndarray:
+        """draw n values from the distribution"""
+        return self.dist(*self.args, **self.kwargs, size=self.n)
+
+    def is_uniform(self) -> bool:
+        return self.dist.__name__ == "uniform"
+    
+    def is_normal(self) -> bool:
+        return self.dist.__name__ == "normal"
+
+    def is_const(self) -> bool:
+        return self.dist.__name__ == "callable_const"
+
+    def compute_range(self) -> None:
+        """compute the numerical range covered by a distribution.
+        for example, a uniform distribution between 0 and 10 has a range of 10."""
+        if self.is_uniform():
+            self.range = self.kwargs["high"] - self.kwargs["low"]
+        elif self.is_normal():
+            self.range = 2 * self.kwargs["scale"]
+        elif self.is_const():
+            self.range = 0
+        else:
+            raise NotImplementedError
+    
 class WeightDist(Dist):
     def __init__(self, dist: Union[int, float, Callable], n: int, *args, **kwargs):
         if isinstance(dist, Callable):

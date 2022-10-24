@@ -28,7 +28,7 @@ def test_lazy():
         n_osc = 3,
         duration = None,
         samples = 300,
-        f_dist = party.Dist(const.RNG.uniform, low=1e5, high=1e6),
+        freq_dist = party.Dist(const.RNG.uniform, low=1e5, high=1e6),
         amplitude = 0.5,
         weight_dist = party.Dist(const.RNG.uniform, low=0.1, high=1, n=3),
         phase_dist = party.Dist(const.RNG.uniform, low=0, high=2),

@@ -4,9 +4,6 @@ from typing import Callable, Final, List, Union
 import numpy as np
 from dist import Dist, WeightDist
 
-import algo
-import const
-
 @dataclass
 class PythonSignalRandArgs:
     """define the distribution from which deterministic parameters are drawn
@@ -21,7 +18,7 @@ class PythonSignalRandArgs:
     duration: float # signal duration in seconds
     samples: int # number of samples in a signal
 
-    f_dist: Dist # frequency distribution
+    freq_dist: Dist # frequency distribution
     amplitude: float # shared by all oscillators in a sum
     weight_dist: WeightDist # amplitude=weight_dist*default_amplitude
                      

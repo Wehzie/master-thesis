@@ -135,7 +135,7 @@ py_rand_args_uniform = party.PythonSignalRandArgs(
     n_osc = 100,
     duration = None,
     samples = 300,
-    f_dist = party.Dist(rng.uniform, low=1e5, high=1e6),
+    freq_dist = party.Dist(rng.uniform, low=1e5, high=1e6),
     amplitude = 0.5,                                                    # resembling 0.5 V amplitude of V02
     weight_dist = party.WeightDist(rng.uniform, low=0, high=10, n=100),   # resistor doesn't amplify so not > 1
     phase_dist = party.Dist(rng.uniform, low=-1/3, high=1/3), # uniform 0 to 2 pi phase shift seems too wild
@@ -147,7 +147,7 @@ py_rand_args_normal = party.PythonSignalRandArgs(
     n_osc = 3000,
     duration = None,
     samples = 300,
-    f_dist = party.Dist(rng.normal, loc=5e5, scale=4e5),
+    freq_dist = party.Dist(rng.normal, loc=5e5, scale=4e5),
     amplitude = 0.5,                                    # resembling 0.5 V amplitude of V02
     weight_dist = party.WeightDist(rng.normal, loc=0.5, scale=0.5, n=3000),   # resistor doesn't amplify so not > 1
     phase_dist = party.Dist(rng.normal, loc=0, scale=1/3), # uniform 0 to 2 pi phase shift seems too wild
@@ -172,27 +172,27 @@ def init_freq_sweep() -> List[party.Dist]:
     )
     return freq_li
 
-def init_const_time_sweep(rand_args: party.PythonSignalRandArgs) -> sweety.ConstTimeSweep:
-    return sweety.ConstTimeSweep(
-    f_dist = init_freq_sweep(),
-    amplitude = [0.5, 5e0, 5e1, 5e2, 5e3, 5e4, 5e5, 5e6],
-    weight_dist = append_normal([
-        party.WeightDist(rng.uniform, low=0, high=1, n=rand_args.n_osc),
-        party.WeightDist(rng.uniform, low=0, high=1e1, n=rand_args.n_osc),
-        party.WeightDist(rng.uniform, low=0, high=1e2, n=rand_args.n_osc),
-        party.WeightDist(rng.uniform, low=0, high=1e3, n=rand_args.n_osc),
-        party.WeightDist(rng.uniform, low=0, high=1e4, n=rand_args.n_osc),
-        party.WeightDist(rng.uniform, low=0, high=1e5, n=rand_args.n_osc),
-    ]),
-    phase_dist = [party.Dist(0)] + append_normal([
-        party.Dist(rng.uniform, low=-1/5, high=1/5),
-        party.Dist(rng.uniform, low=-1/3, high=1/3),
-        party.Dist(rng.uniform, low=-1/2, high=1/2),
-        party.Dist(rng.uniform, low=-1, high=1),
-        party.Dist(rng.uniform, low=-2, high=2),
-        ])
-    )
-const_time_sweep = init_const_time_sweep(py_rand_args_uniform)
+# def init_const_time_sweep(rand_args: party.PythonSignalRandArgs) -> sweety.ConstTimeSweep:
+#     return sweety.ConstTimeSweep(
+#     freq_dist = init_freq_sweep(),
+#     amplitude = [0.5, 5e0, 5e1, 5e2, 5e3, 5e4, 5e5, 5e6],
+#     weight_dist = append_normal([
+#         party.WeightDist(rng.uniform, low=0, high=1, n=rand_args.n_osc),
+#         party.WeightDist(rng.uniform, low=0, high=1e1, n=rand_args.n_osc),
+#         party.WeightDist(rng.uniform, low=0, high=1e2, n=rand_args.n_osc),
+#         party.WeightDist(rng.uniform, low=0, high=1e3, n=rand_args.n_osc),
+#         party.WeightDist(rng.uniform, low=0, high=1e4, n=rand_args.n_osc),
+#         party.WeightDist(rng.uniform, low=0, high=1e5, n=rand_args.n_osc),
+#     ]),
+#     phase_dist = [party.Dist(0)] + append_normal([
+#         party.Dist(rng.uniform, low=-1/5, high=1/5),
+#         party.Dist(rng.uniform, low=-1/3, high=1/3),
+#         party.Dist(rng.uniform, low=-1/2, high=1/2),
+#         party.Dist(rng.uniform, low=-1, high=1),
+#         party.Dist(rng.uniform, low=-2, high=2),
+#         ])
+#     )
+# const_time_sweep = init_const_time_sweep(py_rand_args_uniform)
 
 expo_time_sweep = sweety.ExpoTimeSweep(
     n_osc=[100, 200, 300, 500, 1000, 2000],

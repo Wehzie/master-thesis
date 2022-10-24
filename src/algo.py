@@ -196,3 +196,23 @@ class SearchAlgo(ABC):
     @abstractmethod
     def search(self, *args, **kwargs): # *args needed to use with map(), not sure why
         NotImplementedError
+
+
+"""
+algorithms[
+    random_one_shot,
+    random_one_shot_weights(weight_init=zeros, ones, uniform, dist),
+    las_vegas_aggregate,
+    las_vegas_weight(weight_init=zeros, ones, uniform, dist),
+    # version: pass over a single matrix/weights multiple times
+    iterative,
+    iterative_weight(weight_init=zeros, ones, uniform, dist),
+    annealing (lower num-osc replaced),
+    annealing weight(weight_init=zeros, ones, uniform, dist),
+    las_vegas_purge:
+        draw n oscillators
+        loop over each oscillator and remove it if removing lowers the rmse
+        remaining n-oscillators is non-deterministic
+    genetic,
+    genetic weight(weight_init=zeros, ones, uniform, dist)],
+"""
