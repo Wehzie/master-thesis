@@ -1,4 +1,3 @@
-from unicodedata import is_normalized
 import result_types as resty
 from util import add_str2keys
 import const
@@ -47,57 +46,18 @@ def conv_results_to_pd(results: List[resty.ResultSweep]) -> pd.DataFrame:
         freq_dist_range, weight_dist_range, phase_dist_range, offset_dist_range,
         freq_dist_df, weight_dist_df, phase_dist_df, offset_dist_df], axis=1)
 
-def reduce_dist_attributes(df: pd.DataFrame) -> pd.DataFrame:
-    """reduce each distribution attribute to a single column"""
-
-    df["freq_dist"] = df["freq_dist_low"].astype(str) + "-" + df["freq_dist_high"].astype(str)
-    
-
-def plot_n_vs_rmse(df: pd.DataFrame) -> None:
-    """exp1: plot number of oscillators, n, against rmse for multiple algorithms with z_ops and rand_args fixed"""
-    m_averages = int(df["m_averages"].iloc[[0]])
-    max_z_ops = df["max_z_ops"].values[0]
-    df = df.filter(items=["algo_name", "n_osc", "mean_rmse", "std_rmse"])# "mean_z_ops"])
-
-    algo_names = set(df["algo_name"])
-    dfs_by_algo = [df.loc[df["algo_name"] == name] for name in algo_names]        
-    plt.figure()
-    for data, name in zip(dfs_by_algo, algo_names):
-        plt.errorbar(data["n_osc"], data["mean_rmse"], data["std_rmse"], elinewidth=1, capsize=5, capthick=1, markeredgewidth=1, label=name)
-
-    plt.title(f"mean over {m_averages}, max-ops={max_z_ops}")
-    plt.gca().set_xlabel("number of oscillators")
-    plt.gca().set_ylabel("RMSE(generated, target)")
-    plt.legend(title="algorithm")
-    plt.savefig(Path("data/n_on_rmse.png"), dpi=300)
-
-    plt.show()
-
-def plot_z_vs_rmse(df: pd.DataFrame, target_samples: int) -> None:
-    """exp2: plot number of operations, z_ops, against rmse for multiple algorithms with rand_args fixed"""
+def get_plot_title(df: pd.DataFrame, target_samples: int) -> str:
+    """assemble plot title, execute before filtering out columns from dataframe"""
     m_averages = int(df["m_averages"].iloc[[0]])
     n_osc = df["n_osc"].values[0]
-    df = df.filter(items=["algo_name", "max_z_ops", "mean_rmse", "std_rmse"])
-
-    algo_names = set(df["algo_name"])
-    dfs_by_algo = [df.loc[df["algo_name"] == name] for name in algo_names]        
-    plt.figure()
-    for data, name in zip(dfs_by_algo, algo_names):
-        plt.errorbar(data["max_z_ops"], data["mean_rmse"], data["std_rmse"], elinewidth=1, capsize=5, capthick=1, markeredgewidth=1, label=name)
-
-    plt.title(f"mean over {m_averages}, n={n_osc}, target samples={target_samples}")
-    plt.gca().set_xlabel("max z-operations")
-    plt.gca().set_ylabel("RMSE(generated, target)")
-    plt.legend(title="algorithm")
-    plt.savefig(Path("data/z_vs_rmse.png"), dpi=300)
-
-    plt.show()
+    max_z_ops = int(df["max_z_ops"].values[0])
+    return f"m={m_averages}, n={n_osc}, samples={target_samples}, max z-ops={max_z_ops}"
 
 def filter_df_by_dist_name(df: pd.DataFrame, attr_name: str, dist_name: str) -> pd.DataFrame:
     """
     filter a dataframe by a type of distribution name, e.g. "uniform" or "normal"
 
-    params:
+    args:
         attr_name: in freq, weight, phase, offset
         dist_name: for example uniform
     """
@@ -106,64 +66,102 @@ def filter_df_by_dist_name(df: pd.DataFrame, attr_name: str, dist_name: str) -> 
     if dist_name == "normal":
         return df[df[f"{attr_name}_dist_loc"].notna()]
 
+def plot_rmse_by_algo(df: pd.DataFrame, column_name: str) -> plt.Figure:
+    """plot one line for each algorithm given an attribute column in a dataframe
+
+    args:
+        column_name: for example amplitude or freq_range
+    """
+    fig = plt.figure()
+    algo_names = set(df["algo_name"])
+    dfs_by_algo = [df.loc[df["algo_name"] == name] for name in algo_names]        
+    for data, name in zip(dfs_by_algo, algo_names):
+        plt.errorbar(data[column_name], data["mean_rmse"], data["std_rmse"], elinewidth=1, capsize=5, capthick=1, markeredgewidth=1, label=name)
+    plt.legend(title="algorithm")
+    plt.gca().set_ylabel("RMSE(generated, target)")
+    return fig
+
+def plot_n_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool = False) -> None:
+    """exp1: plot number of oscillators, n, against rmse for multiple algorithms with z_ops and rand_args fixed"""
+    title = get_plot_title(df, target_samples)
+    df = df.filter(items=["algo_name", "n_osc", "mean_rmse", "std_rmse"])
+    _ = plot_rmse_by_algo(df, "n_osc")
+    plt.title(title)
+    plt.gca().set_xlabel("number of oscillators")
+    plt.savefig(Path("data/n_on_rmse.png"), dpi=300)
+    if show: plt.show()
+
+def plot_z_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool = False) -> None:
+    """exp2: plot number of operations, z_ops, against rmse for multiple algorithms with rand_args fixed"""
+    title = get_plot_title(df, target_samples)
+    df = df.filter(items=["algo_name", "max_z_ops", "mean_rmse", "std_rmse"])
+    _ = plot_rmse_by_algo(df, "max_z_ops")
+    plt.title(title)
+    plt.gca().set_xlabel(" z-operations")
+    plt.savefig(Path("data/z_vs_rmse.png"), dpi=300)
+    if show: plt.show()
+
 def plot_range_vs_rmse(df: pd.DataFrame, target_samples: int, attr_name: str, dist_name: str) -> List[plt.Figure]:
     """
     exp3-7: plot range of distribution against rmse for multiple algorithms with rand_args fixed
     
-    param:
+    args:
         attr_name: for example freq
         dist_name: uniform or normal
 
-    return:
+    returns:
         a list of figures, one for each distribution type
     """
     # assign strings for subsetting the dataframe and for injection to plot
     assert attr_name in ["freq", "weight", "phase", "offset"]
     range_name = attr_name + "_range" # for example freq_range
-    m_averages = int(df["m_averages"].iloc[[0]])
-    n_osc = df["n_osc"].values[0]
+    title = get_plot_title(df, target_samples)
 
     # filter df
     df = filter_df_by_dist_name(df, attr_name, dist_name)
     df = df.filter(items=["algo_name", "mean_rmse", "std_rmse", "mean_z_ops", range_name])
 
-    algo_names = set(df["algo_name"])
-    dfs_by_algo = [df.loc[df["algo_name"] == name] for name in algo_names]        
-    fig = plt.figure()
-    for data, name in zip(dfs_by_algo, algo_names):
-        plt.errorbar(data[range_name], data["mean_rmse"], data["std_rmse"], elinewidth=1, capsize=5, capthick=1, markeredgewidth=1, label=name)
-
-    plt.title(f"mean over {m_averages}, n={n_osc}, target samples={target_samples}, dist={dist_name}")
-    plt.legend(title="algorithm")
-    plt.gca().set_ylabel("RMSE(generated, target)")
+    fig = plot_rmse_by_algo(df, range_name)
+    plt.title(f"{title}, dist={dist_name}")
 
     return fig
 
-def plot_freq_range_vs_rmse(df: pd.DataFrame, target_samples: int) -> None:
+def plot_freq_range_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool = False) -> None:
     """exp3: plot frequency range against rmse for multiple algorithms with rand_args and target fixed"""
     for dist_name in const.LEGAL_DISTS:
         fig = plot_range_vs_rmse(df, target_samples, "freq", dist_name)
         fig.gca().set_xlabel("width of frequency band")
         fig.gca().set_xscale("log")
         fig.savefig(Path(f"data/freq_range_{dist_name}_vs_rmse_.png"), dpi=300)
-    plt.show()
+    if show: plt.show()
 
-def plot_weight_range_vs_rmse(df: pd.DataFrame, target_samples: int) -> None:
+def plot_weight_range_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool = False) -> None:
     """exp4: plot weight range against rmse for multiple algorithms with rand_args and target fixed"""
     for dist_name in const.LEGAL_DISTS:
         fig = plot_range_vs_rmse(df, target_samples, "weight", dist_name)
         fig.gca().set_xlabel("width of weight band")
         fig.gca().set_xscale("log")
         fig.savefig(Path(f"data/weight_range_{dist_name}_vs_rmse_.png"), dpi=300)
-    plt.show()
+    if show: plt.show()
 
-def plot_phase_range_vs_rmse(df: pd.DataFrame, target_samples: int) -> None:
+def plot_phase_range_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool = False) -> None:
     """exp5: plot phase range against rmse for multiple algorithms with rand_args and target fixed"""
     for dist_name in const.LEGAL_DISTS:
         fig = plot_range_vs_rmse(df, target_samples, "phase", dist_name)
         fig.gca().set_xlabel("width of phase band")
         fig.savefig(Path(f"data/phase_range_{dist_name}_vs_rmse_.png"), dpi=300)
-    plt.show()
+    if show: plt.show()
+
+def plot_amplitude_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool = False) -> None:
+    "exp8: plot amplitude against rmse for multiple algorithms with rand_args and target fixed"
+    title = get_plot_title(df, target_samples) # before filtering df
+    df = df.filter(items=["algo_name", "mean_rmse", "std_rmse", "amplitude"])
+    fig = plot_rmse_by_algo(df, "amplitude")
+    plt.title(title)
+    fig.gca().set_ylabel("RMSE(generated, target)")
+    fig.gca().set_xlabel("amplitude [V]")
+    plt.savefig(Path(f"data/amplitude_vs_rmse_.png"), dpi=300)
+    if show: plt.show()
 
 ################ OLD STUFF
 

@@ -69,31 +69,44 @@ def simple_algo_sweep(algo_sweep: AlgoSweep, sampling_rate: int, target: np.ndar
         best_sample, z_ops = search_alg.search()
         post_main(best_sample, sampling_rate, target, raw_dtype, z_ops)
 
-def produce_all_results():
+def produce_all_results(algo_sweep: AlgoSweep, target: np.ndarray) -> None:
     """run all experiments and plot results"""
-    exp = experimenteur.Experimenteur(mp = False)
+    show_all = True
+    exp = experimenteur.Experimenteur(mp = True)
 
     results = exp.run_rand_args_sweep(algo_sweep, params.expo_time_sweep, params.py_rand_args_uniform)
     df = expan.conv_results_to_pd(results)
-    expan.plot_n_vs_rmse(df)
+    expan.plot_n_vs_rmse(df, len(target), show=show_all)
 
     results = exp.run_z_ops_sweep(algo_sweep, params.z_ops_sweep)
     df = expan.conv_results_to_pd(results)
-    expan.plot_z_vs_rmse(df)
+    expan.plot_z_vs_rmse(df, len(target), show=show_all)
 
     results = exp.run_rand_args_sweep(algo_sweep, params.freq_sweep, params.py_rand_args_uniform)
     df = expan.conv_results_to_pd(results)
-    expan.plot_freq_vs_rmse_uni_norm(df)
+    expan.plot_freq_range_vs_rmse(df, len(target), show=show_all)
 
-    results = exp.run_rand_args_sweep(algo_sweep, params.weight_sweep, params.py_rand_args_normal)
+    results = exp.run_rand_args_sweep(algo_sweep, params.weight_sweep, params.py_rand_args_uniform)
     df = expan.conv_results_to_pd(results)
+    expan.plot_weight_range_vs_rmse(df, len(target), show=show_all)
+
+    results = exp.run_rand_args_sweep(algo_sweep, params.phase_sweep, params.py_rand_args_uniform)
+    df = expan.conv_results_to_pd(results)
+    expan.plot_phase_range_vs_rmse(df, len(target), show=show_all)
+
+    results = exp.run_rand_args_sweep(algo_sweep, params.amplitude_sweep, params.py_rand_args_normal)
+    df = expan.conv_results_to_pd(results)
+    expan.plot_amplitude_vs_rmse(df, len(target), show=show_all)
 
 @data_analysis.print_time
 def main():
     rand_args, meta_target = params.init_target2rand_args()
     target = meta_target[1]
     algo_sweep = params.init_algo_sweep(target)
+
+    produce_all_results(algo_sweep, target)
     # simple_algo_sweep(algo_sweep, *meta_target)
+    
     exp = experimenteur.Experimenteur(mp = True)
     # results = exp.run_algo_sweep(algo_sweep)
     results = exp.run_rand_args_sweep(algo_sweep, params.weight_sweep, params.py_rand_args_uniform)

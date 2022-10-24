@@ -54,6 +54,7 @@ def init_freq_sweep() -> sweety.FreqSweep:
         ])
     return sweety.FreqSweep(freq_dist=freq_li)
 freq_sweep = init_freq_sweep()
+# TODO: freq fixed-width, varying starting points
 
 def init_weight_sweep(rand_args: party.PythonSignalRandArgs = py_rand_args_uniform) -> sweety.WeightSweep:
     """init weight sweep with given rand_args"""
@@ -63,6 +64,16 @@ def init_weight_sweep(rand_args: party.PythonSignalRandArgs = py_rand_args_unifo
         party.WeightDist(rng.uniform, low=0, high=1e3, n=rand_args.n_osc),
     ]))
 weight_sweep = init_weight_sweep()
+
+def init_phase_sweep() -> sweety.PhaseSweep:
+    return sweety.PhaseSweep(params.append_normal([
+        party.Dist(rng.uniform, low=-1/3, high=1/3),
+        party.Dist(rng.uniform, low=-1/2, high=1/2),
+        party.Dist(rng.uniform, low=-1, high=1),
+    ]))
+phase_sweep = init_phase_sweep()
+
+amplitude_sweep = sweety.AmplitudeSweep([0.5, 2, 5, 10, 20])
 
 # def init_const_time_sweep(rand_args: party.PythonSignalRandArgs) -> sweety.ConstTimeSweep:
 #     return sweety.ConstTimeSweep(
