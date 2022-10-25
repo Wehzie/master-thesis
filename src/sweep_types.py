@@ -5,10 +5,20 @@ import param_types as party
 import algo
 
 @dataclass
+class AlgoSweep:
+    """repeat experiments over multiple algorithms
+    
+    produces a mean rmse, standard deviation and number of operations (z_ops) for a given configuration"""
+    algo: List[algo.SearchAlgo]    # list of algorithms
+    algo_args: List[party.AlgoArgs]  # list of arguments for each algorithm, in order with algos
+    m_averages: int            # number of averages for each experimental configuration
+
+
+
+@dataclass
 class ConstTimeSweep(ABC):
     """sweeps of PythonRandSignalArgs where time complexity between experiments is constant"""
     pass
-    #attr: List[Union[party.Dist, party.WeightDist, float]]
 
 @dataclass
 class FreqSweep(ConstTimeSweep):
@@ -35,23 +45,17 @@ class OffsetSweep(ConstTimeSweep):
 @dataclass
 class ExpoTimeSweep:
     """sweeps of PythonRandSignalArgs where time complexity between experiments is worse then constant, mostly exponential"""
+    pass
+
+@dataclass
+class NOscSweep(ExpoTimeSweep):
     n_osc: List[int]                    # number of n-oscillators
 
-# also expo time, in algo_args, not rand_args
 @dataclass
-class SamplingRateSweep:
-    sampling_rate_factor: List[float]   # factors to downsample the target signal
-
-@dataclass
-class ZOpsSweep:
-# also expo time, in algo_args, not rand_args
+class ZOpsSweep(ExpoTimeSweep): # also expo time, in algo_args, not rand_args
     max_z_ops: List[int]                # maximum number of z-operations
 
+# also expo time, in algo_args, not rand_args
 @dataclass
-class AlgoSweep:
-    """repeat experiments over multiple algorithms
-    
-    produces a mean rmse, standard deviation and number of operations (z_ops) for a given configuration"""
-    algo: List[algo.SearchAlgo]    # list of algorithms
-    algo_args: List[party.AlgoArgs]  # list of arguments for each algorithm, in order with algos
-    m_averages: int            # number of averages for each experimental configuration
+class SamplingRateSweep(ExpoTimeSweep):
+    sampling_rate_factor: List[float]   # factors to downsample the target signal

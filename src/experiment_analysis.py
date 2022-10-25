@@ -101,6 +101,16 @@ def plot_z_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool = False) ->
     plt.savefig(Path("data/z_vs_rmse.png"), dpi=300)
     if show: plt.show()
 
+def plot_samples_vs_rmse(df: pd.DataFrame, target_sample: int, show: bool = False) -> None:
+    """exp9: plot number of samples against rmse for multiple algorithms with rand_args and target fixed"""
+    title = get_plot_title(df, target_sample) # before filtering df
+    df = df.filter(items=["algo_name", "samples", "mean_rmse", "std_rmse"])
+    _ = plot_rmse_by_algo(df, "samples")
+    plt.title(title)
+    plt.gca().set_xlabel("number of samples")
+    plt.savefig(Path(f"data/samples_vs_rmse.png"), dpi=300)
+    if show: plt.show()
+
 def plot_range_vs_rmse(df: pd.DataFrame, target_samples: int, attr_name: str, dist_name: str) -> List[plt.Figure]:
     """
     exp3-7: plot range of distribution against rmse for multiple algorithms with rand_args fixed
@@ -127,7 +137,7 @@ def plot_range_vs_rmse(df: pd.DataFrame, target_samples: int, attr_name: str, di
     return fig
 
 def plot_freq_range_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool = False) -> None:
-    """exp3: plot frequency range against rmse for multiple algorithms with rand_args and target fixed"""
+    """exp3+4: plot frequency range against rmse for multiple algorithms with rand_args and target fixed"""
     for dist_name in const.LEGAL_DISTS:
         fig = plot_range_vs_rmse(df, target_samples, "freq", dist_name)
         fig.gca().set_xlabel("width of frequency band")
@@ -136,7 +146,7 @@ def plot_freq_range_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool = 
     if show: plt.show()
 
 def plot_weight_range_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool = False) -> None:
-    """exp4: plot weight range against rmse for multiple algorithms with rand_args and target fixed"""
+    """exp5: plot weight range against rmse for multiple algorithms with rand_args and target fixed"""
     for dist_name in const.LEGAL_DISTS:
         fig = plot_range_vs_rmse(df, target_samples, "weight", dist_name)
         fig.gca().set_xlabel("width of weight band")
@@ -145,7 +155,7 @@ def plot_weight_range_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool 
     if show: plt.show()
 
 def plot_phase_range_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool = False) -> None:
-    """exp5: plot phase range against rmse for multiple algorithms with rand_args and target fixed"""
+    """exp6: plot phase range against rmse for multiple algorithms with rand_args and target fixed"""
     for dist_name in const.LEGAL_DISTS:
         fig = plot_range_vs_rmse(df, target_samples, "phase", dist_name)
         fig.gca().set_xlabel("width of phase band")
@@ -153,7 +163,7 @@ def plot_phase_range_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool =
     if show: plt.show()
 
 def plot_offset_range_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool = False) -> None:
-    """exp6: plot offset range against rmse for multiple algorithms with rand_args and target fixed"""
+    """exp7: plot offset range against rmse for multiple algorithms with rand_args and target fixed"""
     for dist_name in const.LEGAL_DISTS:
         fig = plot_range_vs_rmse(df, target_samples, "offset", dist_name)
         fig.gca().set_xlabel("width of offset distribution")

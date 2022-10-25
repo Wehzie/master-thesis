@@ -154,7 +154,6 @@ class SearchAlgo(ABC):
         # each process needs a unique seed
         if "mp" in sup_func_kwargs and sup_func_kwargs["mp"] == True:
             rng = np.random.default_rng(None)
-            #self.rand_args.weight_dist = party.WeightDist(rng.uniform, low=0, high=10, n=100)
             dist = self.rand_args.weight_dist.dist
             # __name__ is used to identify the function
             # this is incredibly ugly

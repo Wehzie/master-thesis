@@ -8,18 +8,39 @@ import numpy.typing as npt
 import pandas as pd
 
 def resample(data: np.ndarray, samples: int) -> np.ndarray:
-    """reduce the size of a signal to the desired number of samples"""
+    """modify the size of a signal to the desired number of samples"""
     return signal.resample(data, samples, axis=0)
 
+def downsample_typesafe(data: np.ndarray, samples: int) -> np.ndarray:
+    """reduce the size of a signal to the desired number of samples while maintaining the type
+    
+    args:
+        data: the signal to be resampled
+        samples: the desired number of samples
+
+    returns:
+        the resampled signal    
+    """
+    s_factor = samples/len(data)
+    step = np.floor(1/s_factor).astype(int)
+    resampled = data[0:-1:step]
+    guard = resampled[0:samples]    # make sure the signal is exactly the desired length
+                                    # experimentally, it seems at most 1 sample is cut off by the guard 
+    assert len(guard) == samples
+    return guard
+
 def resample_by_factor(data: np.ndarray, s_factor: float = 0.01) -> npt.NDArray[np.float64]:
-    """reduce the size of a signal by a given factor via downsampling"""
+    """resample a signal obtaining a length of len(data)*s_factor"""
     return signal.resample(data, int(len(data) * s_factor))
 
-def sample_down_int(data: np.ndarray, s_factor: float) -> np.ndarray:
-    """downsample a signal by taking each n-th sample.
-    input signal maintains its type"""
+def downsample_by_factor_typesafe(data: np.ndarray, s_factor: float) -> np.ndarray:
+    """downsample a signal by taking each n-th sample, input signal maintains its type"""
     step = int(1/s_factor)
     return data[0:-1:step]
+
+def get_sampling_rate_after_resample(old_signal: np.ndarray, new_signal: np.ndarray, old_sampling_rate: int) -> int:
+    """compute the sampling rate after resampling a signal"""
+    return int(new_signal.size/old_signal.size*old_sampling_rate)
 
 def scale_up(short: np.ndarray, len_long: int) -> np.ndarray:
     """scale a short signal up to the desired length by repeating each symbol in-place"""

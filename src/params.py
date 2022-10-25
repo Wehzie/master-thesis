@@ -196,7 +196,7 @@ def init_freq_sweep() -> List[party.Dist]:
 #     )
 # const_time_sweep = init_const_time_sweep(py_rand_args_uniform)
 
-expo_time_sweep = sweety.ExpoTimeSweep(
+expo_time_sweep = sweety.NOscSweep(
     n_osc=[100, 200, 300, 500, 1000, 2000],
 )
 
@@ -240,7 +240,7 @@ def init_target2rand_args(scale_factor: float = 0.5) -> Tuple[party.PythonSignal
     """load, downsample target and inject number of samples into rand_args"""
     # loading and manipulating the target signal
     raw_sampling_rate, raw_target, raw_dtype = data_io.load_data()
-    target_full_len: Final = data_preprocessor.sample_down_int(raw_target, scale_factor)
+    target_full_len: Final = data_preprocessor.downsample_by_factor_typesafe(raw_target, scale_factor)
     # shorten the target
     target: Final = data_preprocessor.take_middle_third(target_full_len)
     # save to wav
