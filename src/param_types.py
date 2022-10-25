@@ -29,17 +29,15 @@ class PythonSignalRandArgs:
 @dataclass
 class PythonSignalDetArgs:
     """define a python signal with deterministic parameters
+    the signal is not weighted and has zero offset
     
     produces a single oscillator as result
     """
     duration: float # specify either duration OR samples, let other be None
-    samples: int
+    samples: int # length of the signal in number of samples
     freq: float # frequency
     amplitude: float # amplitude
-    weight: float # weight is a factor that scales amplitude
     phase: float # phase shift
-    offset_fctr: float  # offset_fctr is a factor proportional to amplitude and weight
-                        # defining some offset
     sampling_rate: int
 
 @dataclass

@@ -7,7 +7,11 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 
-def sample_down(data: np.ndarray, s_factor: float = 0.01) -> npt.NDArray[np.float64]:
+def resample(data: np.ndarray, samples: int) -> np.ndarray:
+    """reduce the size of a signal to the desired number of samples"""
+    return signal.resample(data, samples, axis=0)
+
+def resample_by_factor(data: np.ndarray, s_factor: float = 0.01) -> npt.NDArray[np.float64]:
     """reduce the size of a signal by a given factor via downsampling"""
     return signal.resample(data, int(len(data) * s_factor))
 
@@ -74,7 +78,7 @@ def main():
     data_analysis.plot_signal(data)
     data_analysis.plot_fourier(data)
 
-    sd_data = sample_down(data)
+    sd_data = resample_by_factor(data)
     
     data_analysis.plot_signal(sd_data)
     data_analysis.plot_fourier(sd_data)

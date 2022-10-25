@@ -17,30 +17,33 @@ import data_io
 from typing import Final, List, Tuple
 import const
 import params
+import dist
 rng = const.RNG
 
 
+py_rand_args_n_osc = 15
 py_rand_args_uniform = party.PythonSignalRandArgs(
-    n_osc = 30,
+    n_osc = py_rand_args_n_osc,
     duration = None,
     samples = 300,
-    freq_dist = party.Dist(rng.uniform, low=1e5, high=1e6),
+    freq_dist = dist.Dist(rng.uniform, low=1e5, high=1e6),
     amplitude = 0.5,                                                    # resembling 0.5 V amplitude of V02
-    weight_dist = party.WeightDist(rng.uniform, low=0, high=10, n=30),   # resistor doesn't amplify so not > 1
-    phase_dist = party.Dist(rng.uniform, low=-1/3, high=1/3), # uniform 0 to 2 pi phase shift seems too wild
-    offset_dist = party.Dist(rng.uniform, low=0, high=0),    # offset should be reasonable and bounded by amplitude*weight
+    weight_dist = dist.WeightDist(rng.uniform, low=0, high=10, n=py_rand_args_n_osc),   # resistor doesn't amplify so not > 1
+    phase_dist = dist.Dist(rng.uniform, low=-1/3, high=1/3), # uniform 0 to 2 pi phase shift seems too wild
+    #offset_dist = dist.Dist(rng.uniform, low=0, high=0),    # offset should be reasonable and bounded by amplitude*weight
+    offset_dist = dist.Dist(0),
     sampling_rate = 11025                               # the sampling rate of the Magpie signal
 )
 
 py_rand_args_normal = party.PythonSignalRandArgs(
-    n_osc = 30,
+    n_osc = py_rand_args_n_osc,
     duration = None,
     samples = 300,
-    freq_dist = party.Dist(rng.normal, loc=5e5, scale=4e5),
+    freq_dist = dist.Dist(rng.normal, loc=5e5, scale=4e5),
     amplitude = 0.5,                                    # resembling 0.5 V amplitude of V02
-    weight_dist = party.WeightDist(rng.normal, loc=0.5, scale=0.5, n=30),   # resistor doesn't amplify so not > 1
-    phase_dist = party.Dist(rng.normal, loc=0, scale=1/3), # uniform 0 to 2 pi phase shift seems too wild
-    offset_dist = party.Dist(rng.normal, loc=0, scale=100/3),    # offset should be reasonable and bounded by amplitude*weight
+    weight_dist = dist.WeightDist(rng.normal, loc=0.5, scale=0.5, n=py_rand_args_n_osc),   # resistor doesn't amplify so not > 1
+    phase_dist = dist.Dist(rng.normal, loc=0, scale=1/3), # uniform 0 to 2 pi phase shift seems too wild
+    offset_dist = dist.Dist(rng.normal, loc=0, scale=100/3),    # offset should be reasonable and bounded by amplitude*weight
     sampling_rate = 11025                               # the sampling rate of the Magpie signal
 )
 
@@ -48,9 +51,9 @@ def init_freq_sweep() -> sweety.FreqSweep:
     freq_li = list()
     # sweep band from narrow to wide
     freq_li += params.append_normal([ 
-            party.Dist(rng.uniform, low=1e5, high=1e6),
-            party.Dist(rng.uniform, low=1e4, high=1e7),
-            party.Dist(rng.uniform, low=1e3, high=1e8),
+            dist.Dist(rng.uniform, low=1e5, high=1e6),
+            dist.Dist(rng.uniform, low=1e4, high=1e7),
+            dist.Dist(rng.uniform, low=1e3, high=1e8),
         ])
     return sweety.FreqSweep(freq_dist=freq_li)
 freq_sweep = init_freq_sweep()
@@ -59,38 +62,27 @@ freq_sweep = init_freq_sweep()
 def init_weight_sweep(rand_args: party.PythonSignalRandArgs = py_rand_args_uniform) -> sweety.WeightSweep:
     """init weight sweep with given rand_args"""
     return sweety.WeightSweep(params.append_normal([
-        party.WeightDist(rng.uniform, low=0, high=1e1, n=rand_args.n_osc),
-        party.WeightDist(rng.uniform, low=0, high=1e2, n=rand_args.n_osc),
-        party.WeightDist(rng.uniform, low=0, high=1e3, n=rand_args.n_osc),
+        dist.WeightDist(rng.uniform, low=0, high=1e1, n=rand_args.n_osc),
+        dist.WeightDist(rng.uniform, low=0, high=1e2, n=rand_args.n_osc),
+        dist.WeightDist(rng.uniform, low=0, high=1e3, n=rand_args.n_osc),
     ]))
 weight_sweep = init_weight_sweep()
 
 def init_phase_sweep() -> sweety.PhaseSweep:
     return sweety.PhaseSweep(params.append_normal([
-        party.Dist(rng.uniform, low=-1/3, high=1/3),
-        party.Dist(rng.uniform, low=-1/2, high=1/2),
-        party.Dist(rng.uniform, low=-1, high=1),
+        dist.Dist(rng.uniform, low=-1/3, high=1/3),
+        dist.Dist(rng.uniform, low=-1/2, high=1/2),
+        dist.Dist(rng.uniform, low=-1, high=1),
     ]))
 phase_sweep = init_phase_sweep()
 
-amplitude_sweep = sweety.AmplitudeSweep([0.5, 2, 5, 10, 20])
+amplitude_sweep = sweety.AmplitudeSweep([0.5, 2, 5])
 
-# def init_const_time_sweep(rand_args: party.PythonSignalRandArgs) -> sweety.ConstTimeSweep:
-#     return sweety.ConstTimeSweep(
-#     freq_dist = init_freq_sweep(),
-#     amplitude = [0.5, 5e0, 5e1, 5e2],
-#     weight_dist = params.append_normal([
-#         party.WeightDist(rng.uniform, low=0, high=1e1, n=rand_args.n_osc),
-#         party.WeightDist(rng.uniform, low=0, high=1e2, n=rand_args.n_osc),
-#         party.WeightDist(rng.uniform, low=0, high=1e3, n=rand_args.n_osc),
-#     ]),
-#     phase_dist = [party.Dist(0)] + params.append_normal([
-#         party.Dist(rng.uniform, low=-1/3, high=1/3),
-#         party.Dist(rng.uniform, low=-1/2, high=1/2),
-#         party.Dist(rng.uniform, low=-1, high=1),
-#         ])
-#     )
-# const_time_sweep = init_const_time_sweep(py_rand_args_uniform)
+offset_sweep = sweety.OffsetSweep(params.append_normal([
+    dist.Dist(rng.uniform, low=0, high=0), # works better with experiment analysis than Dist(0)
+    dist.Dist(rng.uniform, low=-1, high=1),
+    dist.Dist(rng.uniform, low=-5, high=5),
+]))
 
 expo_time_sweep = sweety.ExpoTimeSweep(
     n_osc=[20, 40, 60],
@@ -136,7 +128,7 @@ def init_algo_sweep(target: np.ndarray) -> sweety.AlgoSweep:
     algo_args = init_algo_args_for_sweep(rand_args, target, max_z_ops=5e2)
     return sweety.AlgoSweep(algo_list, algo_args, m_averages=2)
 
-def init_target2rand_args(scale_factor: float = 0.5) -> Tuple[party.PythonSignalRandArgs, Tuple]:
+def init_target2rand_args(scale_factor: float = 0.01) -> Tuple[party.PythonSignalRandArgs, Tuple]:
     """load, downsample target and inject number of samples into rand_args"""
     # loading and manipulating the target signal
     raw_sampling_rate, raw_target, raw_dtype = data_io.load_data()

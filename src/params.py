@@ -122,6 +122,8 @@ def append_normal(uniform_li: List[party.Dist]) -> List[party.Dist]:
     DistType = type(uniform_li[0])
     norm_li = list()
     for d in uniform_li:
+        if d.is_const():
+            raise ValueError("experiments with constant distributions aren't supported, do low=const, high=const instead")
         if "n" in d.kwargs: # n is in kwargs only for WeightDist where we draw n
             n = d.kwargs["n"]
         else:

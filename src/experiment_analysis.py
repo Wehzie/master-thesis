@@ -132,7 +132,7 @@ def plot_freq_range_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool = 
         fig = plot_range_vs_rmse(df, target_samples, "freq", dist_name)
         fig.gca().set_xlabel("width of frequency band")
         fig.gca().set_xscale("log")
-        fig.savefig(Path(f"data/freq_range_{dist_name}_vs_rmse_.png"), dpi=300)
+        fig.savefig(Path(f"data/freq_range_{dist_name}_vs_rmse.png"), dpi=300)
     if show: plt.show()
 
 def plot_weight_range_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool = False) -> None:
@@ -141,7 +141,7 @@ def plot_weight_range_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool 
         fig = plot_range_vs_rmse(df, target_samples, "weight", dist_name)
         fig.gca().set_xlabel("width of weight band")
         fig.gca().set_xscale("log")
-        fig.savefig(Path(f"data/weight_range_{dist_name}_vs_rmse_.png"), dpi=300)
+        fig.savefig(Path(f"data/weight_range_{dist_name}_vs_rmse.png"), dpi=300)
     if show: plt.show()
 
 def plot_phase_range_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool = False) -> None:
@@ -150,6 +150,14 @@ def plot_phase_range_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool =
         fig = plot_range_vs_rmse(df, target_samples, "phase", dist_name)
         fig.gca().set_xlabel("width of phase band")
         fig.savefig(Path(f"data/phase_range_{dist_name}_vs_rmse_.png"), dpi=300)
+    if show: plt.show()
+
+def plot_offset_range_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool = False) -> None:
+    """exp6: plot offset range against rmse for multiple algorithms with rand_args and target fixed"""
+    for dist_name in const.LEGAL_DISTS:
+        fig = plot_range_vs_rmse(df, target_samples, "offset", dist_name)
+        fig.gca().set_xlabel("width of offset distribution")
+        fig.savefig(Path(f"data/offset_range_{dist_name}_vs_rmse.png"))
     if show: plt.show()
 
 def plot_amplitude_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool = False) -> None:

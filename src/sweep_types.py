@@ -27,8 +27,8 @@ class PhaseSweep(ConstTimeSweep):
     phase_dist: List[party.Dist]
 
 @dataclass
-class OffsetSwee(ConstTimeSweep):
-    phase_dist: List[party.Dist]
+class OffsetSweep(ConstTimeSweep):
+    offset_dist: List[party.Dist]
 
 
 

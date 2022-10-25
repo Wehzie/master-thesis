@@ -7,9 +7,7 @@ import data_analysis
 import data_io
 import test_params as params
 import sample
-from data_preprocessor import norm1d, sample_down, sample_down_int, take_middle_third
-import algo_las_vegas
-import algo_monte_carlo
+import data_preprocessor
 import param_types as party
 import experimenteur
 import result_types as resty
@@ -25,7 +23,7 @@ from sweep_types import AlgoSweep
 def post_main(best_sample: sample.Sample, sampling_rate: int, target: np.ndarray, raw_dtype: np.dtype,
     z_ops: int, plot_time: bool = True, plot_freq: bool = False) -> None:
     # normalize target to range 0 1
-    target_norm = norm1d(target)
+    target_norm = data_preprocessor.norm1d(target)
 
     # find best sample and save
     print(f"signal_sum mean: {np.mean(best_sample.weighted_sum)}")
@@ -62,12 +60,12 @@ def post_main(best_sample: sample.Sample, sampling_rate: int, target: np.ndarray
     
     plt.show()
 
-def simple_algo_sweep(algo_sweep: AlgoSweep, sampling_rate: int, target: np.ndarray, raw_dtype: np.dtype,) -> None:
+def simple_algo_sweep(algo_sweep: AlgoSweep, sampling_rate: int, target: np.ndarray, raw_dtype: np.dtype, visual: bool = False) -> None:
     """algo sweep without averaging or collecting results"""
     for Algo, algo_args in zip(algo_sweep.algo, algo_sweep.algo_args):
         search_alg = Algo(algo_args)
         best_sample, z_ops = search_alg.search()
-        post_main(best_sample, sampling_rate, target, raw_dtype, z_ops)
+        if visual: post_main(best_sample, sampling_rate, target, raw_dtype, z_ops)
 
 def produce_all_results(algo_sweep: AlgoSweep, target: np.ndarray) -> None:
     """run all experiments and plot results"""
@@ -94,7 +92,11 @@ def produce_all_results(algo_sweep: AlgoSweep, target: np.ndarray) -> None:
     df = expan.conv_results_to_pd(results)
     expan.plot_phase_range_vs_rmse(df, len(target), show=show_all)
 
-    results = exp.run_rand_args_sweep(algo_sweep, params.amplitude_sweep, params.py_rand_args_normal)
+    results = exp.run_rand_args_sweep(algo_sweep, params.offset_sweep, params.py_rand_args_uniform)
+    df = expan.conv_results_to_pd(results)
+    expan.plot_offset_range_vs_rmse(df, len(target), show=show_all)
+
+    results = exp.run_rand_args_sweep(algo_sweep, params.amplitude_sweep, params.py_rand_args_uniform)
     df = expan.conv_results_to_pd(results)
     expan.plot_amplitude_vs_rmse(df, len(target), show=show_all)
 
@@ -104,12 +106,12 @@ def main():
     target = meta_target[1]
     algo_sweep = params.init_algo_sweep(target)
 
-    produce_all_results(algo_sweep, target)
+    # produce_all_results(algo_sweep, target)
     # simple_algo_sweep(algo_sweep, *meta_target)
     
     exp = experimenteur.Experimenteur(mp = True)
     # results = exp.run_algo_sweep(algo_sweep)
-    results = exp.run_rand_args_sweep(algo_sweep, params.weight_sweep, params.py_rand_args_uniform)
+    results = exp.run_rand_args_sweep(algo_sweep, params.offset_sweep, params.py_rand_args_uniform)
     # results = exp.run_rand_args_sweep(algo_sweep, params.expo_time_sweep, params.py_rand_args_uniform)
     # results = exp.run_sampling_rate_sweep(params.sampling_rate_sweep)
     # results = exp.run_z_ops_sweep(algo_sweep, params.z_ops_sweep)
@@ -121,8 +123,9 @@ def main():
     df.to_csv(Path("data/experiment.csv"))
 
     print(df.describe())
+    print(f"df.columns: {df.columns}")
     
-    expan.plot_weight_range_vs_rmse(df, len(target))
+    expan.plot_offset_range_vs_rmse(df, len(target), show=True)
 
 if __name__ == "__main__":
     main()

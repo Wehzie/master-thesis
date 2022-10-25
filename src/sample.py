@@ -64,12 +64,12 @@ class Sample():
         with open(data_path, "wb") as f:
             pickle.dump(self, f)
 
-    def update(self, target: np.ndarray) -> None:
+    def update(self, target: np.ndarray) -> None: # TODO: marked for removal
         """recompute sum and rmse"""
         if self.weights is None:
             self.signal_sum = np.sum(self.signal_matrix, axis=0) + self.offset
         else:
-            self.signal_sum = self.predict(self.signal_matrix, self.weights, self.offset)
+            self.signal_sum = self.compute_weighted_sum(self.signal_matrix, self.weights, self.offset)
         self.rmse = data_analysis.compute_rmse(self.signal_sum, target)
 
     @staticmethod
@@ -97,7 +97,7 @@ class Sample():
         return reg
 
     @staticmethod
-    def compute_weighted_sum(X: np.ndarray, coef: np.ndarray, intercept: float = 0) -> np.ndarray:
+    def compute_weighted_sum(X: np.ndarray, coef: np.ndarray, intercept: float) -> np.ndarray:
         """generate approximation of target, y"""
         fit = np.sum(X.T * coef, axis=1) + intercept
         return fit
