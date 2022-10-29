@@ -96,7 +96,7 @@ z_ops_sweep = sweety.ZOpsSweep(
     max_z_ops=[1e3, 5e3, 1e4],
 )
 
-sampling_rate_sweep = sweety.SamplingRateSweep([0.01, 0.03, 0.05])
+sampling_rate_sweep = sweety.NumSamplesSweep([300, 400, 500])
 
 las_vegas_args = party.AlgoArgs(
     rand_args=py_rand_args_uniform,
@@ -127,8 +127,7 @@ max_z_ops: int) -> List[party.AlgoArgs]:
         party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True),
     ])
     
-def init_algo_sweep(target: np.ndarray) -> sweety.AlgoSweep:
-    rand_args = py_rand_args_uniform
+def init_algo_sweep(target: np.ndarray, rand_args: party.PythonSignalRandArgs) -> sweety.AlgoSweep:
     algo_args = init_algo_args_for_sweep(rand_args, target, max_z_ops=5e2)
     return sweety.AlgoSweep(algo_list, algo_args, m_averages=2)
 

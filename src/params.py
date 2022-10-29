@@ -200,7 +200,7 @@ expo_time_sweep = sweety.NOscSweep(
     n_osc=[100, 200, 300, 500, 1000, 2000],
 )
 
-sampling_rate_sweep = sweety.SamplingRateSweep([0.01, 0.1, 0.5, 1])
+sampling_rate_sweep = sweety.NumSamplesSweep([100, 1000, 5000, 10000, 30000])
 
 las_vegas_args = party.AlgoArgs(
     rand_args=py_rand_args_uniform,
@@ -223,16 +223,17 @@ algo_list: List[SearchAlgo] = [
     # MCExploit,
 ]
 
-def init_algo_args_for_sweep(rand_args: party.PythonSignalRandArgs,
+def init_algo_args_for_sweep(
+rand_args: party.PythonSignalRandArgs,
 target: np.ndarray,
-max_z_ops: int) -> List[party.AlgoArgs]:
+max_z_ops: int
+) -> List[party.AlgoArgs]:
     return ([
         party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=False),
         party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True),
     ])
     
-def init_algo_sweep(target: np.ndarray) -> sweety.AlgoSweep:
-    rand_args = py_rand_args_uniform
+def init_algo_sweep(target: np.ndarray, rand_args: party.PythonSignalRandArgs) -> sweety.AlgoSweep:
     algo_args = init_algo_args_for_sweep(rand_args, target, max_z_ops=5e3)
     return sweety.AlgoSweep(algo_list, algo_args, m_averages=20)
 

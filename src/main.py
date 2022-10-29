@@ -68,12 +68,12 @@ def simple_algo_sweep(algo_sweep: AlgoSweep, m_target: meta_target.MetaTarget, v
         best_sample, z_ops = search_alg.search()
         if visual: post_main(best_sample, m_target, z_ops)
 
-def produce_all_results(algo_sweep: AlgoSweep, target: np.ndarray) -> None:
+def produce_all_results(algo_sweep: AlgoSweep, target: np.ndarray, base_rand_args: party.PythonSignalRandArgs) -> None:
     """run all experiments and plot results"""
     show_all = True
     exp = experimenteur.Experimenteur(mp = True)
 
-    results = exp.run_rand_args_sweep(algo_sweep, params.n_osc_sweep, params.py_rand_args_uniform)
+    results = exp.run_rand_args_sweep(algo_sweep, params.n_osc_sweep, base_rand_args)
     df = expan.conv_results_to_pd(results)
     expan.plot_n_vs_rmse(df, len(target), show=show_all)
 
@@ -81,41 +81,44 @@ def produce_all_results(algo_sweep: AlgoSweep, target: np.ndarray) -> None:
     df = expan.conv_results_to_pd(results)
     expan.plot_z_vs_rmse(df, len(target), show=show_all)
 
+    results = exp.run_sampling_rate_sweep(params.sampling_rate_sweep, base_rand_args)
+    df = expan.conv_results_to_pd(results)
+    expan.plot_samples_vs_rmse(df, show=show_all)
+
     for freq_sweep in [params.freq_sweep_from_zero, params.freq_sweep_around_vo2]:
-        results = exp.run_rand_args_sweep(algo_sweep, freq_sweep, params.py_rand_args_uniform)
+        results = exp.run_rand_args_sweep(algo_sweep, freq_sweep, base_rand_args)
         df = expan.conv_results_to_pd(results)
         expan.plot_freq_range_vs_rmse(df, len(target), show=show_all)
 
-    results = exp.run_rand_args_sweep(algo_sweep, params.weight_sweep, params.py_rand_args_uniform)
+    results = exp.run_rand_args_sweep(algo_sweep, params.weight_sweep, base_rand_args)
     df = expan.conv_results_to_pd(results)
     expan.plot_weight_range_vs_rmse(df, len(target), show=show_all)
 
-    results = exp.run_rand_args_sweep(algo_sweep, params.phase_sweep, params.py_rand_args_uniform)
+    results = exp.run_rand_args_sweep(algo_sweep, params.phase_sweep, base_rand_args)
     df = expan.conv_results_to_pd(results)
     expan.plot_phase_range_vs_rmse(df, len(target), show=show_all)
 
-    results = exp.run_rand_args_sweep(algo_sweep, params.offset_sweep, params.py_rand_args_uniform)
+    results = exp.run_rand_args_sweep(algo_sweep, params.offset_sweep, base_rand_args)
     df = expan.conv_results_to_pd(results)
     expan.plot_offset_range_vs_rmse(df, len(target), show=show_all)
 
-    results = exp.run_rand_args_sweep(algo_sweep, params.amplitude_sweep, params.py_rand_args_uniform)
+    results = exp.run_rand_args_sweep(algo_sweep, params.amplitude_sweep, base_rand_args)
     df = expan.conv_results_to_pd(results)
     expan.plot_amplitude_vs_rmse(df, len(target), show=show_all)
 
 @data_analysis.print_time
 def main():
-    m_target = meta_target.MetaTarget(params.py_rand_args_uniform)
-    algo_sweep = params.init_algo_sweep(m_target.signal)
+    rand_args = params.py_rand_args_uniform
+    m_target = meta_target.MetaTarget(rand_args)
+    algo_sweep = params.init_algo_sweep(m_target.signal, rand_args)
 
-    # produce_all_results(algo_sweep, m_target.signal)
-    simple_algo_sweep(algo_sweep, m_target, visual=True)
-    exit()
-    
+    # simple_algo_sweep(algo_sweep, m_target, visual=True)
+    # produce_all_results(algo_sweep, m_target.signal, rand_args)
     exp = experimenteur.Experimenteur(mp = True)
     # results = exp.run_algo_sweep(algo_sweep)
-    # results = exp.run_rand_args_sweep(algo_sweep, params.freq_sweep_from_zero, params.py_rand_args_uniform)
-    # results = exp.run_rand_args_sweep(algo_sweep, params.expo_time_sweep, params.py_rand_args_uniform)
-    # results = exp.run_sampling_rate_sweep(params.sampling_rate_sweep)
+    # results = exp.run_rand_args_sweep(algo_sweep, params.freq_sweep_from_zero, rand_args)
+    # results = exp.run_rand_args_sweep(algo_sweep, params.expo_time_sweep, rand_args)
+    results = exp.run_sampling_rate_sweep(params.sampling_rate_sweep, rand_args)
     # results = exp.run_z_ops_sweep(algo_sweep, params.z_ops_sweep)
     for r in results:
         print(f"{r}\n")
@@ -125,10 +128,10 @@ def main():
     df.to_csv(Path("data/experiment.csv"))
 
     print(df.describe())
-    print(df)
+    print(df["samples"])
     print(f"df.columns: {df.columns}")
     
-    expan.plot_samples_vs_rmse(df, len(m_target.signal), show=True)
+    expan.plot_samples_vs_rmse(df, show=True)
 
 if __name__ == "__main__":
     main()

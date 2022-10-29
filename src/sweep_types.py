@@ -55,7 +55,6 @@ class NOscSweep(ExpoTimeSweep):
 class ZOpsSweep(ExpoTimeSweep): # also expo time, in algo_args, not rand_args
     max_z_ops: List[int]                # maximum number of z-operations
 
-# also expo time, in algo_args, not rand_args
 @dataclass
-class SamplingRateSweep(ExpoTimeSweep):
-    sampling_rate_factor: List[float]   # factors to downsample the target signal
+class NumSamplesSweep(ExpoTimeSweep):
+    samples: List[float]   # number of samples in the target signal

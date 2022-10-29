@@ -9,6 +9,7 @@ import sweep_types as sweety
 import result_types as resty
 from algo import SearchAlgo
 import params
+import meta_target
 
 import numpy as np
 
@@ -79,13 +80,14 @@ class Experimenteur:
         # TODO: flush and pickle results
         return results
     
-    def run_sampling_rate_sweep(self, sweep_args: sweety.SamplingRateSweep) -> resty.ResultSweep:
+    def run_sampling_rate_sweep(self, sweep_args: sweety.NumSamplesSweep, base_args: party.PythonSignalRandArgs) -> resty.ResultSweep:
         """run all algorithms at different sampling rates of a target"""
         results = list()
-        for sf in sweep_args.sampling_rate_factor:
-            rand_args, meta_target = params.init_target2rand_args(scale_factor=sf)
-            target = meta_target[1]
-            algo_sweep = params.init_algo_sweep(target)
+        for s in sweep_args.samples:
+            temp_args = copy.deepcopy(base_args)
+            temp_args.samples = s # inject samples into rand_args
+            m_target = meta_target.MetaTarget(temp_args)            
+            algo_sweep = params.init_algo_sweep(m_target.signal, temp_args)
             results += self.run_algo_sweep(algo_sweep)
         return results
 

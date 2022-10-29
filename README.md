@@ -8,3 +8,5 @@
 
 ## DevOps
 
+- Before running a full sweep run a test sweep with m-averages=1 with the final parameters
+- Before running a full sweep run a test sweep with the test parameters on the target hardware
