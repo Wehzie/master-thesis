@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 import pickle
-from types import NotImplementedType
 from typing import Callable, List, Tuple, Union
 
 import sample
@@ -51,6 +50,17 @@ class SearchAlgo(ABC):
     def gen_empty_sample() -> sample.Sample:
         return sample.Sample(None, None, None, 0, np.inf, list())
 
+    def gen_zero_sample(self) -> sample.Sample:
+        """generate a sample with all sensible fields set to 0"""
+        return sample.Sample(
+            np.zeros((self.rand_args.n_osc, self.rand_args.samples)),
+            np.zeros(self.rand_args.n_osc),
+            np.zeros(self.rand_args.samples),
+            0,
+            data_analysis.compute_rmse(np.zeros(self.rand_args.samples), self.target),
+            list(),
+        )
+
     def pickle_samples(self, k: int) -> None:
         """pickle samples in RAM to disk in order to free RAM
         
@@ -72,7 +82,7 @@ class SearchAlgo(ABC):
         self.z_ops = 0
         self.samples = list()
         if self.history and self.args_path:
-            self.args_path.unlink(missing_ok=True) 
+            self.args_path.unlink(missing_ok=True)
 
     def eval_z_ops_callback():
         """store a sample and current z_ops when the callback schedule says so"""
@@ -86,7 +96,7 @@ class SearchAlgo(ABC):
         """save samples to RAM or file if desired"""
         # if self.z_ops_callbacks: self.eval_z_ops_callback()
         if self.history: self.samples.append(base_sample)
-        if self.history and self.args_path: self.pickle_samples(k)
+        if self.history and self.args_path: self.pickle_samples(k) # TODO: could use len(self.samples)
 
     def set_first_point_to_zero(self) -> None:
         """set the first point in each sample to 0 and recompute rmse
@@ -111,7 +121,7 @@ class SearchAlgo(ABC):
         
         return best_sample, rmse_li, rmse_norm_li
 
-    def eval_max_z_ops(self, verbose: bool = True) -> bool:
+    def stop_on_z_ops(self, verbose: bool = True) -> bool:
         """return true when an algorithm exceeds the maximum number of allowed operations"""
         if self.max_z_ops is None: return False
         if self.z_ops >= self.max_z_ops:
@@ -126,6 +136,15 @@ class SearchAlgo(ABC):
             return temp_sample
         return base_sample
 
+    def draw_random_indices(self, j_replace: int) -> List[int]:
+        """draw random indices pointing to an oscillator and weight for drawing a partial sample"""
+        if self.mp: # whether to use multiprocessing
+            rng = np.random.default_rng()
+            osc_to_replace = rng.choice(self.rand_args.n_osc, size=j_replace, replace=False)
+        else:
+            osc_to_replace = const.RNG.choice(self.rand_args.n_osc, size=j_replace, replace=False)
+        return osc_to_replace
+
     def draw_sample(self) -> sample.Sample:
         """draw a sample and update z_ops"""
         self.z_ops += self.rand_args.n_osc * 2 # weights and oscillators are counted separately
@@ -136,15 +155,15 @@ class SearchAlgo(ABC):
         self.z_ops += self.rand_args.n_osc
         return gen_signal_python.draw_sample_weights(base_sample, self.rand_args, self.target)
 
-    def draw_partial_sample(self, base_sample: sample.Sample, j_replace: int) -> sample.Sample:
+    def draw_partial_sample(self, base_sample: sample.Sample, osc_to_replace: List[int]) -> sample.Sample:
         """given a sample replace j oscillators and weights, update z_ops, recompute metrics"""
-        self.z_ops += j_replace * 2
-        return gen_signal_python.draw_partial_sample(base_sample, self.rand_args, j_replace, self.mp, self.weight_mode, self.target, self.store_det_args)
+        self.z_ops += len(osc_to_replace) * 2 # len(osc_to_replace) == j_replace
+        return gen_signal_python.draw_partial_sample(base_sample, self.rand_args, osc_to_replace, self.weight_mode, self.target, self.store_det_args)
 
-    def draw_partial_sample_weights(self, base_sample: sample.Sample, j_replace: int) -> sample.Sample:
+    def draw_partial_sample_weights(self, base_sample: sample.Sample, osc_to_replace: List[int]) -> sample.Sample:
         """given a sample replace j weights, update z_ops, recompute metrics"""
-        self.z_ops += j_replace
-        return gen_signal_python.draw_partial_sample_weights(base_sample, self.rand_args, j_replace, self.mp, self.weight_mode, self.target, self.store_det_args)
+        self.z_ops += len(osc_to_replace) # len(osc_to_replace) == j_replace
+        return gen_signal_python.draw_partial_sample_weights(base_sample, self.rand_args, osc_to_replace, self.weight_mode, self.target, self.store_det_args)
 
     def handle_mp(self, sup_func_kwargs: dict) -> None:
         """handle multi processing by modifying numpy the random number generator
@@ -199,6 +218,7 @@ class SearchAlgo(ABC):
         returns:
             k_samples: number of k-loops or temp_samples drawn
         """
+        raise NotImplementedError
 
     @abstractmethod
     def search(self, *args, **kwargs): # *args needed to use with map(), not sure why

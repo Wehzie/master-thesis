@@ -3,17 +3,13 @@
 use like:
 import test_params as params
 """
-from pathlib import Path
-from random import randrange
 import numpy as np
 
 from algo import SearchAlgo
-from algo_las_vegas import LasVegas, LasVegasWeight
-from algo_monte_carlo import MCAnneal, MCAnnealWeight, MCExploit, MCExploitWeight, MCOneShot, MCOneShotWeight
+import algo_las_vegas as alave
+import algo_monte_carlo as almoca
 import param_types as party
 import sweep_types as sweety
-import data_preprocessor
-import data_io
 from typing import Final, List, Tuple
 import const
 import params
@@ -111,16 +107,15 @@ las_vegas_args = party.AlgoArgs(
 )
 
 algo_list: List[SearchAlgo] = [
-    MCOneShot,
-    MCOneShotWeight,
-    MCExploit,
-    MCExploit,
-    MCExploitWeight,
-    MCExploitWeight,
-    MCAnneal,
-    MCAnnealWeight,
-    # LasVegas,
-    # LasVegasWeight,
+    alave.LasVegas,
+    almoca.MCOneShot,
+    almoca.MCOneShotWeight,
+    almoca.MCExploit,
+    almoca.MCExploit,
+    almoca.MCExploitWeight,
+    almoca.MCExploitWeight,
+    almoca.MCAnneal,
+    almoca.MCAnnealWeight,
     # Genetic,
 ]
 
@@ -128,6 +123,7 @@ def init_algo_args_for_sweep(rand_args: party.PythonSignalRandArgs,
 target: np.ndarray,
 max_z_ops: int) -> List[party.AlgoArgs]:
     return ([                                                   # TODO: set weight mode and mp in constructor
+        party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=False, mp=const.MULTIPROCESSING),
         party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=False),
         party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True),
         party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=False, j_replace=1, mp=const.MULTIPROCESSING),

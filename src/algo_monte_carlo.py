@@ -12,12 +12,6 @@ class MonteCarlo(algo.SearchAlgo):
     def search(self, *args, **kwargs) -> Tuple[sample.Sample, int]:
         """generate k-signals which are a sum of n-oscillators
         on each iteration draw a new full model (matrix of n-oscillators)
-        
-        params:
-            k_samples: number of times to draw a matrix
-            store_det_args: whether to store the deterministic parameters underlying each oscillator in a model
-            history: whether to store all generated samples, may run out of RAM
-            args_path: when not none, write history to disk instead of RAM at specified path
         """
         self.clear_state()
         self.handle_mp(kwargs)
@@ -76,7 +70,8 @@ class MCExploit(MonteCarlo):
         return self.draw_sample()
 
     def draw_temp_sample(self, base_sample: sample.Sample, *args, **kwargs) -> sample.Sample:
-        return self.draw_partial_sample(base_sample, self.j_replace)
+        osc_to_replace = self.draw_random_indices(self.j_replace)
+        return self.draw_partial_sample(base_sample, osc_to_replace)
 
 class MCExploitWeight(MCExploit):
     """Use the MCExploit algorithm but only draw new weights for each sample"""
@@ -87,7 +82,8 @@ class MCExploitWeight(MCExploit):
         return int((self.max_z_ops - z_init) // z_loop)
 
     def draw_temp_sample(self, base_sample: sample.Sample, *args, **kwargs) -> sample.Sample:
-        return self.draw_partial_sample_weights(base_sample, self.j_replace)
+        osc_to_replace = self.draw_random_indices(self.j_replace)
+        return self.draw_partial_sample_weights(base_sample, osc_to_replace)
 
 
 
@@ -122,7 +118,8 @@ class MCAnneal(MonteCarlo):
 
     def draw_temp_sample(self, base_sample: sample.Sample, k: int, *args, **kwargs) -> sample.Sample:
         j_replace = self.read_j_from_schedule(k)
-        return self.draw_partial_sample(base_sample, j_replace)
+        osc_to_replace = self.draw_random_indices(j_replace)
+        return self.draw_partial_sample(base_sample, osc_to_replace)
 
 class MCAnnealWeight(MCAnneal):
     """use the MCAnneal algorithm but only draw new weights for each sample"""
@@ -134,4 +131,9 @@ class MCAnnealWeight(MCAnneal):
 
     def draw_temp_sample(self, base_sample: sample.Sample, k: int, *args, **kwargs) -> sample.Sample:
         j_replace = self.read_j_from_schedule(k)
-        return self.draw_partial_sample_weights(base_sample, j_replace)
+        osc_to_replace = self.draw_random_indices(j_replace)
+        return self.draw_partial_sample_weights(base_sample, osc_to_replace)
+
+
+# IDEA:
+# an algorithm like MCExploit, but instead of replacing a random position, the positions are replaced top to bottom, and then start again from the top

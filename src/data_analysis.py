@@ -137,6 +137,7 @@ def compute_rmse(p: np.ndarray, t: np.ndarray, verbose: bool = False, pad: bool 
     return rmse
 
 def print_time(func: Callable) -> Callable:
+    """print the time a callable took after execution"""
     @wraps(func)
     def wrap(*args, **kwargs):
         t0 = time.time()

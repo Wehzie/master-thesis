@@ -141,9 +141,10 @@ store_det_args: bool = False) -> sample.Sample:
     if target is not None:
         rmse = data_analysis.compute_rmse(weighted_sum, target)
     return sample.Sample(signal_matrix, weights, weighted_sum, offset, rmse, det_args)
+    
 
 def draw_partial_sample(base_sample: sample.Sample, rand_args: party.PythonSignalRandArgs,
-j_replace: int, mp: bool, weight_mode: bool = False,
+osc_to_replace: List[int], weight_mode: bool = False,
 target: Union[None, np.ndarray] = None, store_det_args: bool = False,
 ) -> sample.Sample:
     """take a base sample and replace j oscillators and weights.
@@ -153,25 +154,18 @@ target: Union[None, np.ndarray] = None, store_det_args: bool = False,
     args:
         base_sample: a sample to be modified
         rand_args: a dataclass containing deterministic and random variables from which oscillators are drawn
-        j_replace: the number of oscillators to replace
-        mp: whether to use multiprocessing
+        osc_to_replace: a list of indices of oscillators to be replaced, j_replace == len(osc_to_replace)
         weight_mode: when true only replace weights, when false, replace weights and oscillators
+        indices: indices at which to replace oscillators and weights
         target: a target signal to compare the generated signal to
         store_det_args: whether to store the deterministic parameters underlying each oscillator in a model
     """
     new_sample = copy.deepcopy(base_sample)
     temp_args = copy.deepcopy(rand_args)
-
-    # generate rows of weights and oscillators to replace
-    if mp:
-        rng = np.random.default_rng()
-        osc_to_replace = rng.choice(rand_args.n_osc, size=j_replace, replace=False)
-    else:
-        osc_to_replace = const.RNG.choice(rand_args.n_osc, size=j_replace, replace=False)
     
     # update the underlying distributions by setting n (number of oscillators) to j (number of oscillators to replace)
-    temp_args.n_osc = j_replace
-    temp_args.weight_dist.n = j_replace
+    temp_args.n_osc = len(osc_to_replace) # len(osc_to_replace) == j_replace
+    temp_args.weight_dist.n = len(osc_to_replace)
 
     # draw a new set of oscillators
     if not weight_mode:
@@ -196,7 +190,7 @@ target: Union[None, np.ndarray] = None, store_det_args: bool = False,
     return new_sample
 
 def draw_sample_weights(base_sample: sample.Sample, rand_args: party.PythonSignalRandArgs, target: Union[None, np.ndarray] = None) -> sample.Sample:
-    """return the base sample with different weights and recomputed metrics
+    """return the base sample with all weights replaced and recomputed metrics
     
     args:
         base_sample: the sample to copy
@@ -216,11 +210,11 @@ def draw_sample_weights(base_sample: sample.Sample, rand_args: party.PythonSigna
     return updated_sample
 
 def draw_partial_sample_weights(base_sample: sample.Sample, rand_args: party.PythonSignalRandArgs,
-j_replace: int, mp: bool, weight_mode: bool = False,
+osc_to_replace: List[int], weight_mode: bool = False,
 target: Union[None, np.ndarray] = None, store_det_args: bool = False,
 ) -> sample.Sample:
     """generalize over draw_sample_weights, only replacing j weights at a time"""
-    return draw_partial_sample(base_sample, rand_args, j_replace, mp, weight_mode, target, store_det_args)
+    return draw_partial_sample(base_sample, rand_args, osc_to_replace, weight_mode, target, store_det_args)
 
 def gen_custom_inv_sawtooth(
     duration: float,

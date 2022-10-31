@@ -23,7 +23,7 @@ from sweep_types import AlgoSweep
 
 
 def post_main(best_sample: sample.Sample, m_target: meta_target.MetaTarget,
-    z_ops: int, plot_time: bool = True, plot_freq: bool = False) -> None:
+    z_ops: int, alg_name: str, plot_time: bool = True, plot_freq: bool = False) -> None:
     # normalize target to range 0 1
     target_norm = data_preprocessor.norm1d(m_target.signal)
 
@@ -45,15 +45,16 @@ def post_main(best_sample: sample.Sample, m_target: meta_target.MetaTarget,
     if plot_time: # time-domain
         #hist_rmse(rmse_list, title="sum distribution")
         #hist_rmse(rmse_norm_list, title="norm-sum distribution")
-        data_analysis.plot_pred_target(best_sample.weighted_sum, m_target.signal, title="sum")
-        data_analysis.plot_pred_target(reg_sample.weighted_sum, m_target.signal, title="regression")
-        data_analysis.plot_pred_target(norm_sample.weighted_sum, target_norm, title="norm-sum")
-        data_analysis.plot_pred_target(norm_reg_sample.weighted_sum, target_norm, title="norm after fit")
+        data_analysis.plot_pred_target(best_sample.weighted_sum, m_target.signal, title=f"{alg_name}, sum")
+        data_analysis.plot_pred_target(reg_sample.weighted_sum, m_target.signal, title=f"{alg_name}, regression")
+        data_analysis.plot_pred_target(norm_sample.weighted_sum, target_norm, title=f"{alg_name}, norm-sum")
+        data_analysis.plot_pred_target(norm_reg_sample.weighted_sum, target_norm, title=f"{alg_name}, norm after fit")
     if plot_freq: # frequency-domain
-        data_analysis.plot_fourier(m_target.signal, title="target")
-        data_analysis.plot_fourier(best_sample.weighted_sum, title="sum")
-        data_analysis.plot_fourier(reg_sample.weighted_sum, title="regression")
+        data_analysis.plot_fourier(m_target.signal, title=f"{alg_name}, target")
+        data_analysis.plot_fourier(best_sample.weighted_sum, title=f"{alg_name}, sum")
+        data_analysis.plot_fourier(reg_sample.weighted_sum, title=f"{alg_name}, regression")
 
+    print(f"{alg_name}")
     print(f"z_ops: {z_ops}")
     print(f"best_sample.rmse_sum {best_sample.rmse}")
     print(f"best_sample.rmse_sum-norm {norm_sample.rmse}")
@@ -62,12 +63,13 @@ def post_main(best_sample: sample.Sample, m_target: meta_target.MetaTarget,
     
     plt.show()
 
-def simple_algo_sweep(algo_sweep: AlgoSweep, m_target: meta_target.MetaTarget, visual: bool = False) -> None:
-    """algo sweep without averaging or collecting results"""
+def qualitative_algo_sweep(algo_sweep: AlgoSweep, m_target: meta_target.MetaTarget, visual: bool = False) -> None:
+    """algo sweep without averaging or collecting results.
+    plots the best sample for each algorithm against the target."""
     for Algo, algo_args in zip(algo_sweep.algo, algo_sweep.algo_args):
         search_alg = Algo(algo_args)
         best_sample, z_ops = search_alg.search()
-        if visual: post_main(best_sample, m_target, z_ops)
+        if visual: post_main(best_sample, m_target, z_ops, search_alg.__class__.__name__)
 
 def produce_all_results(algo_sweep: AlgoSweep, target: np.ndarray, base_rand_args: party.PythonSignalRandArgs) -> None:
     """run all experiments and plot results"""
@@ -113,7 +115,7 @@ def main():
     m_target = meta_target.MetaTarget(rand_args)
     algo_sweep = params.init_algo_sweep(m_target.signal, rand_args)
 
-    # simple_algo_sweep(algo_sweep, m_target, visual=True)
+    # qualitative_algo_sweep(algo_sweep, m_target, visual=True)
     # produce_all_results(algo_sweep, m_target.signal, rand_args)
     exp = experimenteur.Experimenteur()
     # results = exp.run_algo_sweep(algo_sweep)

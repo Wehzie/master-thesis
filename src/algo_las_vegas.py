@@ -12,7 +12,6 @@ from typing import Tuple, Union
 import numpy as np
 from tqdm import tqdm
 
-
 class LasVegas(algo.SearchAlgo):
 
     def init_las_vegas(self, weight_init: Union[None, str], store_det_args: bool) -> sample.Sample:
@@ -36,69 +35,55 @@ class LasVegas(algo.SearchAlgo):
             weights = None # in this mode, weights are not adapted
 
         return sample.Sample(signal_matrix, weights, np.sum(signal_matrix, axis=0), 0, np.inf, signal_args)
+    
+    def infer_k_from_z(self) -> int:
+        return None
 
-    def draw_las_vegas_candidate(self, base_sample: sample.Sample, i: int, mod_args: party.PythonSignalRandArgs, store_det_args: bool, history: bool):
-        # TODO: this can be done more efficiently without deepcopy and recomputing all
-        temp_sample = copy.deepcopy(base_sample)
-        signal, signal_args = gen_signal_python.sum_atomic_signals(mod_args, store_det_args)
-        signal = signal.flatten()
-        temp_sample.signal_matrix[i,:] = signal
-        if store_det_args or history:
-            signal_args = signal_args[0]
-            temp_sample.signal_args.append(signal_args)
-        temp_sample.signal_sum = np.sum(temp_sample.signal_matrix, axis=0)
-        temp_sample.rmse = data_analysis.compute_rmse(temp_sample.signal_sum, self.target)
-        return temp_sample
+    def init_best_sample(self) -> sample.Sample:
+        return super().init_best_sample()
 
-    def eval_las_vegas(self, temp_sample: sample.Sample, base_sample: sample.Sample, i: int, j: int, best_sample_j: int
-    ) -> Tuple[sample.Sample, int, int]:
+    def draw_temp_sample(self) -> sample.Sample:
+        return super().draw_temp_sample()
+
+    def comp_samples(self, base_sample: sample.Sample, temp_sample: sample.Sample) -> Tuple[sample.Sample, bool]:
+        """compare two samples and return the one with lower rmse
+        
+        returns:
+            sample: the sample with lower rmse
+            changed: true if the new sample is better than the old one, false if the old one is better"""
         if temp_sample.rmse < base_sample.rmse:
-            base_sample = temp_sample
-            return temp_sample, i+1, j
-        return base_sample, i, best_sample_j
+            return temp_sample, True
+        return base_sample, False
 
-    def search(self,
-        k_samples: int,
-        weight_init: Union[None, str],
-        max_z_ops: int = None,
-        store_det_args: bool = False,
-        history: bool = False,
-        args_path: Path = None) -> Tuple[sample.Sample, int]:
+    def search(self, *args, **kwargs) -> Tuple[sample.Sample, int]:
         """generate k-signals which are a sum of n-oscillators
         model is constructed by aggregation
         oscillator candidates are accepted into the model when they lower RMSE
 
-        param:
-            k_samples: number of times to draw a matrix
-            store_det_args: whether to store the deterministic parameters underlying each oscillator in a model
-            history: whether to store all generated samples, may run out of RAM
-            args_path: when not none, write history to disk instead of RAM at specified path
-
-        return:
-            best_sample, best_model_j
+        returns:
+            best_sample: the best sample found
+            z_ops: the number of operations performed
         """
-        if history and args_path: args_path.unlink(missing_ok=True) # delete file if it exists
+        self.clear_state()
+        self.handle_mp(kwargs)
 
-        best_sample = self.init_las_vegas(weight_init, store_det_args)
-        best_sample_j = None
-        z_ops = self.rand_args.n_osc
-        for ki in tqdm(range(k_samples)):
-            base_sample = self.init_las_vegas(weight_init, store_det_args) # build up a signal_matrix in here
-            i, j = 0, 0 # number of accepted and drawn weights respectively
-            while i < self.rand_args.n_osc: # construct a model
-                temp_sample = self.draw_las_vegas_candidate(base_sample, i, mod_args, store_det_args, history)
-                base_sample, i, _ = self.eval_las_vegas(temp_sample, base_sample, i, None, None)
-                j += 1
+        def generator(): # support tqdm timer and iterations per second
+            while not self.stop_on_z_ops(): yield
+
+        best_sample = self.gen_zero_sample()
+        for k in tqdm(generator()):
+            base_sample = self.gen_zero_sample()
+            i = 0 # number of replaced weights
+            while i < self.rand_args.n_osc and not self.stop_on_z_ops():
+                temp_sample = self.draw_partial_sample(base_sample, [i])
+                base_sample, changed = self.comp_samples(base_sample, temp_sample)
+                if changed: i += 1 # move to next row
+                self.z_ops += 2
             
-            z_ops += j
-            if self.eval_z_ops(z_ops, max_z_ops): break
+            self.manage_state(base_sample, k)
+            best_sample, _ = self.comp_samples(best_sample, base_sample)
 
-            self.manage_state(base_sample, k_samples, ki, history, args_path)
-            best_sample, _, best_sample_j = self.eval_las_vegas(base_sample, best_sample, 0, j, best_sample_j)
-            
-        self.samples.append(best_sample)
-
-        return best_sample, z_ops
+        return best_sample, self.z_ops
 
 class LasVegasWeight(algo.SearchAlgo):
     def draw_weight(self, weights: np.ndarray, i: int):
