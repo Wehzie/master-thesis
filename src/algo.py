@@ -18,8 +18,8 @@ class SearchAlgo(ABC):
         self.target = algo_args.target                       # target function to approximate
         self.weight_mode = algo_args.weight_mode
         self.max_z_ops = algo_args.max_z_ops
-        self.k_samples = algo_args.k_samples if algo_args.k_samples is not None else self.infer_k_from_z()
         self.j_replace = algo_args.j_replace
+        self.k_samples = algo_args.k_samples if algo_args.k_samples is not None else self.infer_k_from_z()
 
         self.mp = algo_args.mp
         self.z_ops_callbacks = algo_args.z_ops_callbacks
@@ -166,18 +166,6 @@ class SearchAlgo(ABC):
                 elif dist.__name__ == rng.normal.__name__:
                     self.rand_args.weight_dist.dist = rng.normal
 
-    def infer_k_from_z(self) -> int:
-        """infer number of k-loops from a maximum number of operations z"""
-        # TODO: incorporate offsets
-        if self.weight_mode:
-            z_init = self.rand_args.n_osc * 2   # weights and oscillators count separate
-            z_loop = self.rand_args.n_osc       # only weights updated on each loop
-            return int((self.max_z_ops - z_init) // z_loop)
-        
-        # z_init is zero
-        z_loop = self.rand_args.n_osc * 2   # weights and oscillators updated on each loop
-        return int(self.max_z_ops // z_loop)
-
     def get_algo_args(self) -> party.AlgoArgs:
         """get the current set of AlgoArgs form the search module"""
         return party.AlgoArgs(
@@ -202,6 +190,15 @@ class SearchAlgo(ABC):
     def draw_temp_sample(self) -> sample.Sample:
         """draw a temporary sample to compare against the best sample and update z_ops"""
         raise NotImplementedError
+
+    # TODO: incorporate offsets
+    @abstractmethod
+    def infer_k_from_z(self) -> int:
+        """infer number of k-loops from a maximum number of operations z
+        
+        returns:
+            k_samples: number of k-loops or temp_samples drawn
+        """
 
     @abstractmethod
     def search(self, *args, **kwargs): # *args needed to use with map(), not sure why

@@ -1,4 +1,3 @@
-from abc import abstractclassmethod
 from typing import Tuple
 
 import algo
@@ -6,8 +5,6 @@ import sample
 
 import numpy as np
 from tqdm import tqdm
-
-# TODO: check that infer k from z_ops is correct for each algorithm
 
 class MonteCarlo(algo.SearchAlgo):
     """abstract class"""
@@ -33,8 +30,15 @@ class MonteCarlo(algo.SearchAlgo):
 
         return best_sample, self.z_ops
 
+
+
 class MCOneShot(MonteCarlo):
     """monte carlo algorithm for samples consisting of independent oscillators"""
+
+    def infer_k_from_z(self) -> int:
+        # cost of initializing best_sample is zero
+        z_loop = self.rand_args.n_osc * 2   # draw a new sample with n oscillators and weights on each loop
+        return int(self.max_z_ops // z_loop)
 
     def init_best_sample(self) -> sample.Sample:
         return self.gen_empty_sample()
@@ -45,16 +49,28 @@ class MCOneShot(MonteCarlo):
 class MCOneShotWeight(MCOneShot):
     """Use the MCOneShot algorithm but only draw new weights for each sample"""
 
+    def infer_k_from_z(self) -> int:
+        z_init = self.rand_args.n_osc * 2   # initialize a best sample with n oscillators and weights
+        z_loop = self.rand_args.n_osc       # draw a sample with n new weights each loop
+        return int((self.max_z_ops - z_init) // z_loop)
+
     def init_best_sample(self) -> sample.Sample:
         return self.draw_sample()
 
     def draw_temp_sample(self, base_sample: sample.Sample, *args, **kwargs) -> sample.Sample:
         return self.draw_sample_weights(base_sample)
 
+
+
 class MCExploit(MonteCarlo):
     """monte carlo algorithm exploiting a single sample by iterative re-draws
     
     self.mp must be set to True or False"""
+
+    def infer_k_from_z(self) -> int:
+        z_init = self.rand_args.n_osc * 2 # initialize a best sample with n oscillators and weights
+        z_loop = self.j_replace * 2 # j weights and oscillators updated on each loop
+        return int((self.max_z_ops - z_init) // z_loop)
 
     def init_best_sample(self) -> sample.Sample:
         return self.draw_sample()
@@ -65,12 +81,30 @@ class MCExploit(MonteCarlo):
 class MCExploitWeight(MCExploit):
     """Use the MCExploit algorithm but only draw new weights for each sample"""
 
+    def infer_k_from_z(self) -> int:
+        z_init = self.rand_args.n_osc * 2
+        z_loop = self.j_replace # j weights are updated on each loop
+        return int((self.max_z_ops - z_init) // z_loop)
+
     def draw_temp_sample(self, base_sample: sample.Sample, *args, **kwargs) -> sample.Sample:
         return self.draw_partial_sample_weights(base_sample, self.j_replace)
+
+
 
 class MCAnneal(MonteCarlo):
     """use a schedule to reduce the number of oscillators across iterations.
     akin to simulated annealing"""
+
+    def infer_k_from_z(self) -> int:
+        z_init = self.rand_args.n_osc * 2
+        z_loop = self.rand_args.n_osc
+        # we have a linear schedule in the range (n, 1)
+        # the total number of operations is then sum(range(n, 1))
+        # the average number of operations is sum(range(1, n)) / n
+        # that's the same as n / 2 because the schedule is linear
+        # because oscillators and weights are updated we add * 2
+        # the result is z_loop = n
+        return int((self.max_z_ops - z_init) // z_loop)
     
     def read_j_from_schedule(self, k: int) -> int:
         """return the number of oscillator or weights to draw according to a linear schedule
@@ -82,7 +116,7 @@ class MCAnneal(MonteCarlo):
             j: number of oscillators or weights to draw"""
         temperature = (1 - k / self.k_samples)
         return np.ceil(self.rand_args.n_osc*temperature).astype(int)
-    
+
     def init_best_sample(self) -> sample.Sample:
         return self.draw_sample()
 
@@ -92,6 +126,11 @@ class MCAnneal(MonteCarlo):
 
 class MCAnnealWeight(MCAnneal):
     """use the MCAnneal algorithm but only draw new weights for each sample"""
+
+    def infer_k_from_z(self) -> int:
+        z_init = self.rand_args.n_osc * 2
+        z_loop = self.rand_args.n_osc // 2 # we only draw new weights and omit * 2 for oscillators
+        return int((self.max_z_ops - z_init) // z_loop)
 
     def draw_temp_sample(self, base_sample: sample.Sample, k: int, *args, **kwargs) -> sample.Sample:
         j_replace = self.read_j_from_schedule(k)

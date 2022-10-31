@@ -64,12 +64,13 @@ def conv_results_to_pd(results: List[resty.ResultSweep]) -> pd.DataFrame:
         freq_dist_range, weight_dist_range, phase_dist_range, offset_dist_range,
         freq_dist_df, weight_dist_df, phase_dist_df, offset_dist_df], axis=1)
 
-def get_plot_title(df: pd.DataFrame, target_samples: int) -> str:
+def get_plot_title(df: pd.DataFrame, target_samples: int, z_ops: bool = True) -> str:
     """assemble plot title, execute before filtering out columns from dataframe"""
     m_averages = int(df["m_averages"].iloc[[0]])
     n_osc = df["n_osc"].values[0]
     max_z_ops = int(df["max_z_ops"].values[0])
-    return f"m={m_averages}, n={n_osc}, samples={target_samples}, max z-ops={max_z_ops}"
+    str_max_z_ops = f", max_z_ops={max_z_ops}" if z_ops else ""
+    return f"m={m_averages}, n={n_osc}, samples={target_samples}{str_max_z_ops}" 
 
 def filter_df_by_dist_name(df: pd.DataFrame, attr_name: str, dist_name: str) -> pd.DataFrame:
     """
@@ -111,11 +112,11 @@ def plot_n_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool = False) ->
 
 def plot_z_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool = False) -> None:
     """exp2: plot number of operations, z_ops, against rmse for multiple algorithms with rand_args fixed"""
-    title = get_plot_title(df, target_samples)
+    title = get_plot_title(df, target_samples, z_ops=False)
     df = df.filter(items=["algo_name", "max_z_ops", "mean_rmse", "std_rmse"])
     _ = plot_rmse_by_algo(df, "max_z_ops")
     plt.title(title)
-    plt.gca().set_xlabel(" z-operations")
+    plt.gca().set_xlabel("z-operations")
     plt.savefig(Path("data/z_vs_rmse.png"), dpi=300)
     if show: plt.show()
 

@@ -116,6 +116,7 @@ algo_list: List[SearchAlgo] = [
     MCExploit,
     MCExploit,
     MCExploitWeight,
+    MCExploitWeight,
     MCAnneal,
     MCAnnealWeight,
     # LasVegas,
@@ -126,12 +127,13 @@ algo_list: List[SearchAlgo] = [
 def init_algo_args_for_sweep(rand_args: party.PythonSignalRandArgs,
 target: np.ndarray,
 max_z_ops: int) -> List[party.AlgoArgs]:
-    return ([                                                   # TODO: set in constructor
+    return ([                                                   # TODO: set weight mode and mp in constructor
         party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=False),
         party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True),
         party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=False, j_replace=1, mp=const.MULTIPROCESSING),
         party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=False, j_replace=10, mp=const.MULTIPROCESSING),
         party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True, j_replace=1, mp=const.MULTIPROCESSING),
+        party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True, j_replace=10, mp=const.MULTIPROCESSING),
         party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=False, mp=const.MULTIPROCESSING),
         party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True, mp=const.MULTIPROCESSING),
     ])
