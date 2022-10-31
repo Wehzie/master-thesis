@@ -1,3 +1,4 @@
+from re import S
 import result_types as resty
 from util import add_str2keys
 import const
@@ -18,6 +19,21 @@ def compute_dist_ranges(results: List[resty.ResultSweep]) -> List[resty.ResultSw
         result.algo_args.rand_args.offset_dist.compute_range()
     return results
 
+def rename_algos_by_args(name_df: pd.DataFrame, algo_args_df: pd.DataFrame) -> pd.DataFrame:
+    """rename identical algorithms in the dataframe by the distinguishing arguments they were called with.
+    for example, MCExploitJ1, when j_replacements=1 and MCExploitJ5, when j_replacements=5"""
+
+    # filter for j_replace, keep index intact to merge back into name_df
+    temp_df = pd.concat([name_df["algo_name"], algo_args_df["j_replace"]], axis=1)
+    temp_df.dropna(inplace=True)
+    temp_df["j_replace"] = temp_df["j_replace"].astype(int) # ints are prettier than floats
+    temp_df["algo_name"] = temp_df["algo_name"] + ", j=" + temp_df["j_replace"].astype(str)
+    temp_df = name_df.merge(temp_df, left_index=True, right_index=True, how="outer")
+
+    # rename the algorithms
+    name_df["algo_name"] = temp_df["algo_name_y"].fillna(temp_df["algo_name_x"])
+    return name_df
+
 def conv_results_to_pd(results: List[resty.ResultSweep]) -> pd.DataFrame:
     """convert ResultSweep to a pandas dataframe for further processing"""
     results = compute_dist_ranges(results)
@@ -29,6 +45,7 @@ def conv_results_to_pd(results: List[resty.ResultSweep]) -> pd.DataFrame:
     # unpack the nested args such that each entry has its own column
     res_df = pd.DataFrame(results).drop("algo_args", axis=1)
     algo_args_df = pd.DataFrame([r.algo_args for r in results]).drop(["rand_args", "target"], axis=1)
+    res_df = rename_algos_by_args(res_df, algo_args_df)
     rand_args_df = pd.DataFrame(rand_args).drop(rand_args_dist_names, axis=1)
 
     # dist ranges

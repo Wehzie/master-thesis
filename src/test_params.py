@@ -114,6 +114,7 @@ algo_list: List[SearchAlgo] = [
     MCOneShot,
     MCOneShotWeight,
     MCExploit,
+    MCExploit,
     # LasVegas,
     # LasVegasWeight,
     # MCExploit,
@@ -127,6 +128,7 @@ max_z_ops: int) -> List[party.AlgoArgs]:
         party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=False),
         party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True),
         party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=False, j_replace=1, mp=const.MULTIPROCESSING),
+        party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=False, j_replace=10, mp=const.MULTIPROCESSING),
     ])
     
 def init_algo_sweep(target: np.ndarray, rand_args: party.PythonSignalRandArgs) -> sweety.AlgoSweep:
