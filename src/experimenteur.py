@@ -10,11 +10,12 @@ import result_types as resty
 from algo import SearchAlgo
 import params
 import meta_target
+import const
 
 import numpy as np
 
 class Experimenteur:
-    def __init__(self, mp: bool) -> None:
+    def __init__(self, mp: bool = const.MULTIPROCESSING) -> None:
         """
         args:
             mp: if true use multiple CPUs for processing

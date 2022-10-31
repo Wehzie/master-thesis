@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 import pickle
-from typing import Callable, List, Tuple
+from types import NotImplementedType
+from typing import Callable, List, Tuple, Union
 
 import sample
 import data_analysis
@@ -18,8 +19,9 @@ class SearchAlgo(ABC):
         self.weight_mode = algo_args.weight_mode
         self.max_z_ops = algo_args.max_z_ops
         self.k_samples = algo_args.k_samples if algo_args.k_samples is not None else self.infer_k_from_z()
-        self.j_exploits = algo_args.j_exploits
+        self.j_replace = algo_args.j_replace
 
+        self.mp = algo_args.mp
         self.z_ops_callbacks = algo_args.z_ops_callbacks
         self.store_det_args = algo_args.store_det_args
         self.history = algo_args.history
@@ -134,17 +136,10 @@ class SearchAlgo(ABC):
         self.z_ops += self.rand_args.n_osc
         return gen_signal_python.draw_sample_weights(base_sample, self.rand_args, self.target)
 
-    def init_best_sample(self) -> sample.Sample:
-        """initialize best sample in matrix+weight or weight-only optimization mode"""
-        if self.weight_mode: # apply algorithm over weights only
-            return self.draw_sample()
-        return self.gen_empty_sample()
-    
-    def draw_temp_sample(self, base_sample: sample.Sample) -> sample.Sample:
-        """draw temp sample in matrix+weight or weight-only optimization mode"""
-        if self.weight_mode: # apply algorithm over weights only
-            return self.draw_sample_weights(base_sample)
-        return self.draw_sample()
+    def draw_partial_sample(self, base_sample: sample.Sample) -> sample.Sample:
+        """given a sample replace j oscillators and weights, update z_ops, recompute metrics"""
+        self.z_ops += self.j_replace * 2
+        return gen_signal_python.draw_partial_sample(base_sample, self.rand_args, self.j_replace, self.mp, self.target, self.store_det_args)
 
     def handle_mp(self, sup_func_kwargs: dict) -> None:
         """handle multi processing by modifying numpy the random number generator
@@ -168,6 +163,7 @@ class SearchAlgo(ABC):
 
     def infer_k_from_z(self) -> int:
         """infer number of k-loops from a maximum number of operations z"""
+        # TODO: incorporate offsets
         if self.weight_mode:
             z_init = self.rand_args.n_osc * 2   # weights and oscillators count separate
             z_loop = self.rand_args.n_osc       # only weights updated on each loop
@@ -185,7 +181,7 @@ class SearchAlgo(ABC):
             self.weight_mode,
             self.max_z_ops,
             self.k_samples,
-            self.j_exploits,
+            self.j_replace,
             self.z_ops_callbacks,
             self.store_det_args,
             self.history,
@@ -193,8 +189,19 @@ class SearchAlgo(ABC):
         )
 
     @abstractmethod
+    def init_best_sample(self) -> sample.Sample:
+        """initialize best sample before first search loop"""
+        raise NotImplementedError
+
+    @abstractmethod
+    def draw_temp_sample(self) -> sample.Sample:
+        """draw a temporary sample to compare against the best sample and update z_ops"""
+        raise NotImplementedError
+
+    @abstractmethod
     def search(self, *args, **kwargs): # *args needed to use with map(), not sure why
-        NotImplementedError
+        """search for the best sample"""
+        raise NotImplementedError
 
 
 """

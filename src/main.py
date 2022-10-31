@@ -13,6 +13,7 @@ import experimenteur
 import result_types as resty
 import experiment_analysis as expan
 import meta_target
+import const
 
 
 import numpy as np
@@ -114,12 +115,18 @@ def main():
 
     # simple_algo_sweep(algo_sweep, m_target, visual=True)
     # produce_all_results(algo_sweep, m_target.signal, rand_args)
-    exp = experimenteur.Experimenteur(mp = True)
+    exp = experimenteur.Experimenteur()
     # results = exp.run_algo_sweep(algo_sweep)
     # results = exp.run_rand_args_sweep(algo_sweep, params.freq_sweep_from_zero, rand_args)
     # results = exp.run_rand_args_sweep(algo_sweep, params.expo_time_sweep, rand_args)
-    results = exp.run_sampling_rate_sweep(params.sampling_rate_sweep, rand_args)
+    # results = exp.run_sampling_rate_sweep(params.sampling_rate_sweep, rand_args)
     # results = exp.run_z_ops_sweep(algo_sweep, params.z_ops_sweep)
+
+    results = exp.run_z_ops_sweep(algo_sweep, params.z_ops_sweep)
+    df = expan.conv_results_to_pd(results)
+    expan.plot_z_vs_rmse(df, len(m_target.signal), show=True)
+    exit()
+
     for r in results:
         print(f"{r}\n")
     data_io.pickle_results(results, Path("data/results.pickle"))

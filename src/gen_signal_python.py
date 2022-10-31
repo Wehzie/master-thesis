@@ -142,6 +142,45 @@ store_det_args: bool = False) -> sample.Sample:
         rmse = data_analysis.compute_rmse(weighted_sum, target)
     return sample.Sample(signal_matrix, weights, weighted_sum, offset, rmse, det_args)
 
+def draw_partial_sample(base_sample: sample.Sample, rand_args: party.PythonSignalRandArgs,
+j_replace: int, mp: bool,
+target: Union[None, np.ndarray] = None,
+store_det_args: bool = False) -> sample.Sample:
+    new_sample = copy.deepcopy(base_sample)
+    temp_args = copy.deepcopy(rand_args)
+    return new_sample
+
+    # draw a new set of oscillators
+    temp_args.n_osc = j_replace
+    temp_args.weight_dist.n = j_replace
+    partial_signal_matrix, det_args = draw_n_oscillators(temp_args, store_det_args)
+
+    # generate rows of oscillators to replace
+    if mp: # TODO: this should be handled in the algo class
+        rng = np.random.default_rng()
+        osc_to_replace = rng.choice(rand_args.n_osc, size=j_replace, replace=False)
+    else:
+        osc_to_replace = const.RNG.choice(rand_args.n_osc, size=j_replace, replace=False)
+
+    # replace rows of oscillators
+    new_sample.signal_matrix[osc_to_replace] = partial_signal_matrix
+
+    # keep track of the parameters underlying the oscillators
+    if det_args is not None:
+        for (osc_index, det_arg) in zip(osc_to_replace, det_args):
+            new_sample.det_args[osc_index] = det_arg
+
+    # repeat for weights
+    partial_weights = draw_n_weights(temp_args)
+    new_sample.weights[osc_to_replace] = partial_weights
+
+    new_sample.weighted_sum = sample.Sample.compute_weighted_sum(new_sample.signal_matrix,
+        new_sample.weights, new_sample.offset)
+    new_sample.rmse = None
+    if target is not None:
+        new_sample.rmse = data_analysis.compute_rmse(new_sample.weighted_sum, target)
+
+    return new_sample
 
 def draw_sample_weights(base_sample: sample.Sample, rand_args: party.PythonSignalRandArgs, target: Union[None, np.ndarray] = None) -> sample.Sample:
     """return the base sample with different weights and recomputed metrics
