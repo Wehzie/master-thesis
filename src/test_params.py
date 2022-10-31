@@ -9,7 +9,7 @@ import numpy as np
 
 from algo import SearchAlgo
 from algo_las_vegas import LasVegas, LasVegasWeight
-from algo_monte_carlo import MCExploit, MCExploitWeight, MCOneShot, MCOneShotWeight
+from algo_monte_carlo import MCAnneal, MCAnnealWeight, MCExploit, MCExploitWeight, MCOneShot, MCOneShotWeight
 import param_types as party
 import sweep_types as sweety
 import data_preprocessor
@@ -116,10 +116,11 @@ algo_list: List[SearchAlgo] = [
     MCExploit,
     MCExploit,
     MCExploitWeight,
+    MCAnneal,
+    MCAnnealWeight,
     # LasVegas,
     # LasVegasWeight,
-    # MCExploit,
-    # MCExploitWeight,
+    # Genetic,
 ]
 
 def init_algo_args_for_sweep(rand_args: party.PythonSignalRandArgs,
@@ -131,6 +132,8 @@ max_z_ops: int) -> List[party.AlgoArgs]:
         party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=False, j_replace=1, mp=const.MULTIPROCESSING),
         party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=False, j_replace=10, mp=const.MULTIPROCESSING),
         party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True, j_replace=1, mp=const.MULTIPROCESSING),
+        party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=False, mp=const.MULTIPROCESSING),
+        party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True, mp=const.MULTIPROCESSING),
     ])
     
 def init_algo_sweep(target: np.ndarray, rand_args: party.PythonSignalRandArgs) -> sweety.AlgoSweep:
