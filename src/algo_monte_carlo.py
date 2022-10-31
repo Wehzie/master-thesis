@@ -1,15 +1,7 @@
-import copy
-from pathlib import Path
-import gen_signal_python
 import algo
 import sample
-import param_types as party
-import data_analysis
-import const
-rng = const.RNG
 
 from typing import Tuple
-
 from tqdm import tqdm
 
 class MCOneShot(algo.SearchAlgo):
@@ -62,6 +54,7 @@ class MCExploit(algo.SearchAlgo):
     def draw_temp_sample(self, base_sample: sample.Sample) -> sample.Sample:
         return self.draw_partial_sample(base_sample)
 
+    # TODO: abstract to parent class
     def search(self, *args, **kwargs):
         self.clear_state()
         self.handle_mp(kwargs)
@@ -73,3 +66,12 @@ class MCExploit(algo.SearchAlgo):
             self.manage_state(temp_sample, k)
 
         return best_sample, self.z_ops
+
+class MCExploitWeight(MCExploit):
+    """Use the MCExploit algorithm but only draw new weights for each sample"""
+
+    def init_best_sample(self) -> sample.Sample:
+        return self.draw_sample()
+
+    def draw_temp_sample(self, base_sample: sample.Sample) -> sample.Sample:
+        return self.draw_partial_sample_weights(base_sample)

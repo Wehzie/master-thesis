@@ -139,7 +139,12 @@ class SearchAlgo(ABC):
     def draw_partial_sample(self, base_sample: sample.Sample) -> sample.Sample:
         """given a sample replace j oscillators and weights, update z_ops, recompute metrics"""
         self.z_ops += self.j_replace * 2
-        return gen_signal_python.draw_partial_sample(base_sample, self.rand_args, self.j_replace, self.mp, self.target, self.store_det_args)
+        return gen_signal_python.draw_partial_sample(base_sample, self.rand_args, self.j_replace, self.mp, self.weight_mode, self.target, self.store_det_args)
+
+    def draw_partial_sample_weights(self, base_sample: sample.Sample) -> sample.Sample:
+        """given a sample replace j weights, update z_ops, recompute metrics"""
+        self.z_ops += self.j_replace
+        return gen_signal_python.draw_partial_sample_weights(base_sample, self.rand_args, self.j_replace, self.mp, self.weight_mode, self.target, self.store_det_args)
 
     def handle_mp(self, sup_func_kwargs: dict) -> None:
         """handle multi processing by modifying numpy the random number generator
