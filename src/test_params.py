@@ -52,6 +52,7 @@ freq_sweep_around_vo2 = sweety.FreqSweep(
 )
 
 # sweep band from narrow to wide while keeping the lower bound at 0
+# frequency 0 shouldn't be likely at all, start with 0.1 Hz
 freq_sweep_from_zero = sweety.FreqSweep(
     params.append_normal(
         [ party.Dist(rng.uniform, low=0, high=10**(p)) for p in range(0, 3) ]
@@ -60,11 +61,15 @@ freq_sweep_from_zero = sweety.FreqSweep(
 
 def init_weight_sweep(rand_args: party.PythonSignalRandArgs) -> sweety.WeightSweep:
     """init weight sweep with given rand_args"""
-    return sweety.WeightSweep(params.append_normal([
-        dist.WeightDist(rng.uniform, low=0, high=1e1, n=rand_args.n_osc),
-        dist.WeightDist(rng.uniform, low=0, high=1e2, n=rand_args.n_osc),
-        dist.WeightDist(rng.uniform, low=0, high=1e3, n=rand_args.n_osc),
-    ]))
+    return sweety.WeightSweep(
+        params.append_normal(
+            [
+            dist.WeightDist(rng.uniform, low=0, high=1e1, n=rand_args.n_osc),
+            dist.WeightDist(rng.uniform, low=0, high=1e2, n=rand_args.n_osc),
+            dist.WeightDist(rng.uniform, low=0, high=1e3, n=rand_args.n_osc),
+            ]
+        )
+    )
 weight_sweep = init_weight_sweep(py_rand_args_uniform)
 
 phase_sweep = sweety.PhaseSweep(params.append_normal([
@@ -88,11 +93,12 @@ n_osc_sweep = sweety.NOscSweep(
     n_osc=[20, 40, 60],
 )
 
+# TODO: consider starting at lower number of operations
 z_ops_sweep = sweety.ZOpsSweep(
     max_z_ops=[1e3, 5e3, 1e4],
 )
 
-sampling_rate_sweep = sweety.NumSamplesSweep([300, 400, 500])
+sampling_rate_sweep = sweety.NumSamplesSweep([50, 100, 150])
 
 las_vegas_args = party.AlgoArgs(
     rand_args=py_rand_args_uniform,
@@ -107,6 +113,7 @@ las_vegas_args = party.AlgoArgs(
 )
 
 algo_list: List[SearchAlgo] = [
+    alave.LasVegasWeight,
     alave.LasVegas,
     almoca.MCOneShot,
     almoca.MCOneShotWeight,
@@ -123,6 +130,7 @@ def init_algo_args_for_sweep(rand_args: party.PythonSignalRandArgs,
 target: np.ndarray,
 max_z_ops: int) -> List[party.AlgoArgs]:
     return ([                                                   # TODO: set weight mode and mp in constructor
+        party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True, mp=const.MULTIPROCESSING),
         party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=False, mp=const.MULTIPROCESSING),
         party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=False),
         party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True),

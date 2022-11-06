@@ -33,11 +33,11 @@ def post_main(best_sample: sample.Sample, m_target: meta_target.MetaTarget,
     data_io.save_signal_to_wav(best_sample.weighted_sum, m_target.sampling_rate, m_target.dtype, Path("data/best_sample.wav"))
 
     norm_sample = sample.Sample.norm_sample(best_sample, target_norm)
-    
+
     # compute regression against target
     reg_sample = sample.Sample.regress_sample(best_sample, m_target.signal)
     data_io.save_signal_to_wav(reg_sample.weighted_sum, m_target.sampling_rate, m_target.dtype, Path("data/fit.wav"))
-    
+
     # norm regression after fit (good enough)
     norm_reg_sample = sample.Sample.norm_sample(reg_sample, target_norm)
 
@@ -60,7 +60,7 @@ def post_main(best_sample: sample.Sample, m_target: meta_target.MetaTarget,
     print(f"best_sample.rmse_sum-norm {norm_sample.rmse}")
     print(f"best_sample.rmse_fit {reg_sample.rmse}")
     print(f"best_sample.rmse_fit-norm {norm_reg_sample.rmse}")
-    
+
     plt.show()
 
 def qualitative_algo_sweep(algo_sweep: AlgoSweep, m_target: meta_target.MetaTarget, visual: bool = False) -> None:
@@ -74,7 +74,7 @@ def qualitative_algo_sweep(algo_sweep: AlgoSweep, m_target: meta_target.MetaTarg
 def produce_all_results(algo_sweep: AlgoSweep, target: np.ndarray, base_rand_args: party.PythonSignalRandArgs) -> None:
     """run all experiments and plot results"""
     show_all = True
-    exp = experimenteur.Experimenteur(mp = True)
+    exp = experimenteur.Experimenteur()
 
     results = exp.run_rand_args_sweep(algo_sweep, params.n_osc_sweep, base_rand_args)
     df = expan.conv_results_to_pd(results)
@@ -109,14 +109,24 @@ def produce_all_results(algo_sweep: AlgoSweep, target: np.ndarray, base_rand_arg
     df = expan.conv_results_to_pd(results)
     expan.plot_amplitude_vs_rmse(df, len(target), show=show_all)
 
+def run_multi_directional_experiment():
+    """experiments whose parameters are based on other experiments"""
+    # TODO: take best algorithm
+    # then also increase the z_ops to see if the weight-range-to-rmse curve flattens
+    # same for rmse vs n_osc
+    # also for frequency band
+
+
 @data_analysis.print_time
 def main():
     rand_args = params.py_rand_args_uniform
     m_target = meta_target.MetaTarget(rand_args)
     algo_sweep = params.init_algo_sweep(m_target.signal, rand_args)
 
-    # qualitative_algo_sweep(algo_sweep, m_target, visual=True)
+    qualitative_algo_sweep(algo_sweep, m_target, visual=True)
+    # exit()
     # produce_all_results(algo_sweep, m_target.signal, rand_args)
+    exit()
     exp = experimenteur.Experimenteur()
     # results = exp.run_algo_sweep(algo_sweep)
     # results = exp.run_rand_args_sweep(algo_sweep, params.freq_sweep_from_zero, rand_args)
@@ -139,7 +149,7 @@ def main():
     print(df.describe())
     print(df["samples"])
     print(f"df.columns: {df.columns}")
-    
+
     expan.plot_samples_vs_rmse(df, show=True)
 
 if __name__ == "__main__":

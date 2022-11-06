@@ -124,13 +124,9 @@ def append_normal(uniform_li: List[party.Dist]) -> List[party.Dist]:
     for d in uniform_li:
         if d.is_const():
             raise ValueError("experiments with constant distributions aren't supported, do low=const, high=const instead")
-        if "n" in d.kwargs: # n is in kwargs only for WeightDist where we draw n
-            n = d.kwargs["n"]
-        else:
-            n = None # can pass None for regular Dist type
         loc = comp_loc(d.kwargs["low"], d.kwargs["high"])
         scale = comp_scale(d.kwargs["low"], d.kwargs["high"])
-        norm_li.append(DistType(rng.normal, loc=loc, scale=scale, n=n))
+        norm_li.append(DistType(rng.normal, loc=loc, scale=scale, n=d.n))
     return uniform_li + norm_li
 
 py_rand_args_uniform = party.PythonSignalRandArgs(
@@ -157,6 +153,7 @@ py_rand_args_normal = party.PythonSignalRandArgs(
     sampling_rate = 11025                               # the sampling rate of the Magpie signal
 )
 
+# go till 10e10
 def init_freq_sweep() -> List[party.Dist]:
     freq_li = list()
     # sweep band from narrow to wide
@@ -174,27 +171,6 @@ def init_freq_sweep() -> List[party.Dist]:
     )
     return freq_li
 
-# def init_const_time_sweep(rand_args: party.PythonSignalRandArgs) -> sweety.ConstTimeSweep:
-#     return sweety.ConstTimeSweep(
-#     freq_dist = init_freq_sweep(),
-#     amplitude = [0.5, 5e0, 5e1, 5e2, 5e3, 5e4, 5e5, 5e6],
-#     weight_dist = append_normal([
-#         party.WeightDist(rng.uniform, low=0, high=1, n=rand_args.n_osc),
-#         party.WeightDist(rng.uniform, low=0, high=1e1, n=rand_args.n_osc),
-#         party.WeightDist(rng.uniform, low=0, high=1e2, n=rand_args.n_osc),
-#         party.WeightDist(rng.uniform, low=0, high=1e3, n=rand_args.n_osc),
-#         party.WeightDist(rng.uniform, low=0, high=1e4, n=rand_args.n_osc),
-#         party.WeightDist(rng.uniform, low=0, high=1e5, n=rand_args.n_osc),
-#     ]),
-#     phase_dist = [party.Dist(0)] + append_normal([
-#         party.Dist(rng.uniform, low=-1/5, high=1/5),
-#         party.Dist(rng.uniform, low=-1/3, high=1/3),
-#         party.Dist(rng.uniform, low=-1/2, high=1/2),
-#         party.Dist(rng.uniform, low=-1, high=1),
-#         party.Dist(rng.uniform, low=-2, high=2),
-#         ])
-#     )
-# const_time_sweep = init_const_time_sweep(py_rand_args_uniform)
 
 expo_time_sweep = sweety.NOscSweep(
     n_osc=[100, 200, 300, 500, 1000, 2000],

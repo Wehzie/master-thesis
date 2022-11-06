@@ -177,7 +177,7 @@ target: Union[None, np.ndarray] = None, store_det_args: bool = False,
             for (osc_index, det_arg) in zip(osc_to_replace, det_args):
                 new_sample.det_args[osc_index] = det_arg
 
-    # draw a new set of weights weights
+    # draw a new set of weights
     partial_weights = draw_n_weights(temp_args)
     new_sample.weights[osc_to_replace] = partial_weights
 

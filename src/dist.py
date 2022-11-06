@@ -29,7 +29,8 @@ class Dist:
             dist = str(self.dist)           # e.g. 42
         dist += " with "
         kwargs = "kwargs=" + str(self.kwargs)
-        return dist + kwargs
+        n = " and n=" + str(self.n)
+        return dist + kwargs + n
 
     def callable_const(self, const, size=None) -> Union[float, np.ndarray]:
         """return a constant value"""

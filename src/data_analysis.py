@@ -148,10 +148,10 @@ def print_time(func: Callable) -> Callable:
     return wrap
 
 def main():
-    sampling_rate, data = data_io.load_data()
+    sampling_rate, data, _ = data_io.load_data()
     plot_pred_target(data, data-10)
-    plot_signal(data)
-    plot_fourier(data)
+    plot_signal(data, show=True)
+    plot_fourier(data, show=True)
 
 if __name__ == "__main__":
     main()

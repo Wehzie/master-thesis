@@ -7,7 +7,7 @@ import algo
 import sample
 import const
 
-from typing import Tuple, Union
+from typing import List, Tuple, Union
 
 import numpy as np
 from tqdm import tqdm
@@ -40,10 +40,10 @@ class LasVegas(algo.SearchAlgo):
         return None
 
     def init_best_sample(self) -> sample.Sample:
-        return super().init_best_sample()
+        return self.gen_zero_sample()
 
-    def draw_temp_sample(self) -> sample.Sample:
-        return super().draw_temp_sample()
+    def draw_temp_sample(self, base_sample: sample.Sample, osc_to_replace: List[int]) -> sample.Sample:
+        return self.draw_partial_sample(base_sample, osc_to_replace)
 
     def comp_samples(self, base_sample: sample.Sample, temp_sample: sample.Sample) -> Tuple[sample.Sample, bool]:
         """compare two samples and return the one with lower rmse
@@ -70,12 +70,12 @@ class LasVegas(algo.SearchAlgo):
         def generator(): # support tqdm timer and iterations per second
             while not self.stop_on_z_ops(): yield
 
-        best_sample = self.gen_zero_sample()
+        best_sample = self.init_best_sample()
         for k in tqdm(generator()):
-            base_sample = self.gen_zero_sample()
+            base_sample = self.init_best_sample()
             i = 0 # number of replaced weights
             while i < self.rand_args.n_osc and not self.stop_on_z_ops():
-                temp_sample = self.draw_partial_sample(base_sample, [i])
+                temp_sample = self.draw_temp_sample(base_sample, [i])
                 base_sample, changed = self.comp_samples(base_sample, temp_sample)
                 if changed: i += 1 # move to next row
                 self.z_ops += 2
@@ -85,40 +85,10 @@ class LasVegas(algo.SearchAlgo):
 
         return best_sample, self.z_ops
 
-class LasVegasWeight(algo.SearchAlgo):
-    def draw_weight(self, weights: np.ndarray, i: int):
-        w = self.rand_args.weight_dist.draw()
-        weights[i] = w
-        return weights
+class LasVegasWeight(LasVegas):
 
-    def draw_las_vegas_weight_candidate(self, base_sample: sample.Sample, i):
-        temp_sample = copy.deepcopy(base_sample)
-        temp_sample.weights = self.draw_weight(temp_sample.weights, i)
-        temp_sample.signal_sum = sample.Sample.predict(temp_sample.signal_matrix, temp_sample.weights, 0)
-        temp_sample.rmse = data_analysis.compute_rmse(temp_sample.signal_sum, self.target)
-        return temp_sample
-
-    def search(self,
-        k_samples: int,
-        weight_init: Union[None, str],
-        store_det_args: bool = False,
-        history: bool = False,
-        args_path: Path = None) -> Tuple[sample.Sample, int]:
-
-        best_sample = self.init_las_vegas(weight_init, store_det_args)
-        best_sample_j = None
-        z_ops = 0
-        for _ in tqdm(range(k_samples)):
-            base_sample = self.init_las_vegas(weight_init, store_det_args)
-            i, j = 0, 0 # number of accepted and drawn weights respectively
-            while i < self.rand_args.n_osc:
-                temp_sample = self.draw_las_vegas_weight_candidate(base_sample, i)
-                base_sample, i, _ = self.eval_las_vegas(base_sample, temp_sample, i, None, None)
-                j += 1
-
-            z_ops += j
-            best_sample, _, best_sample_j = self.eval_las_vegas(base_sample, best_sample, 0, j, best_sample_j)
-            
-        best_sample.signal_matrix = (best_sample.signal_matrix.T * best_sample.weights).T # TODO: change sample type
-        self.samples.append(best_sample)
-        return best_sample, z_ops
+    def init_best_sample(self) -> sample.Sample:
+        return self.draw_sample()
+    
+    def draw_temp_sample(self, base_sample: sample.Sample, osc_to_replace: List[int]) -> sample.Sample:
+        return self.draw_partial_sample_weights(base_sample, osc_to_replace)

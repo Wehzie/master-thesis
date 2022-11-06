@@ -135,5 +135,21 @@ class MCAnnealWeight(MCAnneal):
         return self.draw_partial_sample_weights(base_sample, osc_to_replace)
 
 
-# IDEA:
-# an algorithm like MCExploit, but instead of replacing a random position, the positions are replaced top to bottom, and then start again from the top
+class MCPurge():
+    """
+    initialize pool of n oscillators and weights
+    set a weight to 0 and evaluate the sample
+    accept change if rmse is lower
+    stop after looping over each oscillator or when z_ops is exhausted
+    """
+
+class MCGrowShrink():
+    """
+    initialize pool of n oscillators and weights
+    randomly add or remove an oscillator
+    where add means draw and replace
+    where remove means set weight to 0
+    evaluate the sample
+    accept change if rmse is lower
+    stop after looping over each oscillator or when z_ops is exhausted
+    """

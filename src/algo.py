@@ -27,8 +27,7 @@ class SearchAlgo(ABC):
         self.args_path = algo_args.args_path
 
         self.algo_args = self.get_algo_args()                       # for storage with algorithm results
-                                                                    # this approach allows injecting from 
-        
+                                                                    # this approach allows injecting from elsewhere
         # state
         self.all_samples: List[sample.Sample] = list()              # list of samples and results
         self.best_samples: List[Tuple[sample.Sample, int]] = list() # list of samples and z_ops for intermediate results

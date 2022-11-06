@@ -8,7 +8,7 @@ import param_types as party
 import sweep_types as sweety
 import result_types as resty
 from algo import SearchAlgo
-import params
+import test_params as params
 import meta_target
 import const
 
