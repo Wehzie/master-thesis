@@ -24,11 +24,10 @@ class MetaTarget:
         # downsample
         target_resampled: Final = data_preprocessor.downsample_typesafe(target_middle, rand_args.samples)
         # save to wav
-        sampling_rate = data_preprocessor.get_sampling_rate_after_resample(target_middle, target_resampled, raw_sampling_rate)
-        data_io.save_signal_to_wav(target_middle, sampling_rate, raw_dtype, Path("data/target_downsampled.wav"))
+        data_io.save_signal_to_wav(target_middle, raw_sampling_rate, raw_dtype, Path("data/target_downsampled.wav"))
         # set state
         self.signal = target_resampled
-        self.sampling_rate = sampling_rate
+        self.sampling_rate = data_preprocessor.get_sampling_rate_after_resample(target_middle, target_resampled, raw_sampling_rate)
         self.dtype = raw_dtype
     
     def __repr__(self) -> str:

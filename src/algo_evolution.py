@@ -1,122 +1,60 @@
-from scipy.optimize import differential_evolution, basinhopping
+"""
+module implements evolutionary algorithms that rely on a population of solution candidates
+
+in a neuromorphic context evolutionary algorithms are more feasible than gradient based methods,
+but they are harder to implement than monte carlo methods, as the memory system must be more complex.
+"""
+
+from scipy.optimize import differential_evolution
 import numpy as np
+import algo
+import sample
+import data_analysis
+import const
 
-from data_analysis import compute_rmse, plot_pred_target
-from search_module import Sample
-rng = np.random.default_rng()
+class DifferentialEvolution(algo.SearchAlgo):
 
-
-def func1(weights, *args):
-    """adapt weights only"""
-    model, x, y = args
-    weighted_sum = np.sum(model.T * weights, axis=1)
-    rmse = compute_rmse(weighted_sum, y)
-    return rmse
-
-def func2(model, *args):
-    """adapt entire matrix""" # this doesn't even make sense because a time-series can't be cut in half
-    x, y, n_osc, samples = args
-    model = model.reshape(n_osc, samples)
-    unweighted_sum = np.sum(model, axis=0)
-    rmse = compute_rmse(unweighted_sum, y)
-    return rmse
-
-# uses globals
-def func3(x):
-    """adapt weights for simulated annealing"""
-    weighted_sum = np.sum(model.T * x, axis=1)
-    rmse = compute_rmse(weighted_sum, y)
-    return rmse
-
-# uses globals
-def func4(x):
-    """adapt maxtrix for simulated annealing""" # this doesn't even make sense because a time-series can't be cut in half
-    x = x.reshape(n_osc, samples) 
-    unweighted_sum = np.sum(x, axis=0)
-    rmse = compute_rmse(unweighted_sum, y)
-    return rmse
-
-if __name__ == '__main__':
-    samples = 6
-    n_osc = 10
-
-    # target data
-    x = [i for i in range(samples)]
-    y = [np.sin(x) for x in x]
-
-    # unweighted model
-    model = rng.normal(-1, 1, (n_osc, samples))
-    # weights will be learned
-    weights = [(0, 1) for _ in range(n_osc)]
-
-    def prog(*args, **kwargs):
-        print(args)
-
-    if False: # evolution on weights
-        # pack model and data into args
-        args = (model, x, y)
-        result = differential_evolution(func1, weights, args=args)
-
-        print(result.x, result.fun, result.nit, result.nfev)
-        pred = Sample.predict(model, result.x, 0)
-        rmse = compute_rmse(pred, y)
-        print("RMSE: {rmse}")
-        plot_pred_target(pred, y, show=True)
-
-    if False: # evolution on full model
-        # differential evolution can only handle 1 dimensional bounds
-        args = x, y, n_osc, samples
-        bound_1d = [(-10, 10) for _ in range(samples)] # single oscillator
-        bounds = list()
-        for _ in range(n_osc): # flatten n oscillators
-            bounds += bound_1d        
-        result = differential_evolution(func2, bounds, args=args, workers=4)
-
-        print(result.x, result.fun, result.nit, result.nfev)
-        model = result.x.reshape(n_osc, samples)
-        pred = np.sum(model, axis=0)
-        rmse = compute_rmse(pred, y)
-        print("RMSE: {rmse}")
-        plot_pred_target(pred, y, show=True)
-
-    if False: # anneal on weights
-        # pack model and data into args
-        weights = np.ones(n_osc)
-        minimizer_kwargs = {"method": "BFGS"}
-        GLOB_MODEL = model
-        result = basinhopping(func3, weights, minimizer_kwargs=minimizer_kwargs,
-                   niter=200)
-
-        print(result.x, result.fun, result.nit, result.nfev)
-        pred = Sample.predict(model, result.x, 0)
-        rmse = compute_rmse(pred, y)
-        print("RMSE: {rmse}")
-        plot_pred_target(pred, y, show=True)
-
-    if False:
-        model = model.flatten()
-        minimizer_kwargs = {"method": "BFGS"}
-        result = basinhopping(func4, model, minimizer_kwargs=minimizer_kwargs,
-                   niter=200)
-
-        print(result.x, result.fun, result.nit, result.nfev)
-        model = result.x.reshape(n_osc, samples)
-        pred = np.sum(model, axis=0)
-        rmse = compute_rmse(pred, y)
-        print("RMSE: {rmse}")
-        plot_pred_target(pred, y, show=True)
+    def draw_temp_sample(self) -> sample.Sample:
+        return super().draw_temp_sample()
     
+    def infer_k_from_z(self) -> int:
+        return None
 
-# random search
-    # monte carlo one-shot
-    # las vegas
-    # monte carlo exploit
-    # simulated annealing
-        # advantage: most easy to implement in hardware
-    
-# population search
-    # genetic algo
-        # problem: neuromorphic memory
+    def init_best_sample(self) -> sample.Sample:
+        return self.draw_sample()
+        
+    def search(self, num_populations:int=15, *args, **kwargs):
+
+        def eval_func(weights, *args):
+            signal_matrix, target = args
+            weighted_sum = np.sum(signal_matrix.T * weights, axis=1)
+            return data_analysis.compute_rmse(weighted_sum, target)
+
+        self.clear_state()
+        self.handle_mp(kwargs)
+
+        # pack model and data into args
+        best_sample = self.init_best_sample()
+        args = (best_sample.signal_matrix, self.target)
+        
+        # weight bounds
+        lo = self.rand_args.weight_dist.kwargs["low"]
+        hi = self.rand_args.weight_dist.kwargs["high"]
+        weight_bounds = [(lo, hi) for _ in range(self.rand_args.n_osc)]
+
+        # compute number of generations from max_z_ops
+        oscillators_per_generation = num_populations * self.rand_args.n_osc
+        num_generations = int((self.max_z_ops - self.rand_args.n_osc) // oscillators_per_generation)
+
+        # run search
+        result = differential_evolution(eval_func, weight_bounds,
+            args=args, maxiter=num_generations, seed=const.GLOBAL_SEED)
+
+        # update best_sample and z_ops
+        best_sample.weights = result.x
+        best_sample.update(self.target)
+        self.z_ops += num_generations * oscillators_per_generation
+        return best_sample, self.z_ops
 
 # hebbian learning
     # boltzman learning, boltzman machine
@@ -142,4 +80,4 @@ if __name__ == '__main__':
     # see this paper which manages to do it a bit
 
 # not discussed
-    # decision tree and random forest
+    # decision tree and random forest, reinforcement

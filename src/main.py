@@ -124,9 +124,8 @@ def main():
     algo_sweep = params.init_algo_sweep(m_target.signal, rand_args)
 
     qualitative_algo_sweep(algo_sweep, m_target, visual=True)
-    # exit()
-    # produce_all_results(algo_sweep, m_target.signal, rand_args)
     exit()
+    # produce_all_results(algo_sweep, m_target.signal, rand_args)
     exp = experimenteur.Experimenteur()
     # results = exp.run_algo_sweep(algo_sweep)
     # results = exp.run_rand_args_sweep(algo_sweep, params.freq_sweep_from_zero, rand_args)

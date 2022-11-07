@@ -1,10 +1,20 @@
+"""
+monte carlo algorithms have deterministic runtime and draw from randomness to find the best solution.
+
+monte carlo algorithms are easiest to implement in hardware;
+no gradient is propagated nor must complex memory be maintained.
+"""
+
 from typing import Tuple
 
 import algo
 import sample
+import const
+import data_analysis
 
 import numpy as np
 from tqdm import tqdm
+from scipy.optimize import basinhopping
 
 class MonteCarlo(algo.SearchAlgo):
     """abstract class"""
@@ -134,6 +144,8 @@ class MCAnnealWeight(MCAnneal):
         osc_to_replace = self.draw_random_indices(j_replace)
         return self.draw_partial_sample_weights(base_sample, osc_to_replace)
 
+class MCAnnealLog():
+    """use logarithmic schedule to reduce the number of oscillators across iterations."""
 
 class MCPurge():
     """
@@ -153,3 +165,65 @@ class MCGrowShrink():
     accept change if rmse is lower
     stop after looping over each oscillator or when z_ops is exhausted
     """
+
+class BasinHopping(algo.SearchAlgo):
+    """NOTE: this algorithm uses gradient information when used with 
+        scipy.optimize.minimize("method": "BFGS") and some other methods,
+        these are not interesting for our neuromorphic context"""
+
+    def draw_temp_sample(self) -> sample.Sample:
+        return super().draw_temp_sample()
+    
+    def infer_k_from_z(self) -> int:
+        return None
+
+    def init_best_sample(self) -> sample.Sample:
+        return self.draw_sample()
+        
+    def search(self, minimizer_kwargs={"method": "COBYLA"}, *args, **kwargs):
+        """
+        
+        params:
+            minimizer_kwargs: dict of arguments to pass to scipy.optimize.minimize
+                                note that only non-gradient based algorithms should be used.
+                                a non gradient based algorithm is the Constrained Optimization BY Linear Approximation (COBYLA) algorithm.
+        """
+
+        self.clear_state()
+        self.handle_mp(kwargs)
+
+        def eval_func(weights):
+            """adapt weights for simulated annealing"""
+            weighted_sum = np.sum(best_sample.signal_matrix.T * weights, axis=1)
+            return data_analysis.compute_rmse(weighted_sum, self.target)
+
+        best_sample = self.init_best_sample()
+        
+        # weight bounds
+        lo = self.rand_args.weight_dist.kwargs["low"]
+        hi = self.rand_args.weight_dist.kwargs["high"]
+        
+        # define bounds
+        class Bounds:
+            def __init__(self, low: float, high: float):
+                self.low = low
+                self.high = high
+            def __call__(self, **kwargs):
+                x = kwargs["x_new"] # hard coded kwarg in scipy
+                tmin = bool(np.all(x >= self.low))
+                tmax = bool(np.all(x <= self.high))
+                return tmax and tmin
+        lo = self.rand_args.weight_dist.kwargs["low"]
+        hi = self.rand_args.weight_dist.kwargs["high"]
+        weight_bounds = Bounds(lo, hi)
+
+        niter = int(self.max_z_ops // self.rand_args.n_osc)
+
+        result = basinhopping(eval_func, best_sample.weights, minimizer_kwargs=minimizer_kwargs, niter=niter, accept_test=weight_bounds, seed=const.GLOBAL_SEED)
+
+        best_sample.weights = result.x
+        best_sample.update(self.target)
+        self.z_ops += niter * self.rand_args.n_osc
+        
+        return best_sample, self.z_ops
+
