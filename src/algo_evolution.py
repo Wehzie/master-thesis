@@ -23,7 +23,8 @@ class DifferentialEvolution(algo.SearchAlgo):
     def init_best_sample(self) -> sample.Sample:
         return self.draw_sample()
         
-    def search(self, num_populations:int=15, *args, **kwargs):
+    def search(self, *args, **kwargs):
+        print(f"searching with {self.__class__.__name__}")
 
         def eval_func(weights, *args):
             signal_matrix, target = args
@@ -43,6 +44,7 @@ class DifferentialEvolution(algo.SearchAlgo):
         weight_bounds = [(lo, hi) for _ in range(self.rand_args.n_osc)]
 
         # compute number of generations from max_z_ops
+        num_populations = 15 # scipy default
         oscillators_per_generation = num_populations * self.rand_args.n_osc
         num_generations = int((self.max_z_ops - self.rand_args.n_osc) // oscillators_per_generation)
 

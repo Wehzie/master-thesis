@@ -123,8 +123,8 @@ def main():
     m_target = meta_target.MetaTarget(rand_args)
     algo_sweep = params.init_algo_sweep(m_target.signal, rand_args)
 
-    qualitative_algo_sweep(algo_sweep, m_target, visual=True)
-    exit()
+    # qualitative_algo_sweep(algo_sweep, m_target, visual=True)
+    # exit()
     # produce_all_results(algo_sweep, m_target.signal, rand_args)
     exp = experimenteur.Experimenteur()
     # results = exp.run_algo_sweep(algo_sweep)

@@ -144,8 +144,21 @@ class MCAnnealWeight(MCAnneal):
         osc_to_replace = self.draw_random_indices(j_replace)
         return self.draw_partial_sample_weights(base_sample, osc_to_replace)
 
-class MCAnnealLog():
+class MCAnnealLog(MCAnneal):
     """use logarithmic schedule to reduce the number of oscillators across iterations."""
+
+    def read_j_from_schedule(self, k: int) -> int:
+        """logarithmic schedule"""
+        temperature = (1 - k / self.k_samples)**np.e
+        return np.ceil(self.rand_args.n_osc*temperature).astype(int)
+
+class MCAnnealLogWeight(MCAnnealWeight):
+    """use logarithmic schedule and optimize only weights"""
+
+    def read_j_from_schedule(self, k: int) -> int:
+        """logarithmic schedule"""
+        temperature = (1 - k / self.k_samples)**np.e
+        return np.ceil(self.rand_args.n_osc*temperature).astype(int)
 
 class MCPurge():
     """
@@ -166,6 +179,8 @@ class MCGrowShrink():
     stop after looping over each oscillator or when z_ops is exhausted
     """
 
+
+
 class BasinHopping(algo.SearchAlgo):
     """NOTE: this algorithm uses gradient information when used with 
         scipy.optimize.minimize("method": "BFGS") and some other methods,
@@ -180,7 +195,7 @@ class BasinHopping(algo.SearchAlgo):
     def init_best_sample(self) -> sample.Sample:
         return self.draw_sample()
         
-    def search(self, minimizer_kwargs={"method": "COBYLA"}, *args, **kwargs):
+    def search(self, *args, **kwargs):
         """
         
         params:
@@ -188,6 +203,7 @@ class BasinHopping(algo.SearchAlgo):
                                 note that only non-gradient based algorithms should be used.
                                 a non gradient based algorithm is the Constrained Optimization BY Linear Approximation (COBYLA) algorithm.
         """
+        print(f"searching with {self.__class__.__name__}")
 
         self.clear_state()
         self.handle_mp(kwargs)
@@ -217,9 +233,10 @@ class BasinHopping(algo.SearchAlgo):
         hi = self.rand_args.weight_dist.kwargs["high"]
         weight_bounds = Bounds(lo, hi)
 
-        niter = int(self.max_z_ops // self.rand_args.n_osc)
+        # using a factor of 1/10, the runtime of the algorithm is similar to that of other algorithms
+        niter = int(self.max_z_ops // self.rand_args.n_osc) // 10
 
-        result = basinhopping(eval_func, best_sample.weights, minimizer_kwargs=minimizer_kwargs, niter=niter, accept_test=weight_bounds, seed=const.GLOBAL_SEED)
+        result = basinhopping(eval_func, best_sample.weights, minimizer_kwargs={"method": "COBYLA"}, niter=niter, accept_test=weight_bounds, seed=const.GLOBAL_SEED)
 
         best_sample.weights = result.x
         best_sample.update(self.target)
