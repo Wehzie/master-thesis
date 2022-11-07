@@ -5,6 +5,7 @@ monte carlo algorithms are easiest to implement in hardware;
 no gradient is propagated nor must complex memory be maintained.
 """
 
+import copy
 from typing import Tuple
 
 import algo
@@ -160,24 +161,30 @@ class MCAnnealLogWeight(MCAnnealWeight):
         temperature = (1 - k / self.k_samples)**np.e
         return np.ceil(self.rand_args.n_osc*temperature).astype(int)
 
-class MCPurge():
+
+
+class MCPurge(MonteCarlo):
     """
     initialize pool of n oscillators and weights
-    set a weight to 0 and evaluate the sample
+    set j weights to 0 and evaluate the sample
     accept change if rmse is lower
     stop after looping over each oscillator or when z_ops is exhausted
+    # TODO: stop after looping over each oscillator
     """
 
-class MCGrowShrink():
-    """
-    initialize pool of n oscillators and weights
-    randomly add or remove an oscillator
-    where add means draw and replace
-    where remove means set weight to 0
-    evaluate the sample
-    accept change if rmse is lower
-    stop after looping over each oscillator or when z_ops is exhausted
-    """
+    def infer_k_from_z(self) -> int:
+        z_init = self.rand_args.n_osc * 2
+        z_loop = self.j_replace # j weights are updated on each loop
+        return int((self.max_z_ops - z_init) // z_loop)
+
+    def init_best_sample(self) -> sample.Sample:
+        return self.draw_sample()
+
+    def draw_temp_sample(self, base_sample: sample.Sample, *args, **kwargs) -> sample.Sample:
+        osc_to_replace = self.draw_random_indices(self.j_replace)
+        temp_sample = copy.deepcopy(base_sample)
+        temp_sample.weights[osc_to_replace] = 0
+        return temp_sample
 
 
 
