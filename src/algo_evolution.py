@@ -39,8 +39,7 @@ class DifferentialEvolution(algo.SearchAlgo):
         args = (best_sample.signal_matrix, self.target)
         
         # weight bounds
-        lo = self.rand_args.weight_dist.kwargs["low"]
-        hi = self.rand_args.weight_dist.kwargs["high"]
+        lo, hi = self.rand_args.weight_dist.get_low_high()
         weight_bounds = [(lo, hi) for _ in range(self.rand_args.n_osc)]
 
         # compute number of generations from max_z_ops

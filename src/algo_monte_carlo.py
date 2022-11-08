@@ -222,10 +222,6 @@ class BasinHopping(algo.SearchAlgo):
 
         best_sample = self.init_best_sample()
         
-        # weight bounds
-        lo = self.rand_args.weight_dist.kwargs["low"]
-        hi = self.rand_args.weight_dist.kwargs["high"]
-        
         # define bounds
         class Bounds:
             def __init__(self, low: float, high: float):
@@ -236,8 +232,8 @@ class BasinHopping(algo.SearchAlgo):
                 tmin = bool(np.all(x >= self.low))
                 tmax = bool(np.all(x <= self.high))
                 return tmax and tmin
-        lo = self.rand_args.weight_dist.kwargs["low"]
-        hi = self.rand_args.weight_dist.kwargs["high"]
+
+        lo, hi = self.rand_args.weight_dist.get_low_high()
         weight_bounds = Bounds(lo, hi)
 
         # using a factor of 1/10, the runtime of the algorithm is similar to that of other algorithms

@@ -32,21 +32,3 @@ class MetaTarget:
     
     def __repr__(self) -> str:
         return f"MetaTarget(signal={self.signal}, sampling_rate={self.sampling_rate}, dtype={self.dtype})"
-
-# @dataclass
-# class MetaTarget:
-#     signal: np.ndarray
-#     sampling_rate: int
-#     raw_dtype: np.dtype
-
-# def init_target(rand_args: party.PythonSignalRandArgs) -> MetaTarget:
-#     """load, downsample target and inject number of samples into rand_args"""
-#     # loading and manipulating the target signal
-#     raw_sampling_rate, raw_target, raw_dtype = data_io.load_data()
-#     # shorten the target
-#     target_resampled: Final = data_preprocessor.resample(raw_target, rand_args.samples)
-#     sampling_rate = int(len(target_resampled)/len(raw_target)*raw_sampling_rate)
-#     target_middle: Final = data_preprocessor.take_middle_third(target_resampled)
-#     # save to wav
-#     data_io.save_signal_to_wav(target_middle, sampling_rate, raw_dtype, Path("data/target_resampled.wav"))
-#     return MetaTarget(target_middle, sampling_rate, raw_dtype)

@@ -1,21 +1,20 @@
 import copy
 from functools import wraps
 from pathlib import Path
-from typing import Callable, Final, List, Tuple
 
 import data_analysis
 import data_io
-import test_params as params
 import sample
 import data_preprocessor
 import param_types as party
 import experimenteur
-import result_types as resty
 import experiment_analysis as expan
 import meta_target
 import const
-
-
+if const.TEST_PARAMS:
+    import test_params as params
+else:
+    import params
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -71,9 +70,10 @@ def qualitative_algo_sweep(algo_sweep: AlgoSweep, m_target: meta_target.MetaTarg
         best_sample, z_ops = search_alg.search()
         if visual: post_main(best_sample, m_target, z_ops, search_alg.__class__.__name__)
 
+@data_analysis.print_time
 def produce_all_results(algo_sweep: AlgoSweep, target: np.ndarray, base_rand_args: party.PythonSignalRandArgs) -> None:
     """run all experiments and plot results"""
-    show_all = True
+    show_all = False
     exp = experimenteur.Experimenteur()
 
     results = exp.run_rand_args_sweep(algo_sweep, params.n_osc_sweep, base_rand_args)
@@ -117,6 +117,8 @@ def run_multi_directional_experiment():
     # also for frequency band
 
 
+# TODO: pickle figures after save to png
+# TODO: intermediate pickle of results
 @data_analysis.print_time
 def main():
     rand_args = params.py_rand_args_uniform
@@ -125,7 +127,8 @@ def main():
 
     # qualitative_algo_sweep(algo_sweep, m_target, visual=True)
     # exit()
-    # produce_all_results(algo_sweep, m_target.signal, rand_args)
+    produce_all_results(algo_sweep, m_target.signal, rand_args)
+    exit()
     exp = experimenteur.Experimenteur()
     # results = exp.run_algo_sweep(algo_sweep)
     # results = exp.run_rand_args_sweep(algo_sweep, params.freq_sweep_from_zero, rand_args)

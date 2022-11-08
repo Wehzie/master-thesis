@@ -1,6 +1,6 @@
 import numpy as np
 import const
-from typing import List, Union, Callable
+from typing import List, Tuple, Union, Callable
 
 # "|", for example int|float requires python 3.10 or greater
 class Dist:
@@ -53,6 +53,16 @@ class Dist:
 
     def is_const(self) -> bool:
         return self.dist.__name__ == "callable_const"
+
+    def get_low_high(self) -> Tuple[float, float]:
+        if self.is_uniform():
+            return self.kwargs["low"], self.kwargs["high"]
+        if self.is_normal():
+            return self.kwargs["loc"] - self.kwargs["scale"], self.kwargs["loc"] + self.kwargs["scale"]
+        if self.is_const():
+            return self.draw(), self.draw()
+        else:
+            raise NotImplementedError
 
     def compute_range(self) -> None:
         """compute the numerical range covered by a distribution.
