@@ -195,7 +195,7 @@ freq_sweep_around_vo2 = sweety.FreqSweep(
     ])
 )
 
-# sweep band from narrow to wide while keeping the lower bound at 0
+# TODO: sweep band from narrow to wide while keeping the lower bound at 0
 # frequency 0 shouldn't be likely at all, start with 0.1 Hz
 freq_sweep_from_zero = sweety.FreqSweep(
     append_normal(
@@ -246,47 +246,54 @@ z_ops_sweep = sweety.ZOpsSweep(
 
 sampling_rate_sweep = sweety.NumSamplesSweep([50, 100, 200, 500])
 
-
+# TODO: bundle args and algos
 algo_list: List[SearchAlgo] = [
-    almoca.BasinHopping,
+    # almoca.BasinHopping,
     alevo.DifferentialEvolution,
     alave.LasVegas,
-    alave.LasVegasWeight,
-    almoca.MCOneShot,
-    almoca.MCOneShotWeight,
+    # alave.LasVegasWeight,
+    # almoca.MCOneShot,
+    # almoca.MCOneShotWeight,
     almoca.MCExploit,
-    almoca.MCExploit,
-    almoca.MCExploitWeight,
-    almoca.MCExploitWeight,
-    almoca.MCAnneal,
-    almoca.MCAnnealWeight,
+    # almoca.MCExploit,
+    # almoca.MCExploitWeight,
+    # almoca.MCExploitWeight,
+    # almoca.MCAnneal,
+    # almoca.MCAnnealWeight,
     almoca.MCAnnealLog,
-    almoca.MCAnnealLogWeight,
-    almoca.MCPurge,
+    # almoca.MCAnnealLogWeight,
+    # almoca.MCPurge,
 ]
 
 def init_algo_args_for_sweep(rand_args: party.PythonSignalRandArgs,
 target: np.ndarray,
 max_z_ops: int) -> List[party.AlgoArgs]:
     return ([                                                   # TODO: set weight mode and mp in constructor
+    # basin hopping
+        # party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True, mp=const.MULTIPROCESSING),
+    # differential evolution
         party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True, mp=const.MULTIPROCESSING),
-        party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True, mp=const.MULTIPROCESSING),
+    # las vegas
         party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=False, mp=const.MULTIPROCESSING),
-        party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True, mp=const.MULTIPROCESSING),
-        party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=False),
-        party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True),
+        # party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True, mp=const.MULTIPROCESSING),
+    # mc one shot
+        # party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=False),
+        # party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True),
+    # mc exploit
         party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=False, j_replace=1, mp=const.MULTIPROCESSING),
-        party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=False, j_replace=10, mp=const.MULTIPROCESSING),
-        party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True, j_replace=1, mp=const.MULTIPROCESSING),
-        party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True, j_replace=10, mp=const.MULTIPROCESSING),
+        # party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=False, j_replace=10, mp=const.MULTIPROCESSING),
+        # party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True, j_replace=1, mp=const.MULTIPROCESSING),
+        # party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True, j_replace=10, mp=const.MULTIPROCESSING),
+    # mc anneal
+        # party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=False, mp=const.MULTIPROCESSING),
+        # party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True, mp=const.MULTIPROCESSING),
         party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=False, mp=const.MULTIPROCESSING),
-        party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True, mp=const.MULTIPROCESSING),
-        party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=False, mp=const.MULTIPROCESSING),
-        party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True, mp=const.MULTIPROCESSING),
-        party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True, j_replace=1, mp=const.MULTIPROCESSING),
+        # party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True, mp=const.MULTIPROCESSING),
+    # mc purge
+        # party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True, j_replace=1, mp=const.MULTIPROCESSING),
     ])
     
 def init_algo_sweep(target: np.ndarray, rand_args: party.PythonSignalRandArgs) -> sweety.AlgoSweep:
-    algo_args = init_algo_args_for_sweep(rand_args, target, max_z_ops=5e4)
-    return sweety.AlgoSweep(algo_list, algo_args, m_averages=5)
+    algo_args = init_algo_args_for_sweep(rand_args, target, max_z_ops=1e5)
+    return sweety.AlgoSweep(algo_list, algo_args, m_averages=3)
 

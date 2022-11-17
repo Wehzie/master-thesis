@@ -10,3 +10,5 @@ TEST_RNG: Final = np.random.default_rng() # use no seed for testing to increase 
 SAMPLE_FLUSH_PERIOD: Final = 1000 # number of samples to store in RAM before flush to disk
 LEGAL_DISTS: Final = [RNG.uniform.__name__, RNG.normal.__name__] # supported distributions to draw from
 TEST_PARAMS: Final[bool] = True
+
+SEPARATE_LEGEND: Final[bool] = False # show and save legends in a separate figure

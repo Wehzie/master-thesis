@@ -66,6 +66,7 @@ class Experimenteur:
         args:
             algo_sweep: a list of algorithms and algorithm arguments, the algorithm arguments will be modified
             sweep_args: a attributes within a rand_args type, for each attribute a list of values is tested"""
+        print("sweeping with", sweep_args.__class__.__name__)
         results = []
         for val_schedule in fields(sweep_args): # for example frequency distribution
             for Algo, algo_args in zip(algo_sweep.algo, algo_sweep.algo_args): # for example monte carlo search
@@ -86,6 +87,7 @@ class Experimenteur:
     
     def run_sampling_rate_sweep(self, sweep_args: sweety.NumSamplesSweep, base_args: party.PythonSignalRandArgs) -> resty.ResultSweep:
         """run all algorithms at different sampling rates of a target"""
+        print("sweeping with", sweep_args.__class__.__name__)
         results = list()
         for s in sweep_args.samples:
             temp_args = copy.deepcopy(base_args)
@@ -97,6 +99,7 @@ class Experimenteur:
 
     def run_z_ops_sweep(self, algo_sweep: sweety.AlgoSweep, z_ops_sweep: sweety.ZOpsSweep) -> resty.ResultSweep:
         """run all algorithms with different numbers of z-operations, corresponding to more extensive search"""
+        print("sweeping with", z_ops_sweep.__class__.__name__)
         results = list()
         for z_ops in z_ops_sweep.max_z_ops:
             # inject max_z_ops into each algorithm's algo_args

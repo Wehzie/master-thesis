@@ -1,5 +1,3 @@
-import copy
-from functools import wraps
 from pathlib import Path
 
 import data_analysis
@@ -88,11 +86,13 @@ def produce_all_results(algo_sweep: AlgoSweep, target: np.ndarray, base_rand_arg
     df = expan.conv_results_to_pd(results)
     expan.plot_samples_vs_rmse(df, show=show_all)
 
-    for freq_sweep in [params.freq_sweep_from_zero, params.freq_sweep_around_vo2]:
+    freq_sweeps = [params.freq_sweep_from_zero, params.freq_sweep_around_vo2]
+    freq_sweep_names = ["freq_range_from_zero", "freq_range_around_vo2"]
+    for freq_sweep, freq_sweep_name in zip(freq_sweeps, freq_sweep_names):
         results = exp.run_rand_args_sweep(algo_sweep, freq_sweep, base_rand_args)
         df = expan.conv_results_to_pd(results)
-        expan.plot_freq_range_vs_rmse(df, len(target), show=show_all)
-
+        expan.plot_freq_range_vs_rmse(df, len(target), freq_sweep_name, show=show_all)
+        
     results = exp.run_rand_args_sweep(algo_sweep, params.weight_sweep, base_rand_args)
     df = expan.conv_results_to_pd(results)
     expan.plot_weight_range_vs_rmse(df, len(target), show=show_all)

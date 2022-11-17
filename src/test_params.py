@@ -48,7 +48,8 @@ freq_sweep_around_vo2 = sweety.FreqSweep(
         dist.Dist(rng.uniform, low=1e5, high=1e6),
         dist.Dist(rng.uniform, low=1e4, high=1e7),
         dist.Dist(rng.uniform, low=1e3, high=1e8),
-    ])
+    ]),
+    #"freq_range_around_vo2"
 )
 
 # sweep band from narrow to wide while keeping the lower bound at 0
@@ -56,7 +57,8 @@ freq_sweep_around_vo2 = sweety.FreqSweep(
 freq_sweep_from_zero = sweety.FreqSweep(
     params.append_normal(
         [ party.Dist(rng.uniform, low=0, high=10**(p)) for p in range(0, 3) ]
-    )
+    ),
+    #"freq_range_from_zero"
 )
 
 def init_weight_sweep(rand_args: party.PythonSignalRandArgs) -> sweety.WeightSweep:
@@ -101,6 +103,7 @@ z_ops_sweep = sweety.ZOpsSweep(
 sampling_rate_sweep = sweety.NumSamplesSweep([30, 60, 90])
 
 algo_list: List[SearchAlgo] = [
+    almoca.MCExploitFast,
     almoca.BasinHopping,
     alevo.DifferentialEvolution,
     alave.LasVegas,
@@ -122,6 +125,7 @@ def init_algo_args_for_sweep(rand_args: party.PythonSignalRandArgs,
 target: np.ndarray,
 max_z_ops: int) -> List[party.AlgoArgs]:
     return ([                                                   # TODO: set weight mode and mp in constructor
+        party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=False, j_replace=1, mp=const.MULTIPROCESSING),
         party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True, mp=const.MULTIPROCESSING),
         party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True, mp=const.MULTIPROCESSING),
         party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=False, mp=const.MULTIPROCESSING),

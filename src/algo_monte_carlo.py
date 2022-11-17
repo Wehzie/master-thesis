@@ -6,16 +6,19 @@ no gradient is propagated nor must complex memory be maintained.
 """
 
 import copy
-from typing import Tuple
+from typing import Tuple, List
 
 import algo
 import sample
 import const
 import data_analysis
+import param_types as party
 
 import numpy as np
 from tqdm import tqdm
 from scipy.optimize import basinhopping
+
+# TODO: ensure that offset is treated in the same way as weights
 
 class MonteCarlo(algo.SearchAlgo):
     """abstract class"""
@@ -96,7 +99,49 @@ class MCExploitWeight(MCExploit):
         osc_to_replace = self.draw_random_indices(self.j_replace)
         return self.draw_partial_sample_weights(base_sample, osc_to_replace)
 
+# TODO: during the initialization phase, the position of replaced oscillators may better be random,
+# only must memory be kept of which has been updated, and the list from which to draw must be updated to shrink
+class MCExploitFast(MCExploit):
+    """algorithm is equivalent to mcexploit after an initalization phase.
+    the duration of the initialization phase is non deterministic and inspired by las vegas algorithms.
+    the algorithm combines fast convergence speed of las vegas algorithms with the exploitation of MCExploit.
+    the MCExploitFast algorithm continues to be deterministic in runtime.
+    
+    loop over oscillators from top to bottom,
+    once an oscillator has been replaced on each row,
+    proceed to replace oscillators in random positions
+    """
 
+    def __init__(self, algo_args: party.AlgoArgs):
+        super().__init__(algo_args)
+        self.changed_once: List[bool] = [False for _ in range(self.rand_args.n_osc)]
+
+    def get_osc_to_replace(self) -> List[int]:
+        if all(self.changed_once):
+            return self.draw_random_indices(self.j_replace)
+        else:
+            # find first False and get index
+            first_false = next(i for (i, val) in enumerate(self.changed_once) if val == False)
+            # wrap around max index
+            osc_to_replace = [i % self.rand_args.n_osc for i in range(first_false, first_false+self.j_replace)]
+            return osc_to_replace
+
+    def draw_temp_sample(self, base_sample: sample.Sample, *args, **kwargs) -> sample.Sample:
+        osc_to_replace = self.get_osc_to_replace()
+        return self.draw_partial_sample(base_sample, osc_to_replace)
+
+    def comp_samples(self, base_sample: sample.Sample, temp_sample: sample.Sample) -> sample.Sample:
+        if temp_sample.rmse < base_sample.rmse:
+            if not all(self.changed_once):
+                # set changed_once to True for all oscillators that have been replaced
+                first_false = next(i for (i, val) in enumerate(self.changed_once) if val == False)
+                # can't exceed max index
+                true_len = min(self.j_replace, self.rand_args.n_osc - first_false)
+                self.changed_once[first_false] = [True] * true_len
+            return temp_sample
+        return base_sample
+
+        
 
 class MCAnneal(MonteCarlo):
     """use a schedule to reduce the number of oscillators across iterations.
@@ -162,6 +207,22 @@ class MCAnnealLogWeight(MCAnnealWeight):
         return np.ceil(self.rand_args.n_osc*temperature).astype(int)
 
 
+class MCGrowShrink(MonteCarlo):
+    """generalization over MCDampen
+    where we have l-the probability to dampen vs 1-l the probability to grow
+    and then we have j, the number of weights to adapt
+    and lastly we have h the factor by which to dampen or grow weights"""
+
+class MCDampen(MonteCarlo):
+    """generalization over MCPurge
+    initialize pool of n oscillators and weights
+    take j weights, multiply weights by dampening-factor h, and evaluate the sample
+    where h >= 0 and <= 1
+    accept change if rmse is lower
+    stop when z_ops is exhausted
+
+    MCPurge is a special case of MCDampen with h=0
+    """
 
 class MCPurge(MonteCarlo):
     """

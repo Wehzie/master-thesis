@@ -75,10 +75,5 @@ class DifferentialEvolution(algo.SearchAlgo):
     # and then changing the dist on-fly on such a device would be a necessary requirement
     # Schomaker: work is being done on this at cognigron, ask for citation
 
-# gradient based
-    # not feasible
-    # attribution problem: by what amount does oscillator_i contribute to the error?
-    # see this paper which manages to do it a bit
-
 # not discussed
     # decision tree and random forest, reinforcement

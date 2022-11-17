@@ -1,14 +1,39 @@
-from re import S
 import result_types as resty
 from util import add_str2keys
 import const
 import param_types as party
 
-from typing import List, Union
+from typing import List, Union, Tuple
 from pathlib import Path
+import itertools
 
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib as mpl
+from cycler import cycler
+
+# rainbow colors
+cmap = mpl.colormaps['Spectral']
+rb_colors = [cmap(i) for i in np.linspace(0, 0.9, 10)]
+# tableau colors
+colors = plt.cm.tab10.colors
+# set up plotting
+linestyles = ["solid", "dashed"]
+color_list = colors * len(linestyles)
+linestyle_list = [[style] * len(colors) for style in linestyles]
+# flatten from [[style1, ...], [style2, ...]] to [style1, style1, ..., style2, ...]
+linestyle_list = itertools.chain.from_iterable(linestyle_list)
+default_cycler = (
+    cycler(color=color_list) +
+    cycler(linestyle=linestyle_list)
+)
+plt.rc('axes', prop_cycle=default_cycler)
+
+# TODO: style multiple algo lines with a cycler to increase number of colors
+# remove whitespace where possible form plots (right hand side)
+# make legends background more transparent
+# optionally save legend to the side or as a separate figure
 
 def compute_dist_ranges(results: List[resty.ResultSweep]) -> List[resty.ResultSweep]:
     """compute the ranges for each distribution in a list of results"""
@@ -69,7 +94,7 @@ def get_plot_title(df: pd.DataFrame, target_samples: int, z_ops: bool = True) ->
     m_averages = int(df["m_averages"].iloc[[0]])
     n_osc = df["n_osc"].values[0]
     max_z_ops = int(df["max_z_ops"].values[0])
-    str_max_z_ops = f", max_z_ops={max_z_ops}" if z_ops else ""
+    str_max_z_ops = f", max z-ops={max_z_ops}" if z_ops else ""
     return f"m={m_averages}, n={n_osc}, samples={target_samples}{str_max_z_ops}" 
 
 def filter_df_by_dist_name(df: pd.DataFrame, attr_name: str, dist_name: str) -> pd.DataFrame:
@@ -85,7 +110,7 @@ def filter_df_by_dist_name(df: pd.DataFrame, attr_name: str, dist_name: str) -> 
     if dist_name == "normal":
         return df[df[f"{attr_name}_dist_loc"].notna()]
 
-def plot_rmse_by_algo(df: pd.DataFrame, column_name: str) -> plt.Figure:
+def plot_rmse_by_algo(df: pd.DataFrame, column_name: str, separate_legend: bool = const.SEPARATE_LEGEND) -> Tuple[plt.Figure, plt.Figure]:
     """plot one line for each algorithm given an attribute column in a dataframe
 
     args:
@@ -93,32 +118,44 @@ def plot_rmse_by_algo(df: pd.DataFrame, column_name: str) -> plt.Figure:
     """
     fig = plt.figure()
     algo_names = set(df["algo_name"])
+    algo_names = sorted(algo_names)
     dfs_by_algo = [df.loc[df["algo_name"] == name] for name in algo_names]        
     for data, name in zip(dfs_by_algo, algo_names):
         plt.errorbar(data[column_name], data["mean_rmse"], data["std_rmse"], elinewidth=1, capsize=5, capthick=1, markeredgewidth=1, label=name)
-    plt.legend(title="algorithm")
+    plt.legend(title="Algorithm", framealpha=0.5)
     plt.gca().set_ylabel("RMSE(generated, target)")
-    return fig
+
+    if separate_legend == False: return fig, None
+    
+    fig.gca().legend().set_visible(False) # hide legend on main plot
+    legend_as_fig = plt.figure()
+    plt.figlegend(*fig.gca().get_legend_handles_labels(), loc="upper left", title="algorithm")
+    
+    return fig, legend_as_fig
+
+def save_fig_n_legend(fig: plt.Figure, legend_as_fig: plt.Figure, name: str, show: bool = False) -> None:
+    fig.savefig(Path("data") / (name + ".png"), dpi=300)
+    if legend_as_fig is not None:
+        legend_as_fig.savefig(Path("data") / (name + "_legend.png"), dpi=300)
+    if show: plt.show()
 
 def plot_n_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool = False) -> None:
     """exp1: plot number of oscillators, n, against rmse for multiple algorithms with z_ops and rand_args fixed"""
     title = get_plot_title(df, target_samples)
     df = df.filter(items=["algo_name", "n_osc", "mean_rmse", "std_rmse"])
-    _ = plot_rmse_by_algo(df, "n_osc")
-    plt.title(title)
-    plt.gca().set_xlabel("number of oscillators")
-    plt.savefig(Path("data/n_on_rmse.png"), dpi=300)
-    if show: plt.show()
+    fig, legend_as_fig = plot_rmse_by_algo(df, "n_osc")
+    fig.gca().set_title(title)
+    fig.gca().set_xlabel("number of oscillators")
+    save_fig_n_legend(fig, legend_as_fig, "n_on_rmse", show)
 
 def plot_z_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool = False) -> None:
     """exp2: plot number of operations, z_ops, against rmse for multiple algorithms with rand_args fixed"""
     title = get_plot_title(df, target_samples, z_ops=False)
     df = df.filter(items=["algo_name", "max_z_ops", "mean_rmse", "std_rmse"])
-    _ = plot_rmse_by_algo(df, "max_z_ops")
-    plt.title(title)
-    plt.gca().set_xlabel("z-operations")
-    plt.savefig(Path("data/z_vs_rmse.png"), dpi=300)
-    if show: plt.show()
+    fig, legend_as_fig = plot_rmse_by_algo(df, "max_z_ops")
+    fig.gca().set_title(title)
+    fig.gca().set_xlabel("z-operations")
+    save_fig_n_legend(fig, legend_as_fig, "z_vs_rmse", show)
 
 def plot_samples_vs_rmse(df: pd.DataFrame, show: bool = False) -> None:
     """exp3: plot number of samples against rmse for multiple algorithms with rand_args and target fixed"""
@@ -129,11 +166,10 @@ def plot_samples_vs_rmse(df: pd.DataFrame, show: bool = False) -> None:
     title = f"m={m_averages}, n={n_osc}, max z-ops={max_z_ops}"
 
     df = df.filter(items=["algo_name", "samples", "mean_rmse", "std_rmse"])
-    _ = plot_rmse_by_algo(df, "samples")
-    plt.title(title)
-    plt.gca().set_xlabel("number of samples")
-    plt.savefig(Path(f"data/samples_vs_rmse.png"), dpi=300)
-    if show: plt.show()
+    fig, legend_as_fig = plot_rmse_by_algo(df, "samples")
+    fig.gca().set_title(title)
+    fig.gca().set_xlabel("number of samples")
+    save_fig_n_legend(fig, legend_as_fig, "samples_vs_rmse", show)
 
 def plot_range_vs_rmse(df: pd.DataFrame, target_samples: int, attr_name: str, dist_name: str) -> List[plt.Figure]:
     """
@@ -155,52 +191,52 @@ def plot_range_vs_rmse(df: pd.DataFrame, target_samples: int, attr_name: str, di
     df = filter_df_by_dist_name(df, attr_name, dist_name)
     df = df.filter(items=["algo_name", "mean_rmse", "std_rmse", "mean_z_ops", range_name])
 
-    fig = plot_rmse_by_algo(df, range_name)
-    plt.title(f"{title}, dist={dist_name}")
+    fig, legend_as_fig = plot_rmse_by_algo(df, range_name)
+    fig.gca().set_title(f"{title}, dist={dist_name}")
 
-    return fig
+    return fig, legend_as_fig
 
-def plot_freq_range_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool = False) -> None:
+def plot_freq_range_vs_rmse(df: pd.DataFrame, target_samples: int, sweep_name: str, show: bool = False) -> None:
     """exp4+5: plot frequency range against rmse for multiple algorithms with rand_args and target fixed"""
     for dist_name in const.LEGAL_DISTS:
-        fig = plot_range_vs_rmse(df, target_samples, "freq", dist_name)
-        fig.gca().set_xlabel("width of frequency band")
+        fig, legend_as_fig = plot_range_vs_rmse(df, target_samples, "freq", dist_name)
+        fig.gca().set_xlabel("frequency diversity") # width of frequency band
         fig.gca().set_xscale("log")
-        fig.savefig(Path(f"data/freq_range_{dist_name}_vs_rmse.png"), dpi=300)
+        save_fig_n_legend(fig, legend_as_fig, f"{sweep_name}_{dist_name}_vs_rmse", show=False)
     if show: plt.show()
 
 def plot_weight_range_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool = False) -> None:
     """exp6: plot weight range against rmse for multiple algorithms with rand_args and target fixed"""
     for dist_name in const.LEGAL_DISTS:
-        fig = plot_range_vs_rmse(df, target_samples, "weight", dist_name)
-        fig.gca().set_xlabel("width of weight band")
+        fig, legend_as_fig = plot_range_vs_rmse(df, target_samples, "weight", dist_name)
+        fig.gca().set_xlabel("dynamic range (scaled by amplitude)") # width of weight band
+        # dynamic range would be given with amplitude=1
         fig.gca().set_xscale("log")
-        fig.savefig(Path(f"data/weight_range_{dist_name}_vs_rmse.png"), dpi=300)
+        save_fig_n_legend(fig, legend_as_fig, f"weight_range_{dist_name}_vs_rmse", show=False)
     if show: plt.show()
 
 def plot_phase_range_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool = False) -> None:
     """exp7: plot phase range against rmse for multiple algorithms with rand_args and target fixed"""
     for dist_name in const.LEGAL_DISTS:
-        fig = plot_range_vs_rmse(df, target_samples, "phase", dist_name)
-        fig.gca().set_xlabel("width of phase band")
-        fig.savefig(Path(f"data/phase_range_{dist_name}_vs_rmse_.png"), dpi=300)
+        fig, legend_as_fig = plot_range_vs_rmse(df, target_samples, "phase", dist_name)
+        fig.gca().set_xlabel("phase diversity") # width of phase band
+        save_fig_n_legend(fig, legend_as_fig, f"phase_range_{dist_name}_vs_rmse", show=False)
     if show: plt.show()
 
 def plot_offset_range_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool = False) -> None:
     """exp8: plot offset range against rmse for multiple algorithms with rand_args and target fixed"""
     for dist_name in const.LEGAL_DISTS:
-        fig = plot_range_vs_rmse(df, target_samples, "offset", dist_name)
-        fig.gca().set_xlabel("width of offset distribution")
-        fig.savefig(Path(f"data/offset_range_{dist_name}_vs_rmse.png"))
+        fig, legend_as_fig = plot_range_vs_rmse(df, target_samples, "offset", dist_name)
+        fig.gca().set_xlabel("offset diversity") # width of offset distribution
+        save_fig_n_legend(fig, legend_as_fig, f"offset_range_{dist_name}_vs_rmse", show=False)
     if show: plt.show()
 
 def plot_amplitude_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool = False) -> None:
     "exp9: plot amplitude against rmse for multiple algorithms with rand_args and target fixed"
     title = get_plot_title(df, target_samples) # before filtering df
     df = df.filter(items=["algo_name", "mean_rmse", "std_rmse", "amplitude"])
-    fig = plot_rmse_by_algo(df, "amplitude")
-    plt.title(title)
+    fig, legend_as_fig = plot_rmse_by_algo(df, "amplitude")
+    fig.gca().set_title(title)
     fig.gca().set_ylabel("RMSE(generated, target)")
-    fig.gca().set_xlabel("amplitude [V]")
-    plt.savefig(Path(f"data/amplitude_vs_rmse_.png"), dpi=300)
-    if show: plt.show()
+    fig.gca().set_xlabel("amplitude")
+    save_fig_n_legend(fig, legend_as_fig, "amplitude_vs_rmse", show)

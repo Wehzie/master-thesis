@@ -1,4 +1,5 @@
 matplotlib
+cycler
 numpy
 scipy
 pandas
