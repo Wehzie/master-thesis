@@ -55,6 +55,8 @@ class AlgoArgs:
     max_z_ops: Union[None, int]     = None  # maximum number of operations until learning is aborted
     k_samples: int                  = None  # number of times to re-run base algorithm
     j_replace: Union[None, int]    = None   # number of oscillators to replace in each iteration for MCExploit
+    l_damp_prob: Union[None, float] = None  # dampening probability for MCGrowShrink
+    h_damp_fac: Union[None, float]   = None # dampening factor for MCGrowShrink, MCDampen, MCPurge
     mp: Union[None, bool]           = None  # whether to use multiprocessing
     z_ops_callbacks: Union[None, List[int]] = None # at each value of z_ops store the best sample up to that point
     store_det_args: bool            = False # whether to store det_args for each k

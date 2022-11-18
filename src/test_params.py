@@ -103,6 +103,8 @@ z_ops_sweep = sweety.ZOpsSweep(
 sampling_rate_sweep = sweety.NumSamplesSweep([30, 60, 90])
 
 algo_list: List[SearchAlgo] = [
+    almoca.MCGrowShrink,
+    almoca.MCDampen,
     almoca.MCExploitFast,
     almoca.BasinHopping,
     alevo.DifferentialEvolution,
@@ -125,6 +127,8 @@ def init_algo_args_for_sweep(rand_args: party.PythonSignalRandArgs,
 target: np.ndarray,
 max_z_ops: int) -> List[party.AlgoArgs]:
     return ([                                                   # TODO: set weight mode and mp in constructor
+        party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True, j_replace=1, l_damp_prob=0.5, h_damp_fac=0.5, mp=const.MULTIPROCESSING),
+        party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True, j_replace=1, h_damp_fac=0.5, mp=const.MULTIPROCESSING),
         party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=False, j_replace=1, mp=const.MULTIPROCESSING),
         party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True, mp=const.MULTIPROCESSING),
         party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True, mp=const.MULTIPROCESSING),
@@ -140,7 +144,7 @@ max_z_ops: int) -> List[party.AlgoArgs]:
         party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True, mp=const.MULTIPROCESSING),
         party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=False, mp=const.MULTIPROCESSING),
         party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True, mp=const.MULTIPROCESSING),
-        party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True, j_replace=1, mp=const.MULTIPROCESSING),
+        party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True, j_replace=1, h_damp_fac=0, mp=const.MULTIPROCESSING),
     ])
     
 def init_algo_sweep(target: np.ndarray, rand_args: party.PythonSignalRandArgs) -> sweety.AlgoSweep:

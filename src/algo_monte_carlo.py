@@ -43,6 +43,14 @@ class MonteCarlo(algo.SearchAlgo):
 class MCOneShot(MonteCarlo):
     """monte carlo algorithm for samples consisting of independent oscillators"""
 
+    # TODO: evaluate whether redrawing an oscillator is equally expensive to drawing a weight
+    # right now drawing a weight costs z=1
+    # the oscillator algos consistently outperform
+    # maybe this is only because essentially it's like drawing a weight, frequency, offset, and phase in one
+    # so we'd have to consider z=4
+    # another thought is to consider number of evaluations as z, this is used by scipy
+    # lastly, maybe this issue isn't so important, since we care about comparing the algorithms
+    # and not an algorithms weight only vs weight and oscillator version
     def infer_k_from_z(self) -> int:
         # cost of initializing best_sample is zero
         z_loop = self.rand_args.n_osc * 2   # draw a new sample with n oscillators and weights on each loop
@@ -102,7 +110,7 @@ class MCExploitWeight(MCExploit):
 # TODO: during the initialization phase, the position of replaced oscillators may better be random,
 # only must memory be kept of which has been updated, and the list from which to draw must be updated to shrink
 class MCExploitFast(MCExploit):
-    """algorithm is equivalent to mcexploit after an initalization phase.
+    """algorithm is equivalent to MCExploit after an initialization phase.
     the duration of the initialization phase is non deterministic and inspired by las vegas algorithms.
     the algorithm combines fast convergence speed of las vegas algorithms with the exploitation of MCExploit.
     the MCExploitFast algorithm continues to be deterministic in runtime.
@@ -207,31 +215,12 @@ class MCAnnealLogWeight(MCAnnealWeight):
         return np.ceil(self.rand_args.n_osc*temperature).astype(int)
 
 
+
 class MCGrowShrink(MonteCarlo):
     """generalization over MCDampen
     where we have l-the probability to dampen vs 1-l the probability to grow
     and then we have j, the number of weights to adapt
     and lastly we have h the factor by which to dampen or grow weights"""
-
-class MCDampen(MonteCarlo):
-    """generalization over MCPurge
-    initialize pool of n oscillators and weights
-    take j weights, multiply weights by dampening-factor h, and evaluate the sample
-    where h >= 0 and <= 1
-    accept change if rmse is lower
-    stop when z_ops is exhausted
-
-    MCPurge is a special case of MCDampen with h=0
-    """
-
-class MCPurge(MonteCarlo):
-    """
-    initialize pool of n oscillators and weights
-    set j weights to 0 and evaluate the sample
-    accept change if rmse is lower
-    stop after looping over each oscillator or when z_ops is exhausted
-    # TODO: stop after looping over each oscillator
-    """
 
     def infer_k_from_z(self) -> int:
         z_init = self.rand_args.n_osc * 2
@@ -242,10 +231,46 @@ class MCPurge(MonteCarlo):
         return self.draw_sample()
 
     def draw_temp_sample(self, base_sample: sample.Sample, *args, **kwargs) -> sample.Sample:
+        rng = np.random.default_rng() if self.mp else const.RNG # each rng needs to be seeded differently for multiprocessing
+        # l_dampen = 0.9, then 90% of the time we dampen
+        if self.l_damp_prob > rng.uniform():
+            multiplier = self.h_damp_fac
+        else:
+            multiplier = 1 / self.h_damp_fac # growth factor is inverse of dampening factor
         osc_to_replace = self.draw_random_indices(self.j_replace)
         temp_sample = copy.deepcopy(base_sample)
-        temp_sample.weights[osc_to_replace] = 0
+        temp_sample.weights[osc_to_replace] *= multiplier
         return temp_sample
+
+class MCDampen(MCGrowShrink):
+    """generalization over MCPurge
+    initialize pool of n oscillators and weights
+    take j weights, multiply weights by dampening-factor h, and evaluate the sample
+    where h >= 0 and <= 1
+    accept change if rmse is lower
+    stop when z_ops is exhausted
+
+    MCPurge is a special case of MCDampen with h=0
+    """
+
+    def draw_temp_sample(self, base_sample: sample.Sample, *args, **kwargs) -> sample.Sample:
+        osc_to_replace = self.draw_random_indices(self.j_replace)
+        temp_sample = copy.deepcopy(base_sample)
+        temp_sample.weights[osc_to_replace] *= self.h_damp_fac
+        return temp_sample
+
+class MCPurge(MCDampen):
+    """
+    initialize pool of n oscillators and weights
+    set j weights to 0 and evaluate the sample
+    accept change if rmse is lower
+    stop after looping over each oscillator or when z_ops is exhausted
+    # TODO: stop after looping over each oscillator
+    """
+
+    def __init__(self, algo_args: party.AlgoArgs):
+        super().__init__(algo_args)
+        assert self.h_damp_fac == 0, "h_damp_fac must be 0 for MCPurge"
 
 
 

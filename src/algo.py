@@ -18,6 +18,8 @@ class SearchAlgo(ABC):
         self.weight_mode = algo_args.weight_mode
         self.max_z_ops = algo_args.max_z_ops
         self.j_replace = algo_args.j_replace
+        self.l_damp_prob = algo_args.l_damp_prob
+        self.h_damp_fac = algo_args.h_damp_fac
         self.k_samples = algo_args.k_samples if algo_args.k_samples is not None else self.infer_k_from_z()
 
         self.mp = algo_args.mp
