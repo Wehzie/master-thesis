@@ -12,3 +12,7 @@ LEGAL_DISTS: Final = [RNG.uniform.__name__, RNG.normal.__name__] # supported dis
 TEST_PARAMS: Final[bool] = True
 
 SEPARATE_LEGEND: Final[bool] = False # show and save legends in a separate figure
+MAX_TARGET_DURATION: Final[float] = 10  # maximum duration of a target signal in seconds for frequency sweep
+                                        # frequency 0 shouldn't be possible to generate
+                                        # a period of T=1/f=10s is already longer than the longest target I plan to generate
+                                        # which yields f=1/T=0.1 Hz

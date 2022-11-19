@@ -51,8 +51,9 @@ class Experimenteur:
     def run_algo_sweep(self, algo_sweep: sweety.AlgoSweep) -> List[resty.ResultSweep]:
         """run an experiment comparing multiple algorithms on their rmse and operations"""
         results = list()
-        for Algo, algo_args in zip(algo_sweep.algo, algo_sweep.algo_args):
-            search_alg = Algo(algo_args)
+        for awa in algo_sweep.algo_with_args:
+            awa: sweety.AlgoWithArgs
+            search_alg = awa.Algo(awa.algo_args)
             samples_z_ops = self.invoke_search(search_alg, algo_sweep)
             result = self.produce_result(samples_z_ops, search_alg, algo_sweep)
             results.append(result)
@@ -69,16 +70,17 @@ class Experimenteur:
         print("sweeping with", sweep_args.__class__.__name__)
         results = []
         for val_schedule in fields(sweep_args): # for example frequency distribution
-            for Algo, algo_args in zip(algo_sweep.algo, algo_sweep.algo_args): # for example monte carlo search
+            for awa in algo_sweep.algo_with_args: # for example monte carlo search
+                awa: sweety.AlgoWithArgs
                 for val in getattr(sweep_args, val_schedule.name):    # for example normal vs uniform frequency distribution
                     temp_args = copy.deepcopy(base_args)              # init/reset temporary rand_args
                     setattr(temp_args, val_schedule.name, val)        # for example, for field frequency in base_args set value 10 Hz
                     if val_schedule.name == "n_osc":                  # when n_osc changes
                         temp_args.weight_dist.n = val                 #    update n also in weight_dist
-                    algo_args.rand_args = temp_args
-                    f_algo_args: Final = copy.deepcopy(algo_args)
+                    awa.algo_args.rand_args = temp_args
+                    f_algo_args: Final = copy.deepcopy(awa.algo_args)
                     
-                    search_alg: SearchAlgo = Algo(f_algo_args)
+                    search_alg: SearchAlgo = awa.Algo(f_algo_args)
                     samples_z_ops = self.invoke_search(search_alg, algo_sweep)
                     result = self.produce_result(samples_z_ops, search_alg, algo_sweep)
                     results.append(result)
@@ -103,7 +105,8 @@ class Experimenteur:
         results = list()
         for z_ops in z_ops_sweep.max_z_ops:
             # inject max_z_ops into each algorithm's algo_args
-            for algo_args in algo_sweep.algo_args:
-                algo_args.max_z_ops = z_ops
+            for awa in algo_sweep.algo_with_args:
+                awa: sweety.AlgoWithArgs
+                awa.algo_args.max_z_ops = z_ops
             results += self.run_algo_sweep(algo_sweep)
         return results

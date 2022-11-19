@@ -144,7 +144,7 @@ store_det_args: bool = False) -> sample.Sample:
     
 
 def draw_partial_sample(base_sample: sample.Sample, rand_args: party.PythonSignalRandArgs,
-osc_to_replace: List[int], weight_mode: bool = False,
+osc_to_replace: List[int], weight_mode: bool,
 target: Union[None, np.ndarray] = None, store_det_args: bool = False,
 ) -> sample.Sample:
     """take a base sample and replace j oscillators and weights.
@@ -208,13 +208,6 @@ def draw_sample_weights(base_sample: sample.Sample, rand_args: party.PythonSigna
     if target is not None:
         updated_sample.rmse = data_analysis.compute_rmse(updated_sample.weighted_sum, target)   
     return updated_sample
-
-def draw_partial_sample_weights(base_sample: sample.Sample, rand_args: party.PythonSignalRandArgs,
-osc_to_replace: List[int], weight_mode: bool = False,
-target: Union[None, np.ndarray] = None, store_det_args: bool = False,
-) -> sample.Sample:
-    """generalize over draw_sample_weights, only replacing j weights at a time"""
-    return draw_partial_sample(base_sample, rand_args, osc_to_replace, weight_mode, target, store_det_args)
 
 def gen_custom_inv_sawtooth(
     duration: float,

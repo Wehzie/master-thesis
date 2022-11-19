@@ -16,7 +16,7 @@ else:
 import numpy as np
 import matplotlib.pyplot as plt
 
-from sweep_types import AlgoSweep
+import sweep_types as sweety
 
 
 def post_main(best_sample: sample.Sample, m_target: meta_target.MetaTarget,
@@ -60,16 +60,17 @@ def post_main(best_sample: sample.Sample, m_target: meta_target.MetaTarget,
 
     plt.show()
 
-def qualitative_algo_sweep(algo_sweep: AlgoSweep, m_target: meta_target.MetaTarget, visual: bool = False) -> None:
+def qualitative_algo_sweep(algo_sweep: sweety.AlgoSweep, m_target: meta_target.MetaTarget, visual: bool = False) -> None:
     """algo sweep without averaging or collecting results.
     plots the best sample for each algorithm against the target."""
-    for Algo, algo_args in zip(algo_sweep.algo, algo_sweep.algo_args):
-        search_alg = Algo(algo_args)
+    for awa in algo_sweep.algo_with_args:
+        awa: sweety.AlgoWithArgs
+        search_alg = awa.Algo(awa.algo_args)
         best_sample, z_ops = search_alg.search()
         if visual: post_main(best_sample, m_target, z_ops, search_alg.__class__.__name__)
 
 @data_analysis.print_time
-def produce_all_results(algo_sweep: AlgoSweep, target: np.ndarray, base_rand_args: party.PythonSignalRandArgs) -> None:
+def produce_all_results(algo_sweep: sweety.AlgoSweep, target: np.ndarray, base_rand_args: party.PythonSignalRandArgs) -> None:
     """run all experiments and plot results"""
     show_all = False
     exp = experimenteur.Experimenteur()

@@ -15,7 +15,6 @@ class SearchAlgo(ABC):
     def __init__(self, algo_args: party.AlgoArgs):
         self.rand_args = algo_args.rand_args                # signal generation parameters
         self.target = algo_args.target                       # target function to approximate
-        self.weight_mode = algo_args.weight_mode
         self.max_z_ops = algo_args.max_z_ops
         self.j_replace = algo_args.j_replace
         self.l_damp_prob = algo_args.l_damp_prob
@@ -159,12 +158,12 @@ class SearchAlgo(ABC):
     def draw_partial_sample(self, base_sample: sample.Sample, osc_to_replace: List[int]) -> sample.Sample:
         """given a sample replace j oscillators and weights, update z_ops, recompute metrics"""
         self.z_ops += len(osc_to_replace) * 2 # len(osc_to_replace) == j_replace
-        return gen_signal_python.draw_partial_sample(base_sample, self.rand_args, osc_to_replace, self.weight_mode, self.target, self.store_det_args)
+        return gen_signal_python.draw_partial_sample(base_sample, self.rand_args, osc_to_replace, False, self.target, self.store_det_args)
 
     def draw_partial_sample_weights(self, base_sample: sample.Sample, osc_to_replace: List[int]) -> sample.Sample:
         """given a sample replace j weights, update z_ops, recompute metrics"""
         self.z_ops += len(osc_to_replace) # len(osc_to_replace) == j_replace
-        return gen_signal_python.draw_partial_sample_weights(base_sample, self.rand_args, osc_to_replace, self.weight_mode, self.target, self.store_det_args)
+        return gen_signal_python.draw_partial_sample(base_sample, self.rand_args, osc_to_replace, True, self.target, self.store_det_args)
 
     def handle_mp(self, sup_func_kwargs: dict) -> None:
         """handle multi processing by modifying numpy the random number generator
@@ -191,7 +190,6 @@ class SearchAlgo(ABC):
         return party.AlgoArgs(
             self.rand_args,
             self.target,
-            self.weight_mode,
             self.max_z_ops,
             self.k_samples,
             self.j_replace,

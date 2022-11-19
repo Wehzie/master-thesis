@@ -5,12 +5,16 @@ import param_types as party
 import algo
 
 @dataclass
+class AlgoWithArgs:
+    Algo: algo.SearchAlgo # list of algorithms
+    algo_args: party.AlgoArgs # list of arguments for each algorithm, in order with algos
+
+@dataclass
 class AlgoSweep:
     """repeat experiments over multiple algorithms
     
     produces a mean rmse, standard deviation and number of operations (z_ops) for a given configuration"""
-    algo: List[algo.SearchAlgo]    # list of algorithms
-    algo_args: List[party.AlgoArgs]  # list of arguments for each algorithm, in order with algos
+    algo_with_args: List[AlgoWithArgs]
     m_averages: int            # number of averages for each experimental configuration
 
 
