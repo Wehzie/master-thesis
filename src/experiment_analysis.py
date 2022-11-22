@@ -199,8 +199,22 @@ def plot_range_vs_rmse(df: pd.DataFrame, target_samples: int, attr_name: str, di
 def plot_freq_range_vs_rmse(df: pd.DataFrame, target_samples: int, sweep_name: str, show: bool = False) -> None:
     """exp4+5: plot frequency range against rmse for multiple algorithms with rand_args and target fixed"""
     for dist_name in const.LEGAL_DISTS:
+        print(df.columns)
+        print(df[["freq_range", "freq_dist_loc", "freq_dist_scale"]])
+        print("dist: ", dist_name)
+
         fig, legend_as_fig = plot_range_vs_rmse(df, target_samples, "freq", dist_name)
-        fig.gca().set_xlabel("frequency diversity") # width of frequency band
+        x_label = "frequency diversity [Hz]"
+        if dist_name == "uniform" and sweep_name == "freq_range_from_zero":
+            x_label += r", lower bound $\rightarrow$ 0, upper bound = $x$"
+        elif dist_name == "uniform" and sweep_name == "freq_range_around_vo2":
+            x_label += r", lower + upper bound = $x$"
+        elif dist_name == "normal" and sweep_name == "freq_range_from_zero":
+            x_label += r", $\mu + \sigma = x$ , $\mu \approx \sigma$"
+        elif dist_name == "normal" and sweep_name == "freq_range_around_vo2":
+            mu = df["freq_dist_loc"].dropna().iloc[0]
+            x_label += r", $\mu$=" + f"{mu:.0f}, " + r"$\sigma = x/2$"
+        fig.gca().set_xlabel(x_label) # width of frequency band
         fig.gca().set_xscale("log")
         save_fig_n_legend(fig, legend_as_fig, f"{sweep_name}_{dist_name}_vs_rmse", show=False)
     if show: plt.show()
@@ -209,7 +223,8 @@ def plot_weight_range_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool 
     """exp6: plot weight range against rmse for multiple algorithms with rand_args and target fixed"""
     for dist_name in const.LEGAL_DISTS:
         fig, legend_as_fig = plot_range_vs_rmse(df, target_samples, "weight", dist_name)
-        fig.gca().set_xlabel("dynamic range (scaled by amplitude)") # width of weight band
+        inv_amplitude = 1/df["amplitude"].iloc[0]
+        fig.gca().set_xlabel(f"dynamic range (scaled by inverse-of-amplitude={inv_amplitude:.0f})") # width of weight band
         # dynamic range would be given with amplitude=1
         fig.gca().set_xscale("log")
         save_fig_n_legend(fig, legend_as_fig, f"weight_range_{dist_name}_vs_rmse", show=False)
@@ -220,6 +235,7 @@ def plot_phase_range_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool =
     for dist_name in const.LEGAL_DISTS:
         fig, legend_as_fig = plot_range_vs_rmse(df, target_samples, "phase", dist_name)
         fig.gca().set_xlabel("phase diversity") # width of phase band
+        fig.gca().xaxis.set_major_formatter("{x:.2f}"+r"$\pi$")
         save_fig_n_legend(fig, legend_as_fig, f"phase_range_{dist_name}_vs_rmse", show=False)
     if show: plt.show()
 
@@ -234,9 +250,11 @@ def plot_offset_range_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool 
 def plot_amplitude_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool = False) -> None:
     "exp9: plot amplitude against rmse for multiple algorithms with rand_args and target fixed"
     title = get_plot_title(df, target_samples) # before filtering df
+    weight_range = df["weight_range"].iloc[0]
+    title += f", weight_range={weight_range:.1f}"
     df = df.filter(items=["algo_name", "mean_rmse", "std_rmse", "amplitude"])
     fig, legend_as_fig = plot_rmse_by_algo(df, "amplitude")
     fig.gca().set_title(title)
     fig.gca().set_ylabel("RMSE(generated, target)")
-    fig.gca().set_xlabel("amplitude")
+    fig.gca().set_xlabel("unweighted amplitude")
     save_fig_n_legend(fig, legend_as_fig, "amplitude_vs_rmse", show)

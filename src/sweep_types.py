@@ -24,6 +24,8 @@ class ConstTimeSweep(ABC):
     """sweeps of PythonRandSignalArgs where time complexity between experiments is constant"""
     pass
 
+# adding meta info to the sweep class is a good idea
+# but requires changing the experimenteur class which iterates over fields of the sweep class
 @dataclass
 class FreqSweep(ConstTimeSweep):
     freq_dist: List[party.Dist]

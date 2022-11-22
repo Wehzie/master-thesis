@@ -9,6 +9,7 @@ from algo import SearchAlgo
 import algo_las_vegas as alave
 import algo_monte_carlo as almoca
 import algo_evolution as alevo
+import algo_gradient as algra
 import param_types as party
 import sweep_types as sweety
 from typing import Final, List, Tuple
@@ -46,9 +47,9 @@ py_rand_args_normal = party.PythonSignalRandArgs(
 # sweep band from narrow to wide centering around 5e5, the median VO2 freq 
 freq_sweep_around_vo2 = sweety.FreqSweep(
     params.append_normal([
-        dist.Dist(rng.uniform, low=1e5, high=1e6),
-        dist.Dist(rng.uniform, low=1e4, high=1e7),
-        dist.Dist(rng.uniform, low=1e3, high=1e8),
+        dist.Dist(rng.uniform, low=4.5e5, high=5.5e5),
+        dist.Dist(rng.uniform, low=4e5, high=6e5),
+        dist.Dist(rng.uniform, low=3e5, high=7e5),
     ]),
 )
 
@@ -72,10 +73,12 @@ def init_weight_sweep(rand_args: party.PythonSignalRandArgs) -> sweety.WeightSwe
     )
 weight_sweep = init_weight_sweep(py_rand_args_uniform)
 
+# negative phase shift is unnecessary, as -1/2 pi is equivalent to 3/2 pi
 phase_sweep = sweety.PhaseSweep(params.append_normal([
-        dist.Dist(rng.uniform, low=-1/3, high=1/3),
-        dist.Dist(rng.uniform, low=-1/2, high=1/2),
-        dist.Dist(rng.uniform, low=-1, high=1),
+        dist.Dist(rng.uniform, low=0, high=1/3),
+        dist.Dist(rng.uniform, low=0, high=1/2),
+        dist.Dist(rng.uniform, low=0, high=1),
+        dist.Dist(rng.uniform, low=0, high=2),
     ])
 )
 
@@ -187,8 +190,17 @@ def init_algo_sweep(target: np.ndarray, rand_args: party.PythonSignalRandArgs, m
             party.AlgoArgs(rand_args, target, max_z_ops),
         ),
     ]
-    all_algos_with_args = one_shot_algos + exploit_algos + grow_shrink_algos + anneal_algos + las_vegas_algos + other_algos
+    gradient_algos = [
+            sweety.AlgoWithArgs(
+            algra.LinearRegression,
+            party.AlgoArgs(rand_args, target),
+        ),
+    ]
 
+    all_algos_with_args = one_shot_algos# + exploit_algos + grow_shrink_algos + anneal_algos + las_vegas_algos + other_algos
+
+
+    
     return sweety.AlgoSweep(all_algos_with_args, m_averages)
 
 # TODO: use for tests
@@ -203,12 +215,13 @@ algo_list: List[SearchAlgo] = [
     almoca.MCGrowShrink,
     almoca.MCDampen,
     almoca.MCPurge,
-    alave.LasVegas,
-    alave.LasVegasWeight,
     almoca.MCAnneal,
     almoca.MCAnnealWeight,
     almoca.MCAnnealLog,
     almoca.MCAnnealLogWeight,
     almoca.BasinHopping,
+    alave.LasVegas,
+    alave.LasVegasWeight,
     alevo.DifferentialEvolution,
+    algra.LinearRegression,
 ]

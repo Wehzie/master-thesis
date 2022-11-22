@@ -5,7 +5,33 @@ this is in particular due to the attribution problem.
 This is to ask by what amount does oscillator_i contribute to the error?
 """
 
+from typing import Tuple, List, Callable, Dict, Any, Union
+from tqdm import tqdm
+
+import sample
 import algo
 
 class LinearRegression(algo.SearchAlgo):
-    NotImplemented
+
+    def init_best_sample(self) -> sample.Sample:
+        return super().init_best_sample()
+
+    def draw_temp_sample(self) -> sample.Sample:
+        return super().draw_temp_sample()
+
+    def infer_k_from_z(self) -> None:
+        """it's not feasible to infer k from z using the scipy implementation of linear regression"""
+        return None
+
+    def search(self, *args, **kwargs) -> Tuple[sample.Sample, int]:
+        """randomly draw n-oscillators, then apply gradient based linear regression to fit against the target"""
+        print(f"searching with {self.__class__.__name__}")
+        self.clear_state()
+        self.handle_mp(kwargs)
+        best_sample = self.draw_sample()
+        reg_sample = sample.Sample.regress_sample(best_sample, self.target)
+
+        return reg_sample, self.z_ops
+
+
+
