@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 import param_types as party
 import const
 import sample
+import gen_signal
 
 def gen_inv_sawtooth(
     duration: float,
@@ -96,18 +97,6 @@ def draw_n_oscillators(rand_args: party.PythonSignalRandArgs, store_det_args: bo
     return signal_matrix, det_arg_li
 
 
-def draw_single_weight(rand_args: party.PythonSignalRandArgs) -> float:
-    return rand_args.weight_dist.draw()
-
-
-def draw_n_weights(rand_args: party.PythonSignalRandArgs) -> np.ndarray:
-    return rand_args.weight_dist.draw_n()
-
-
-def draw_offset(rand_args: party.PythonSignalRandArgs) -> float:
-    return rand_args.offset_dist.draw()
-
-
 def draw_params_random(args: party.PythonSignalRandArgs) -> party.PythonSignalDetArgs:
     """draw randomly from parameter pool"""
     duration = args.duration
@@ -134,8 +123,8 @@ store_det_args: bool = False) -> sample.Sample:
         sample contains matrix, weights, weighted sum, offset, rmse and deterministic arguments underlying the oscillators in the model
     """
     signal_matrix, det_args = draw_n_oscillators(rand_args, store_det_args)
-    weights = draw_n_weights(rand_args)
-    offset = draw_offset(rand_args)
+    weights = gen_signal.SignalGenerator.draw_n_weights(rand_args)
+    offset = gen_signal.SignalGenerator.draw_offset(rand_args)
     weighted_sum = sample.Sample.compute_weighted_sum(signal_matrix, weights, offset)
     rmse = None
     if target is not None:
@@ -178,7 +167,7 @@ target: Union[None, np.ndarray] = None, store_det_args: bool = False,
                 new_sample.det_args[osc_index] = det_arg
 
     # draw a new set of weights
-    partial_weights = draw_n_weights(temp_args)
+    partial_weights = gen_signal.SignalGenerator.draw_n_weights(temp_args)
     new_sample.weights[osc_to_replace] = partial_weights
 
     new_sample.weighted_sum = sample.Sample.compute_weighted_sum(new_sample.signal_matrix,
@@ -200,9 +189,9 @@ def draw_sample_weights(base_sample: sample.Sample, rand_args: party.PythonSigna
         the base sample with new weights and re-computed metrics
     """
     updated_sample = copy.deepcopy(base_sample)
-    updated_sample.weights = draw_n_weights(rand_args)
+    updated_sample.weights = gen_signal.SignalGenerator.draw_n_weights(rand_args)
     # TODO: should I draw a new offset?
-    # updated_sample.offset = draw_offset(rand_args)
+    # updated_sample.offset = gen_signal.SignalGenerator.draw_offset(rand_args)
     updated_sample.weighted_sum = sample.Sample.compute_weighted_sum(updated_sample.signal_matrix, updated_sample.weights, updated_sample.offset)
     updated_sample.rmse = None
     if target is not None:

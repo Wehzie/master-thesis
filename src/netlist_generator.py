@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 
 from param_types import SpiceSingleDetArgs, SpiceSumDetArgs
 
+# see https://github.com/PySpice-org/PySpice
+
 INCLUDE = """
 .include ./circuit_lib/VO2_Sto_rand.cir
 """
@@ -162,17 +164,13 @@ def build_sum_netlist(path: Path, PARAM: dict) -> dict:
     return det_param
 
 
-def build_single_netlist(path: Path, param: SpiceSingleDetArgs, debug: bool = False) -> None:
-    """
-    Write netlist to file with a single oscillator.
-    
-    Return dictionary of deterministic parameters.
-    """
+def build_single_netlist(path: Path, det_args: SpiceSingleDetArgs, debug: bool = False) -> None:
+    """Write netlist to file with a single oscillator."""
     netlist = INCLUDE
-    netlist += POWER.format(v=param.v_in)
-    netlist += SUM_OSC_TEMPLATE.format(i=1, r=param.r, c=param.c, r_control=param.r_control)
-    netlist += POST_SUM.format(r_last=param.r_last)
-    netlist += build_control(path, param.__dict__)
+    netlist += POWER.format(v=det_args.v_in)
+    netlist += SUM_OSC_TEMPLATE.format(i=1, r=det_args.r, c=det_args.c, r_control=det_args.r_control)
+    netlist += POST_SUM.format(r_last=det_args.r_last)
+    netlist += build_control(path, det_args.__dict__)
 
     if debug: print(f"writing netlist to path {path}")
     with open(path, "w") as f:

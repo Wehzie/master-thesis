@@ -26,7 +26,7 @@ py_rand_args_uniform = party.PythonSignalRandArgs(
     samples = 150,
     freq_dist = dist.Dist(rng.uniform, low=1e5, high=1e6),
     amplitude = 0.5,                                                    # resembling 0.5 V amplitude of V02
-    weight_dist = dist.WeightDist(rng.uniform, low=0, high=10, n=py_rand_args_n_osc),   # resistor doesn't amplify so not > 1
+    weight_dist = dist.WeightDist(rng.uniform, low=0, high=10, n=py_rand_args_n_osc),   # scale down when <1 and scale up when >1
     phase_dist = dist.Dist(rng.uniform, low=-1/3, high=1/3), # uniform 0 to 2 pi phase shift seems too wild
     offset_dist = dist.Dist(rng.uniform, low=0, high=0),    # offset should be reasonable and bounded by amplitude*weight
     sampling_rate = 11025                               # the sampling rate of the Magpie signal
@@ -197,7 +197,7 @@ def init_algo_sweep(target: np.ndarray, rand_args: party.PythonSignalRandArgs, m
         ),
     ]
 
-    all_algos_with_args = one_shot_algos# + exploit_algos + grow_shrink_algos + anneal_algos + las_vegas_algos + other_algos
+    all_algos_with_args = one_shot_algos + exploit_algos + grow_shrink_algos + anneal_algos + las_vegas_algos + other_algos
 
 
     

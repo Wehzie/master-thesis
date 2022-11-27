@@ -11,7 +11,7 @@ from algo import SearchAlgo
 import meta_target
 import const
 if const.TEST_PARAMS:
-    import test_params as params
+    import params_test_py as params
 else:
     import params
 

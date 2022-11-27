@@ -27,6 +27,7 @@ class PythonSignalRandArgs:
     offset_dist: Dist # offset=offset_dist.draw()*amplitude*weight
     sampling_rate: int # number of samples per second
 
+
 @dataclass
 class PythonSignalDetArgs:
     """define a python signal with deterministic parameters
@@ -40,6 +41,7 @@ class PythonSignalDetArgs:
     amplitude: float # amplitude
     phase: float # phase shift
     sampling_rate: int
+
 
 @dataclass
 class AlgoArgs:
@@ -64,46 +66,58 @@ class AlgoArgs:
     args_path: Union[None, Path]    = None  # whether to flush samples in RAM to file at given path
 
 
+
+#### #### #### #### SPICE #### #### #### ####
+
+
+
 @dataclass
 class SpiceSumRandArgs:
-    n_osc: int = 2
-    v_in: float = 14
+    # TODO: rename SpipySumRandArgs
+    """define distributions from which electric components are initialized"""
+    n_osc: int          # number of oscillators
+    v_in: float         # input voltage
     
-    r_last: float = 0
-    r_control: float = 1e6
-    r_min: float = 30e3
-    r_max: float = 70e3
-    r_dist: str = "uniform"
+    r_last: float       # resistance of resistor after summation of resistors
+    r_control: float    # # resistor following the control terminal, doesn't affect oscillation
 
-    c_min: float = 300e-12
-    c_max: float = 300e-12
-    c_dist: str = "uniform"
+    r_dist: Dist        # distribution for main resistor
+    c_dist: Dist        # distribution for main capacitor
 
-    time_step: float = 5e-9
-    time_stop: float = 3.3e-2
-    time_start: float = 0
+    time_step: float    # simulated time step in seconds
+    time_stop: float    # simulation stop time in seconds
+    time_start: float   # simulation start time in seconds
 
-    dependent_component: str = "v(osc1)"
+    dependent_component: str # a quantity and point to measure
+                             # for example v(A) or i(A)
+                             # where A is a node name
+                             # and v is voltage and i is current
 
-@dataclass
-class SpiceSumDetArgs:
-    n_osc: int
-    v_in: float
-    r_list: list[float]
-    r_last: float
-    r_control: float
-    c_list: list[float]
+    phase_dist: Dist        # shift SPICE signal by phase, in radians, inject phase into netlist via time_start
+    weight_dist: WeightDist # scale amplitude ot SPICE signal in Python
+    offset_dist: Dist       # alter offset of SPICE signal in Python
 
 @dataclass
 class SpiceSingleDetArgs:
+    """define deterministic electric components for a single oscillator circuit"""
+    n_osc: int      # number of oscillators
+    v_in: float     # input voltage, influences frequency, and offset
+    r: float        # resistor controls frequency, doesn't affect amplitude
+    r_last: float   # for a single oscillator the effect of r_last is equal to adding the resistance to r
+    r_control: float # resistor following the control terminal, doesn't affect oscillation
+    c: float        # capacitor, impact similar to main resistor
+    time_step: float # simulated time step in seconds
+    time_stop: float # simulation stop time in seconds
+    time_start: float # simulation start time in seconds
+    dependent_component: str = "v(osc1)" # the node to read out and report back to Python
+    phase: float = 0.0 # phase shift in radians, added on Python side
+
+@dataclass
+class SpiceSumDetArgs:
+    """define deterministic electric components for a circuit of parallel oscillators"""
     n_osc: int
     v_in: float
-    r: float
+    r_list: List[float]
     r_last: float
     r_control: float
-    c: float
-    time_step: float
-    time_stop: float
-    time_start: float
-    sim_success: bool = None
-    dependent_component: str = "v(osc1)" # TODO: is this being used?
+    c_list: List[float]

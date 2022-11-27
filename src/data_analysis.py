@@ -136,6 +136,7 @@ def compute_rmse(p: np.ndarray, t: np.ndarray, verbose: bool = False, pad: bool 
         print(f"RMSE: {rmse}")
     return rmse
 
+
 def print_time(func: Callable) -> Callable:
     """print the time a callable took after execution"""
     @wraps(func)
@@ -146,6 +147,23 @@ def print_time(func: Callable) -> Callable:
         print(f"\ntime elapsed for func '{func.__name__}': {time_elapsed:.2f} s\n")
         return result
     return wrap
+
+
+def get_freq_from_fft(s: np.ndarray, sample_spacing: float) -> float:
+    """compute fundamental frequency of an oscillator using FFT"""
+    spectrum = np.fft.rfft(s)
+    freqs = np.fft.rfftfreq(len(s), sample_spacing) # frequency axis
+    abs_spec = abs(spectrum) # absolute spectrum
+    # choose the largest peak in the spectrum
+    # for example
+    #   return freqs[abs_spec.argmax()]
+    # however the following seems more robust
+    # see, https://stackoverflow.com/questions/59265603/how-to-find-period-of-signal-autocorrelation-vs-fast-fourier-transform-vs-power
+    inflection = np.diff(np.sign(np.diff(abs_spec)))
+    peaks = (inflection < 0).nonzero()[0] + 1
+    peak = peaks[abs_spec[peaks].argmax()]
+    return freqs[peak]
+
 
 def main():
     sampling_rate, data, _ = data_io.load_data()

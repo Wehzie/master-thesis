@@ -10,7 +10,7 @@ import experiment_analysis as expan
 import meta_target
 import const
 if const.TEST_PARAMS:
-    import test_params as params
+    import params_test_py as params
 else:
     import params
 import numpy as np
@@ -119,41 +119,15 @@ def run_multi_directional_experiment():
 
 
 # TODO: pickle figures after save to png
-# TODO: intermediate pickle of results
+# TODO: store intermediate pickle of results
 @data_analysis.print_time
 def main():
     rand_args = params.py_rand_args_uniform
     m_target = meta_target.MetaTarget(rand_args)
     algo_sweep = params.init_algo_sweep(m_target.signal, rand_args)
 
-    # qualitative_algo_sweep(algo_sweep, m_target, visual=True)
-    # exit()
-    produce_all_results(algo_sweep, m_target.signal, rand_args)
-    exit()
-    exp = experimenteur.Experimenteur()
-    # results = exp.run_algo_sweep(algo_sweep)
-    # results = exp.run_rand_args_sweep(algo_sweep, params.freq_sweep_from_zero, rand_args)
-    # results = exp.run_rand_args_sweep(algo_sweep, params.expo_time_sweep, rand_args)
-    # results = exp.run_sampling_rate_sweep(params.sampling_rate_sweep, rand_args)
-    # results = exp.run_z_ops_sweep(algo_sweep, params.z_ops_sweep)
-
-    results = exp.run_z_ops_sweep(algo_sweep, params.z_ops_sweep)
-    df = expan.conv_results_to_pd(results)
-    expan.plot_z_vs_rmse(df, len(m_target.signal), show=True)
-    exit()
-
-    for r in results:
-        print(f"{r}\n")
-    data_io.pickle_results(results, Path("data/results.pickle"))
-
-    df = expan.conv_results_to_pd(results)
-    df.to_csv(Path("data/experiment.csv"))
-
-    print(df.describe())
-    print(df["samples"])
-    print(f"df.columns: {df.columns}")
-
-    expan.plot_samples_vs_rmse(df, show=True)
+    qualitative_algo_sweep(algo_sweep, m_target, visual=True)
+    # produce_all_results(algo_sweep, m_target.signal, rand_args)
 
 if __name__ == "__main__":
     main()

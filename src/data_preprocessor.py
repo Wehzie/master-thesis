@@ -94,6 +94,24 @@ def norm2d(matrix: np.ndarray) -> np.ndarray:
     """normalize a each row in a matrix to the range from 0 to 1"""
     return np.apply_along_axis(norm1d, 0, matrix)
 
+def add_phase_to_oscillator(s: np.ndarray, phase: float, period: float, sample_spacing: float, mode: str="delay") -> np.ndarray:
+    """add phase to an oscillator signal by rolling over the signal
+    
+    args:
+        s: the oscillator signal
+        phase: the phase to add in radians
+        period: the period of the signal
+        sample_spacing: the time between samples in the signal
+        mode: the mode to use for rolling the signal"""
+    samples_per_period = period / sample_spacing
+    normalized_phase = 0.5 * phase # normalize phase from 0, 2 to [0, 1)
+    samples_to_shift = int(samples_per_period * normalized_phase)
+    if samples_to_shift == 0:
+        return s
+    if mode == "roll":
+        return np.roll(s, samples_to_shift)
+    return np.pad(s, (samples_to_shift, 0))[:-samples_to_shift]
+
 def main():
     sampling_rate, data = data_io.load_data()
     data_analysis.plot_signal(data)
