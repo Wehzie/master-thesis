@@ -3,7 +3,7 @@ las vegas algorithms have non-deterministic runtime and draw from randomness to 
 """
 
 import copy
-import gen_signal_python
+import gen_signal_python as gensi_python # TODO: remove once init_las_vegas is removed
 import algo
 import sample
 import const
@@ -16,11 +16,13 @@ from tqdm import tqdm
 class LasVegas(algo.SearchAlgo):
 
     def init_las_vegas(self, weight_init: Union[None, str], store_det_args: bool) -> sample.Sample:
+        # TODO: remove this function
+        # possibly reuse different initialization methods
         if weight_init is None: # in this mode, weights are not adapted
             signal_matrix = np.zeros((self.rand_args.n_osc, self.rand_args.samples))
             signal_args = list()
         else:
-            signal_matrix, signal_args = gen_signal_python.sum_atomic_signals(self.rand_args, store_det_args)
+            signal_matrix, signal_args = gensi_python.PythonSigGen.draw_n_oscillators(self.rand_args, store_det_args)
 
         if weight_init == "ones":
             weights = np.ones(self.rand_args.n_osc)

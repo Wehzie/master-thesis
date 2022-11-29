@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 
 import gen_signal
-import gen_signal_python
+import gen_signal_python as gensi_python
 import const
 import param_types as party
 
@@ -31,4 +31,4 @@ class AlgoArgs:
     history: bool                   = False # whether to store each sample
     args_path: Union[None, Path]    = None  # whether to flush samples in RAM to file at given path
     # TODO: since sig_generator is important it should be an earlier argument
-    sig_generator: gen_signal.SignalGenerator = gen_signal_python.PythonSignalGenerator() # method of generating signals
+    sig_generator: gen_signal.SignalGenerator = gensi_python.PythonSigGen() # method of generating signals

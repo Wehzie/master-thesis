@@ -10,10 +10,7 @@ import result_types as resty
 import algo
 import meta_target
 import const
-if const.TEST_PARAMS:
-    import params_test_py as params
-else:
-    import params
+import param_util
 
 import numpy as np
 
@@ -95,7 +92,7 @@ class Experimenteur:
             temp_args = copy.deepcopy(base_args)
             temp_args.samples = s # inject samples into rand_args
             m_target = meta_target.MetaTarget(temp_args)            
-            algo_sweep = params.init_algo_sweep(m_target.signal, temp_args)
+            algo_sweep = param_util.init_algo_sweep(m_target.signal, temp_args)
             results += self.run_algo_sweep(algo_sweep)
         return results
 

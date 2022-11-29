@@ -1,4 +1,3 @@
-import copy
 from pathlib import Path
 from typing import List, Tuple, Union
 import data_io
@@ -14,7 +13,7 @@ import const
 import dist
 import gen_signal
 
-class PythonSignalGenerator(gen_signal.SignalGenerator):
+class PythonSigGen(gen_signal.SignalGenerator):
 
     @staticmethod
     def draw_params_random(args: party.PythonSignalRandArgs) -> party.PythonSignalDetArgs:
@@ -72,9 +71,9 @@ class PythonSignalGenerator(gen_signal.SignalGenerator):
     def draw_single_oscillator(rand_args: party.PythonSignalRandArgs, store_det_args: bool = False
     ) -> Tuple[np.ndarray, Union[None, party.PythonSignalDetArgs]]:
         # determine a set of parameters for a single oscillator
-        det_args = PythonSignalGenerator.draw_params_random(rand_args)
+        det_args = PythonSigGen.draw_params_random(rand_args)
         # generate single oscillator signal, discard x-range
-        _, single_signal = PythonSignalGenerator.gen_inv_sawtooth(**det_args.__dict__)
+        _, single_signal = PythonSigGen.gen_inv_sawtooth(**det_args.__dict__)
         if store_det_args:
             return single_signal, det_args
         return single_signal, None
@@ -86,7 +85,7 @@ class PythonSignalGenerator(gen_signal.SignalGenerator):
         det_arg_li = list()
 
         for i in range(rand_args.n_osc):
-            single_signal, det_args = PythonSignalGenerator.draw_single_oscillator(rand_args, store_det_args)
+            single_signal, det_args = PythonSigGen.draw_single_oscillator(rand_args, store_det_args)
             if store_det_args: det_arg_li.append(det_args)
             signal_matrix[i,:] = single_signal
         return signal_matrix, det_arg_li
@@ -107,7 +106,7 @@ def gen_custom_inv_sawtooth(
     return x, y
 
 def main():
-    sig_generator = PythonSignalGenerator()
+    sig_generator = PythonSigGen()
 
     if True:
         x, y = gen_custom_inv_sawtooth(

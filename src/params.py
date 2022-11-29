@@ -1,5 +1,4 @@
 """parameters documented in code for reproducibility"""
-from pathlib import Path
 import numpy as np
 
 from algo import SearchAlgo
@@ -12,8 +11,7 @@ import sweep_types as sweety
 from typing import Final, List, Tuple
 import const
 import dist
-import data_preprocessor
-import data_io
+import param_util
 rng = const.RNG
 
 param_sweep_schedule = {
@@ -112,42 +110,6 @@ bird_params = {
     }
 }
 
-def comp_loc(low: float, high: float) -> float:
-    """compute loc (mean) for normal distribution from uniform distribution's low and high bounds"""
-    return low + (high - low) / 2
-
-def comp_scale(low: float, high: float) -> float:
-    """compute scale (std dev) for normal distribution from a uniform distribution's low and high bounds"""
-    return (high - low) / 2
-
-def append_normal(uniform_li: List[dist.Dist]) -> List[dist.Dist]:
-    """given a list of Dists, repeat the list with normal distributions"""
-    DistType = type(uniform_li[0])
-    norm_li = list()
-    for d in uniform_li:
-        if d.is_const():
-            raise ValueError("experiments with constant distributions aren't supported, do low=const, high=const instead")
-        loc = comp_loc(d.kwargs["low"], d.kwargs["high"])
-        scale = comp_scale(d.kwargs["low"], d.kwargs["high"])
-        norm_li.append(DistType(rng.normal, loc=loc, scale=scale, n=d.n))
-    return uniform_li + norm_li
-
-def init_target2rand_args(rand_args: party.PythonSignalRandArgs, scale_factor: float = 0.5) -> Tuple[party.PythonSignalRandArgs, Tuple]:
-    """load, downsample target and inject number of samples into rand_args"""
-    # loading and manipulating the target signal
-    raw_sampling_rate, raw_target, raw_dtype = data_io.load_data()
-    target_full_len: Final = data_preprocessor.downsample_by_factor_typesafe(raw_target, scale_factor)
-    # shorten the target
-    target: Final = data_preprocessor.take_middle_third(target_full_len)
-    # save to wav
-    sampling_rate = int(scale_factor*raw_sampling_rate)
-    data_io.save_signal_to_wav(target, sampling_rate, raw_dtype, Path("data/target_downsampled.wav"))
-    # init search params
-    rand_args = rand_args
-    rand_args.samples = len(target) # generated signals match length of target
-                                    # NOTE: the sampling rate could also be set lower instead
-    return rand_args, (sampling_rate, target, raw_dtype)
-
 # for fitting a sample that can be heared by human ear
 py_rand_args_n_osc = 3000
 py_rand_args_quality_test = party.PythonSignalRandArgs(
@@ -189,7 +151,7 @@ py_rand_args_normal = party.PythonSignalRandArgs(
 
 # sweep band from narrow to wide centering around 5e5, the median VO2 freq 
 freq_sweep_around_vo2 = sweety.FreqSweep(
-    append_normal([
+    param_util.append_normal([
         dist.Dist(rng.uniform, low=1e5, high=1e6),
         dist.Dist(rng.uniform, low=1e4, high=1e7),
         dist.Dist(rng.uniform, low=1e3, high=1e8),
@@ -199,7 +161,7 @@ freq_sweep_around_vo2 = sweety.FreqSweep(
 # TODO: sweep band from narrow to wide while keeping the lower bound at 0
 # frequency 0 shouldn't be likely at all, start with 0.1 Hz
 freq_sweep_from_zero = sweety.FreqSweep(
-    append_normal(
+    param_util.append_normal(
         [ dist.Dist(rng.uniform, low=0, high=10**(p)) for p in range(0, 9) ]
     )
 )
@@ -207,7 +169,7 @@ freq_sweep_from_zero = sweety.FreqSweep(
 def init_weight_sweep(rand_args: party.PythonSignalRandArgs) -> sweety.WeightSweep:
     """init weight sweep with given rand_args"""
     return sweety.WeightSweep(
-        append_normal(
+        param_util.append_normal(
             [
             dist.WeightDist(rng.uniform, low=0, high=1e1, n=rand_args.n_osc),
             dist.WeightDist(rng.uniform, low=0, high=1e2, n=rand_args.n_osc),
@@ -218,7 +180,7 @@ def init_weight_sweep(rand_args: party.PythonSignalRandArgs) -> sweety.WeightSwe
     )
 weight_sweep = init_weight_sweep(py_rand_args_uniform)
 
-phase_sweep = sweety.PhaseSweep(append_normal([
+phase_sweep = sweety.PhaseSweep(param_util.append_normal([
         dist.Dist(rng.uniform, low=-1/3, high=1/3),
         dist.Dist(rng.uniform, low=-1/2, high=1/2),
         dist.Dist(rng.uniform, low=-1, high=1),
@@ -229,7 +191,7 @@ phase_sweep = sweety.PhaseSweep(append_normal([
 amplitude_sweep = sweety.AmplitudeSweep([0.5, 2, 5, 10])
 
 offset_sweep = sweety.OffsetSweep(
-    append_normal([
+    param_util.append_normal([
         dist.Dist(rng.uniform, low=0, high=0), # works better with experiment analysis than Dist(0)
         dist.Dist(rng.uniform, low=-1, high=1),
         dist.Dist(rng.uniform, low=-5, high=5),

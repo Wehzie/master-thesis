@@ -3,19 +3,10 @@
 use like:
 import test_params as params
 """
-import numpy as np
-
-from algo import SearchAlgo
-import algo_las_vegas as alave
-import algo_monte_carlo as almoca
-import algo_evolution as alevo
-import algo_gradient as algra
 import param_types as party
-import algo_args_types as algarty
 import sweep_types as sweety
-from typing import List
 import const
-import params
+import param_util
 import dist
 rng = const.RNG
 
@@ -47,7 +38,7 @@ py_rand_args_normal = party.PythonSignalRandArgs(
 
 # sweep band from narrow to wide centering around 5e5, the median VO2 freq 
 freq_sweep_around_vo2 = sweety.FreqSweep(
-    params.append_normal([
+    param_util.append_normal([
         dist.Dist(rng.uniform, low=4.5e5, high=5.5e5),
         dist.Dist(rng.uniform, low=4e5, high=6e5),
         dist.Dist(rng.uniform, low=3e5, high=7e5),
@@ -56,7 +47,7 @@ freq_sweep_around_vo2 = sweety.FreqSweep(
 
 # sweep band from narrow to wide while keeping the lower bound at 0
 freq_sweep_from_zero = sweety.FreqSweep(
-    params.append_normal(
+    param_util.append_normal(
         [ dist.Dist(rng.uniform, low=1/const.MAX_TARGET_DURATION, high=10**(p)) for p in range(0, 3) ]
     ),
 )
@@ -64,7 +55,7 @@ freq_sweep_from_zero = sweety.FreqSweep(
 def init_weight_sweep(rand_args: party.PythonSignalRandArgs) -> sweety.WeightSweep:
     """init weight sweep with given rand_args"""
     return sweety.WeightSweep(
-        params.append_normal(
+        param_util.append_normal(
             [
             dist.WeightDist(rng.uniform, low=0, high=1e1, n=rand_args.n_osc),
             dist.WeightDist(rng.uniform, low=0, high=1e2, n=rand_args.n_osc),
@@ -75,7 +66,7 @@ def init_weight_sweep(rand_args: party.PythonSignalRandArgs) -> sweety.WeightSwe
 weight_sweep = init_weight_sweep(py_rand_args_uniform)
 
 # negative phase shift is unnecessary, as -1/2 pi is equivalent to 3/2 pi
-phase_sweep = sweety.PhaseSweep(params.append_normal([
+phase_sweep = sweety.PhaseSweep(param_util.append_normal([
         dist.Dist(rng.uniform, low=0, high=1/3),
         dist.Dist(rng.uniform, low=0, high=1/2),
         dist.Dist(rng.uniform, low=0, high=1),
@@ -86,7 +77,7 @@ phase_sweep = sweety.PhaseSweep(params.append_normal([
 amplitude_sweep = sweety.AmplitudeSweep([0.5, 2, 5])
 
 offset_sweep = sweety.OffsetSweep(
-    params.append_normal([
+    param_util.append_normal([
         dist.Dist(rng.uniform, low=0, high=0), # works better with experiment analysis than Dist(0)
         dist.Dist(rng.uniform, low=-1, high=1),
         dist.Dist(rng.uniform, low=-5, high=5),
@@ -102,127 +93,3 @@ z_ops_sweep = sweety.ZOpsSweep(
 )
 
 sampling_rate_sweep = sweety.NumSamplesSweep([30, 60, 90])
-
-def init_algo_sweep(target: np.ndarray, rand_args: party.PythonSignalRandArgs, max_z_ops: int = 3e3, m_averages: int = 1) -> sweety.AlgoSweep:
-    """initialize a set of algorithms with varying arguments for a fixed target and a fixed set of rand_args from which to draw oscillators
-    
-    args:
-        target: the target signal
-        rand_args: the random variables from which oscillators are drawn
-        z: the maximum number of z-operations to perform
-        m_averages: the number of times to average the results of each algorithm"""
-    one_shot_algos = [
-        sweety.AlgoWithArgs(
-            almoca.MCOneShot,
-            algarty.AlgoArgs(rand_args, target, max_z_ops),
-        ),
-        sweety.AlgoWithArgs(
-            almoca.MCOneShotWeight,
-            algarty.AlgoArgs(rand_args, target, max_z_ops),
-        ),
-    ]
-    exploit_algos = [
-        sweety.AlgoWithArgs(
-            almoca.MCExploit,
-            algarty.AlgoArgs(rand_args, target, max_z_ops, j_replace=1),
-        ),
-        sweety.AlgoWithArgs(
-            almoca.MCExploit,
-            algarty.AlgoArgs(rand_args, target, max_z_ops, j_replace=10),
-        ),
-        sweety.AlgoWithArgs(
-            almoca.MCExploitWeight,
-            algarty.AlgoArgs(rand_args, target, max_z_ops, j_replace=1),
-        ),
-        sweety.AlgoWithArgs(
-            almoca.MCExploitFast,
-            algarty.AlgoArgs(rand_args, target, max_z_ops, j_replace=1),
-        ),
-    ]
-    grow_shrink_algos = [
-        sweety.AlgoWithArgs(
-            almoca.MCGrowShrink,
-            algarty.AlgoArgs(rand_args, target, max_z_ops, j_replace=1, l_damp_prob=0.5, h_damp_fac=0.5),
-        ),
-        sweety.AlgoWithArgs(
-            almoca.MCDampen,
-            algarty.AlgoArgs(rand_args, target, max_z_ops, j_replace=1, h_damp_fac=0.5),
-        ),
-        sweety.AlgoWithArgs(
-            almoca.MCPurge,
-            algarty.AlgoArgs(rand_args, target, max_z_ops, j_replace=1, h_damp_fac=0),
-        ),
-    ]
-    anneal_algos = [
-        sweety.AlgoWithArgs(
-            almoca.MCAnneal,
-            algarty.AlgoArgs(rand_args, target, max_z_ops),
-        ),
-        sweety.AlgoWithArgs(
-            almoca.MCAnnealWeight,
-            algarty.AlgoArgs(rand_args, target, max_z_ops),
-        ),
-        sweety.AlgoWithArgs(
-            almoca.MCAnnealLog,
-            algarty.AlgoArgs(rand_args, target, max_z_ops),
-        ),
-        sweety.AlgoWithArgs(
-            almoca.MCAnnealLogWeight,
-            algarty.AlgoArgs(rand_args, target, max_z_ops),
-        ),
-    ]
-    las_vegas_algos = [
-        sweety.AlgoWithArgs(
-            alave.LasVegas,
-            algarty.AlgoArgs(rand_args, target, max_z_ops),
-        ),
-        sweety.AlgoWithArgs(
-            alave.LasVegasWeight,
-            algarty.AlgoArgs(rand_args, target, max_z_ops),
-        ),
-    ]
-    other_algos = [
-        sweety.AlgoWithArgs(
-            almoca.BasinHopping,
-            algarty.AlgoArgs(rand_args, target, max_z_ops),
-        ),
-        sweety.AlgoWithArgs(
-            alevo.DifferentialEvolution,
-            algarty.AlgoArgs(rand_args, target, max_z_ops),
-        ),
-    ]
-    gradient_algos = [
-            sweety.AlgoWithArgs(
-            algra.LinearRegression,
-            algarty.AlgoArgs(rand_args, target),
-        ),
-    ]
-
-    all_algos_with_args = one_shot_algos + exploit_algos + grow_shrink_algos + anneal_algos + las_vegas_algos + other_algos
-
-
-    
-    return sweety.AlgoSweep(all_algos_with_args, m_averages)
-
-# TODO: use for tests
-algo_list: List[SearchAlgo] = [
-    almoca.MCExploit,
-    almoca.MCExploit,
-    almoca.MCExploitWeight,
-    almoca.MCExploitWeight,
-    almoca.MCExploitFast,
-    almoca.MCOneShot,
-    almoca.MCOneShotWeight,
-    almoca.MCGrowShrink,
-    almoca.MCDampen,
-    almoca.MCPurge,
-    almoca.MCAnneal,
-    almoca.MCAnnealWeight,
-    almoca.MCAnnealLog,
-    almoca.MCAnnealLogWeight,
-    almoca.BasinHopping,
-    alave.LasVegas,
-    alave.LasVegasWeight,
-    alevo.DifferentialEvolution,
-    algra.LinearRegression,
-]

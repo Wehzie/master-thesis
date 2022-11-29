@@ -199,10 +199,6 @@ def plot_range_vs_rmse(df: pd.DataFrame, target_samples: int, attr_name: str, di
 def plot_freq_range_vs_rmse(df: pd.DataFrame, target_samples: int, sweep_name: str, show: bool = False) -> None:
     """exp4+5: plot frequency range against rmse for multiple algorithms with rand_args and target fixed"""
     for dist_name in const.LEGAL_DISTS:
-        print(df.columns)
-        print(df[["freq_range", "freq_dist_loc", "freq_dist_scale"]])
-        print("dist: ", dist_name)
-
         fig, legend_as_fig = plot_range_vs_rmse(df, target_samples, "freq", dist_name)
         x_label = "frequency diversity [Hz]"
         if dist_name == "uniform" and sweep_name == "freq_range_from_zero":

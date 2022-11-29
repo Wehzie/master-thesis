@@ -13,7 +13,7 @@ import params_test_spice as params
 import netlist_generator
 
 
-class SpiceSignalGenerator(gen_signal.SignalGenerator):
+class SpipySignalGenerator(gen_signal.SignalGenerator):
     """spice netlists generate single signals and python sums them up
     this approach scales better than pure spice signal generation
     but worse than pure python signal generation
@@ -85,9 +85,9 @@ class SpiceSignalGenerator(gen_signal.SignalGenerator):
         ifinity_breaker = 0 # prevent infinite loop
         # non-deterministic runtime due to possible simulation failure
         while i < rand_args.n_osc:
-            det_params = SpiceSignalGenerator.draw_params_random(rand_args)
-            single_signal = SpiceSignalGenerator.draw_single_oscillator(det_params)
-            success = SpiceSignalGenerator.simulation_successful(single_signal, num_samples)
+            det_params = SpipySignalGenerator.draw_params_random(rand_args)
+            single_signal = SpipySignalGenerator.draw_single_oscillator(det_params)
+            success = SpipySignalGenerator.simulation_successful(single_signal, num_samples)
             if success:
                 # exact number of samples is non-deterministic
                 # around 2% cutoff
@@ -102,7 +102,7 @@ class SpiceSignalGenerator(gen_signal.SignalGenerator):
 
     
 def main():
-    sig_gen = SpiceSignalGenerator()
+    sig_gen = SpipySignalGenerator()
     
     if False:
         # test single oscillator generation
