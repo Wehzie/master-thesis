@@ -12,7 +12,7 @@ import algo
 import sample
 import const
 import data_analysis
-import param_types as party
+import algo_args_types as algarty
 
 import numpy as np
 from tqdm import tqdm
@@ -120,7 +120,7 @@ class MCExploitFast(MCExploit):
     proceed to replace oscillators in random positions
     """
 
-    def __init__(self, algo_args: party.AlgoArgs):
+    def __init__(self, algo_args: algarty.AlgoArgs):
         super().__init__(algo_args)
         self.changed_once: List[bool] = [False for _ in range(self.rand_args.n_osc)]
 
@@ -268,7 +268,7 @@ class MCPurge(MCDampen):
     # TODO: stop after looping over each oscillator
     """
 
-    def __init__(self, algo_args: party.AlgoArgs):
+    def __init__(self, algo_args: algarty.AlgoArgs):
         super().__init__(algo_args)
         assert self.h_damp_fac == 0, "h_damp_fac must be 0 for MCPurge"
 

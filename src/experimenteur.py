@@ -7,7 +7,7 @@ from functools import partial
 import param_types as party
 import sweep_types as sweety
 import result_types as resty
-from algo import SearchAlgo
+import algo
 import meta_target
 import const
 if const.TEST_PARAMS:
@@ -30,7 +30,7 @@ class Experimenteur:
     def mean_std():
         return np.mean, np.std
 
-    def invoke_search(self, search_alg: SearchAlgo, algo_sweep: sweety.AlgoSweep) -> Iterable:
+    def invoke_search(self, search_alg: algo.SearchAlgo, algo_sweep: sweety.AlgoSweep) -> Iterable:
         """call an algorithm's search function for a given number of times"""
         if self.mp:
             with Pool(self.cpu_count) as p:
@@ -40,7 +40,7 @@ class Experimenteur:
             samples_z_ops = map(search_alg.search, range(algo_sweep.m_averages))
         return samples_z_ops
 
-    def produce_result(self, samples_z_ops: Iterable, search_alg: SearchAlgo, algo_sweep: sweety.AlgoSweep) -> resty.ResultSweep:
+    def produce_result(self, samples_z_ops: Iterable, search_alg: algo.SearchAlgo, algo_sweep: sweety.AlgoSweep) -> resty.ResultSweep:
         m_rmse_z_ops = [(s.rmse, z_ops) for s, z_ops in samples_z_ops] # List[Tuples[rmse, z_ops]]
         unzipped1 = zip(*m_rmse_z_ops) # unzip to List[rmse], List[z_ops]
         unzipped2 = copy.deepcopy(unzipped1)
@@ -80,7 +80,7 @@ class Experimenteur:
                     awa.algo_args.rand_args = temp_args
                     f_algo_args: Final = copy.deepcopy(awa.algo_args)
                     
-                    search_alg: SearchAlgo = awa.Algo(f_algo_args)
+                    search_alg: algo.SearchAlgo = awa.Algo(f_algo_args)
                     samples_z_ops = self.invoke_search(search_alg, algo_sweep)
                     result = self.produce_result(samples_z_ops, search_alg, algo_sweep)
                     results.append(result)

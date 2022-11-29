@@ -1,17 +1,14 @@
 from dataclasses import dataclass
-from pathlib import Path
-import pickle
 from typing import List
 
-import param_types as party
-import result_types as resty
+import algo_args_types as algarty
 import sample
 
 @dataclass
 class ResultSweep:
     """running an experiment with AlgoSweep args produces a list of ResultAlgoSweep"""
     algo_name: str
-    algo_args: party.AlgoArgs       # to track what's going on at any point in time
+    algo_args: algarty.AlgoArgs       # to track what's going on at any point in time
     mean_rmse: float
     std_rmse: float
     mean_z_ops: float

@@ -1,13 +1,14 @@
 from abc import ABC
 from dataclasses import dataclass
-from typing import List, Union
-import param_types as party
+from typing import List
+import dist
 import algo
+import algo_args_types as algarty
 
 @dataclass
 class AlgoWithArgs:
     Algo: algo.SearchAlgo # list of algorithms
-    algo_args: party.AlgoArgs # list of arguments for each algorithm, in order with algos
+    algo_args: algarty.AlgoArgs # list of arguments for each algorithm, in order with algos
 
 @dataclass
 class AlgoSweep:
@@ -28,7 +29,7 @@ class ConstTimeSweep(ABC):
 # but requires changing the experimenteur class which iterates over fields of the sweep class
 @dataclass
 class FreqSweep(ConstTimeSweep):
-    freq_dist: List[party.Dist]
+    freq_dist: List[dist.Dist]
 
 @dataclass
 class AmplitudeSweep(ConstTimeSweep):
@@ -36,15 +37,15 @@ class AmplitudeSweep(ConstTimeSweep):
 
 @dataclass
 class WeightSweep(ConstTimeSweep):
-    weight_dist: List[party.WeightDist]
+    weight_dist: List[dist.WeightDist]
 
 @dataclass
 class PhaseSweep(ConstTimeSweep):
-    phase_dist: List[party.Dist]
+    phase_dist: List[dist.Dist]
 
 @dataclass
 class OffsetSweep(ConstTimeSweep):
-    offset_dist: List[party.Dist]
+    offset_dist: List[dist.Dist]
 
 
 

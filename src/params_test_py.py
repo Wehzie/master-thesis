@@ -11,8 +11,9 @@ import algo_monte_carlo as almoca
 import algo_evolution as alevo
 import algo_gradient as algra
 import param_types as party
+import algo_args_types as algarty
 import sweep_types as sweety
-from typing import Final, List, Tuple
+from typing import List
 import const
 import params
 import dist
@@ -56,7 +57,7 @@ freq_sweep_around_vo2 = sweety.FreqSweep(
 # sweep band from narrow to wide while keeping the lower bound at 0
 freq_sweep_from_zero = sweety.FreqSweep(
     params.append_normal(
-        [ party.Dist(rng.uniform, low=1/const.MAX_TARGET_DURATION, high=10**(p)) for p in range(0, 3) ]
+        [ dist.Dist(rng.uniform, low=1/const.MAX_TARGET_DURATION, high=10**(p)) for p in range(0, 3) ]
     ),
 )
 
@@ -113,87 +114,87 @@ def init_algo_sweep(target: np.ndarray, rand_args: party.PythonSignalRandArgs, m
     one_shot_algos = [
         sweety.AlgoWithArgs(
             almoca.MCOneShot,
-            party.AlgoArgs(rand_args, target, max_z_ops),
+            algarty.AlgoArgs(rand_args, target, max_z_ops),
         ),
         sweety.AlgoWithArgs(
             almoca.MCOneShotWeight,
-            party.AlgoArgs(rand_args, target, max_z_ops),
+            algarty.AlgoArgs(rand_args, target, max_z_ops),
         ),
     ]
     exploit_algos = [
         sweety.AlgoWithArgs(
             almoca.MCExploit,
-            party.AlgoArgs(rand_args, target, max_z_ops, j_replace=1),
+            algarty.AlgoArgs(rand_args, target, max_z_ops, j_replace=1),
         ),
         sweety.AlgoWithArgs(
             almoca.MCExploit,
-            party.AlgoArgs(rand_args, target, max_z_ops, j_replace=10),
+            algarty.AlgoArgs(rand_args, target, max_z_ops, j_replace=10),
         ),
         sweety.AlgoWithArgs(
             almoca.MCExploitWeight,
-            party.AlgoArgs(rand_args, target, max_z_ops, j_replace=1),
+            algarty.AlgoArgs(rand_args, target, max_z_ops, j_replace=1),
         ),
         sweety.AlgoWithArgs(
             almoca.MCExploitFast,
-            party.AlgoArgs(rand_args, target, max_z_ops, j_replace=1),
+            algarty.AlgoArgs(rand_args, target, max_z_ops, j_replace=1),
         ),
     ]
     grow_shrink_algos = [
         sweety.AlgoWithArgs(
             almoca.MCGrowShrink,
-            party.AlgoArgs(rand_args, target, max_z_ops, j_replace=1, l_damp_prob=0.5, h_damp_fac=0.5),
+            algarty.AlgoArgs(rand_args, target, max_z_ops, j_replace=1, l_damp_prob=0.5, h_damp_fac=0.5),
         ),
         sweety.AlgoWithArgs(
             almoca.MCDampen,
-            party.AlgoArgs(rand_args, target, max_z_ops, j_replace=1, h_damp_fac=0.5),
+            algarty.AlgoArgs(rand_args, target, max_z_ops, j_replace=1, h_damp_fac=0.5),
         ),
         sweety.AlgoWithArgs(
             almoca.MCPurge,
-            party.AlgoArgs(rand_args, target, max_z_ops, j_replace=1, h_damp_fac=0),
+            algarty.AlgoArgs(rand_args, target, max_z_ops, j_replace=1, h_damp_fac=0),
         ),
     ]
     anneal_algos = [
         sweety.AlgoWithArgs(
             almoca.MCAnneal,
-            party.AlgoArgs(rand_args, target, max_z_ops),
+            algarty.AlgoArgs(rand_args, target, max_z_ops),
         ),
         sweety.AlgoWithArgs(
             almoca.MCAnnealWeight,
-            party.AlgoArgs(rand_args, target, max_z_ops),
+            algarty.AlgoArgs(rand_args, target, max_z_ops),
         ),
         sweety.AlgoWithArgs(
             almoca.MCAnnealLog,
-            party.AlgoArgs(rand_args, target, max_z_ops),
+            algarty.AlgoArgs(rand_args, target, max_z_ops),
         ),
         sweety.AlgoWithArgs(
             almoca.MCAnnealLogWeight,
-            party.AlgoArgs(rand_args, target, max_z_ops),
+            algarty.AlgoArgs(rand_args, target, max_z_ops),
         ),
     ]
     las_vegas_algos = [
         sweety.AlgoWithArgs(
             alave.LasVegas,
-            party.AlgoArgs(rand_args, target, max_z_ops),
+            algarty.AlgoArgs(rand_args, target, max_z_ops),
         ),
         sweety.AlgoWithArgs(
             alave.LasVegasWeight,
-            party.AlgoArgs(rand_args, target, max_z_ops),
+            algarty.AlgoArgs(rand_args, target, max_z_ops),
         ),
     ]
     other_algos = [
         sweety.AlgoWithArgs(
             almoca.BasinHopping,
-            party.AlgoArgs(rand_args, target, max_z_ops),
+            algarty.AlgoArgs(rand_args, target, max_z_ops),
         ),
         sweety.AlgoWithArgs(
             alevo.DifferentialEvolution,
-            party.AlgoArgs(rand_args, target, max_z_ops),
+            algarty.AlgoArgs(rand_args, target, max_z_ops),
         ),
     ]
     gradient_algos = [
             sweety.AlgoWithArgs(
             algra.LinearRegression,
-            party.AlgoArgs(rand_args, target),
+            algarty.AlgoArgs(rand_args, target),
         ),
     ]
 

@@ -5,7 +5,7 @@ import networkx as nx
 import numpy as np
 import matplotlib.pyplot as plt
 
-from param_types import SpiceSingleDetArgs, SpiceSumDetArgs
+import param_types as party
 
 # see https://github.com/PySpice-org/PySpice
 
@@ -164,7 +164,7 @@ def build_sum_netlist(path: Path, PARAM: dict) -> dict:
     return det_param
 
 
-def build_single_netlist(path: Path, det_args: SpiceSingleDetArgs, debug: bool = False) -> None:
+def build_single_netlist(path: Path, det_args: party.SpiceSingleDetArgs, debug: bool = False) -> None:
     """Write netlist to file with a single oscillator."""
     netlist = INCLUDE
     netlist += POWER.format(v=det_args.v_in)

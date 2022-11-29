@@ -13,6 +13,7 @@ if const.TEST_PARAMS:
     import params_test_py as params
 else:
     import params
+import params_test_spice
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -122,12 +123,15 @@ def run_multi_directional_experiment():
 # TODO: store intermediate pickle of results
 @data_analysis.print_time
 def main():
+    # rand_args = params_test_spice.spice_rand_args_uniform
+    # m_target = meta_target.MetaTarget(rand_args)
+
     rand_args = params.py_rand_args_uniform
     m_target = meta_target.MetaTarget(rand_args)
     algo_sweep = params.init_algo_sweep(m_target.signal, rand_args)
 
-    qualitative_algo_sweep(algo_sweep, m_target, visual=True)
-    # produce_all_results(algo_sweep, m_target.signal, rand_args)
+    #qualitative_algo_sweep(algo_sweep, m_target, visual=True)
+    produce_all_results(algo_sweep, m_target.signal, rand_args)
 
 if __name__ == "__main__":
     main()

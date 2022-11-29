@@ -5,6 +5,7 @@ sys.path.append(os.path.dirname(os.path.realpath(__file__)) + "/../src")
 
 from gen_signal_python import *
 import data_preprocessor
+import dist
 
 def test_lazy():
 
@@ -37,11 +38,11 @@ def test_lazy():
         n_osc = 3,
         duration = None,
         samples = 300,
-        freq_dist = party.Dist(const.TEST_RNG.uniform, low=1e5, high=1e6),
+        freq_dist = dist.Dist(const.TEST_RNG.uniform, low=1e5, high=1e6),
         amplitude = 0.5,
         weight_dist = party.WeightDist(const.TEST_RNG.uniform, low=0.1, high=1, n=3),
-        phase_dist = party.Dist(const.TEST_RNG.uniform, low=0, high=2),
-        offset_dist = party.Dist(const.TEST_RNG.uniform, low=-10, high=10),
+        phase_dist = dist.Dist(const.TEST_RNG.uniform, low=0, high=2),
+        offset_dist = dist.Dist(const.TEST_RNG.uniform, low=-10, high=10),
         sampling_rate = 11025
     )
 

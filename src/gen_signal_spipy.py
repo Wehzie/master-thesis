@@ -4,21 +4,26 @@ from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 
-import sample
 import gen_signal
 import data_analysis
 import data_io
 import data_preprocessor
 import param_types as party
 import params_test_spice as params
-from netlist_generator import build_single_netlist, build_sum_netlist, run_ngspice, select_netlist_generator
-
+import netlist_generator
 
 
 class SpiceSignalGenerator(gen_signal.SignalGenerator):
     """spice netlists generate single signals and python sums them up
     this approach scales better than pure spice signal generation
-    but worse than pure python signal generation"""
+    but worse than pure python signal generation
+    
+    when a sample is drawn SPICE is called to generate the signals and Pytho is used for post-processing    
+    the underlying time series are SPICE generated
+    weights are added in Python, instead of using an operational amplifier for gain in SPICE
+    phase is added in Python, instead of using an operational amplifier integrator in SPICE
+    offset is added in Python, instead of using an operational amplifier in SPICE
+    """
 
     # ability to generate single oscillator in ngspice
     # ability to generate k oscillators and sum them in ngspice
@@ -29,9 +34,9 @@ class SpiceSignalGenerator(gen_signal.SignalGenerator):
         experiment_path = data_io.find_dir_name(work_dir)
         tmp_path = experiment_path / "netlist.cir"
         # build netlist with a single oscillator
-        build_single_netlist(tmp_path, det_args)
+        netlist_generator.build_single_netlist(tmp_path, det_args)
         # run simulation on ngspice
-        run_ngspice(tmp_path)
+        netlist_generator.run_ngspice(tmp_path)
         # load the simulation data written by ngspice into Python
         df = data_io.load_sim_data(Path(str(tmp_path) + ".dat"))
         # convert from dataframe to numpy
@@ -94,24 +99,7 @@ class SpiceSignalGenerator(gen_signal.SignalGenerator):
             if ifinity_breaker > 10:
                 raise Exception("Infinite loop detected")
         return signal_matrix, det_arg_li
-    
-    @staticmethod
-    def draw_sample(rand_args: party.SpiceSumRandArgs, target: Union[None, np.ndarray] = None, store_det_args: bool = False) -> sample.Sample:
-        """draw a sample, combining SPICE signals and Python post-processing
-        
-        the underlying time series are SPICE generated
-        weights are added in Python, instead of using an operational amplifier for gain in SPICE
-        phase is added in Python, instead of using an operational amplifier integrator in SPICE
-        offset is added in Python, instead of using an operational amplifier in SPICE
-        """
-        signal_matrix, det_args = SpiceSignalGenerator.draw_n_oscillators(rand_args, store_det_args)
-        weights = gen_signal.SignalGenerator.draw_n_weights(rand_args)
-        offset = gen_signal.SignalGenerator.draw_offset(rand_args)
-        weighted_sum = sample.Sample.compute_weighted_sum(signal_matrix, weights, offset)
-        rmse = None
-        if target is not None:
-            rmse = data_analysis.compute_rmse(weighted_sum, target)
-        return sample.Sample(signal_matrix, weights, weighted_sum, offset, rmse, det_args)
+
     
 def main():
     sig_gen = SpiceSignalGenerator()

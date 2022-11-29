@@ -5,16 +5,15 @@ from typing import Callable, List, Tuple, Union
 import sample
 import data_analysis
 import const
-import param_types as party
-import gen_signal_python
+import algo_args_types as algarty
 
 import numpy as np
 
 class SearchAlgo(ABC):
 
-    def __init__(self, algo_args: party.AlgoArgs):
-        self.rand_args = algo_args.rand_args                # signal generation parameters
-        self.target = algo_args.target                       # target function to approximate
+    def __init__(self, algo_args: algarty.AlgoArgs):
+        self.rand_args = algo_args.rand_args
+        self.target = algo_args.target
         self.max_z_ops = algo_args.max_z_ops
         self.j_replace = algo_args.j_replace
         self.l_damp_prob = algo_args.l_damp_prob
@@ -26,6 +25,8 @@ class SearchAlgo(ABC):
         self.store_det_args = algo_args.store_det_args
         self.history = algo_args.history
         self.args_path = algo_args.args_path
+
+        self.sig_generator = algo_args.sig_generator
 
         self.algo_args = self.get_algo_args()                       # for storage with algorithm results
                                                                     # this approach allows injecting from elsewhere
@@ -148,22 +149,22 @@ class SearchAlgo(ABC):
     def draw_sample(self) -> sample.Sample:
         """draw a sample and update z_ops"""
         self.z_ops += self.rand_args.n_osc * 2 # weights and oscillators are counted separately
-        return gen_signal_python.draw_sample(self.rand_args, self.target, self.store_det_args)
+        return self.sig_generator.draw_sample(self.rand_args, self.target, self.store_det_args)
 
     def draw_sample_weights(self, base_sample: sample.Sample):
         """update z_ops, draw new weights for the sample and recompute metrics"""
         self.z_ops += self.rand_args.n_osc
-        return gen_signal_python.draw_sample_weights(base_sample, self.rand_args, self.target)
+        return self.sig_generator.draw_sample_weights(base_sample, self.rand_args, self.target)
 
     def draw_partial_sample(self, base_sample: sample.Sample, osc_to_replace: List[int]) -> sample.Sample:
         """given a sample replace j oscillators and weights, update z_ops, recompute metrics"""
         self.z_ops += len(osc_to_replace) * 2 # len(osc_to_replace) == j_replace
-        return gen_signal_python.draw_partial_sample(base_sample, self.rand_args, osc_to_replace, False, self.target, self.store_det_args)
+        return self.sig_generator.draw_partial_sample(base_sample, self.rand_args, osc_to_replace, False, self.target, self.store_det_args)
 
     def draw_partial_sample_weights(self, base_sample: sample.Sample, osc_to_replace: List[int]) -> sample.Sample:
         """given a sample replace j weights, update z_ops, recompute metrics"""
         self.z_ops += len(osc_to_replace) # len(osc_to_replace) == j_replace
-        return gen_signal_python.draw_partial_sample(base_sample, self.rand_args, osc_to_replace, True, self.target, self.store_det_args)
+        return self.sig_generator.draw_partial_sample(base_sample, self.rand_args, osc_to_replace, True, self.target, self.store_det_args)
 
     def handle_mp(self, sup_func_kwargs: dict) -> None:
         """handle multi processing by modifying numpy the random number generator
@@ -185,18 +186,22 @@ class SearchAlgo(ABC):
                 elif dist.__name__ == rng.normal.__name__:
                     self.rand_args.weight_dist.dist = rng.normal
 
-    def get_algo_args(self) -> party.AlgoArgs:
+    def get_algo_args(self) -> algarty.AlgoArgs:
         """get the current set of AlgoArgs form the search module"""
-        return party.AlgoArgs(
+        return algarty.AlgoArgs(
             self.rand_args,
             self.target,
             self.max_z_ops,
             self.k_samples,
             self.j_replace,
+            self.l_damp_prob,
+            self.h_damp_fac,
+            self.mp,
             self.z_ops_callbacks,
             self.store_det_args,
             self.history,
             self.args_path,
+            self.sig_generator,
         )
 
     @abstractmethod

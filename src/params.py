@@ -7,6 +7,7 @@ import algo_las_vegas as alave
 import algo_monte_carlo as almoca
 import algo_evolution as alevo
 import param_types as party
+import algo_args_types as algarty
 import sweep_types as sweety
 from typing import Final, List, Tuple
 import const
@@ -119,8 +120,8 @@ def comp_scale(low: float, high: float) -> float:
     """compute scale (std dev) for normal distribution from a uniform distribution's low and high bounds"""
     return (high - low) / 2
 
-def append_normal(uniform_li: List[party.Dist]) -> List[party.Dist]:
-    """given a list of party.Dists, repeat the list with normal distributions"""
+def append_normal(uniform_li: List[dist.Dist]) -> List[dist.Dist]:
+    """given a list of Dists, repeat the list with normal distributions"""
     DistType = type(uniform_li[0])
     norm_li = list()
     for d in uniform_li:
@@ -199,7 +200,7 @@ freq_sweep_around_vo2 = sweety.FreqSweep(
 # frequency 0 shouldn't be likely at all, start with 0.1 Hz
 freq_sweep_from_zero = sweety.FreqSweep(
     append_normal(
-        [ party.Dist(rng.uniform, low=0, high=10**(p)) for p in range(0, 9) ]
+        [ dist.Dist(rng.uniform, low=0, high=10**(p)) for p in range(0, 9) ]
     )
 )
 
@@ -267,30 +268,30 @@ algo_list: List[SearchAlgo] = [
 
 def init_algo_args_for_sweep(rand_args: party.PythonSignalRandArgs,
 target: np.ndarray,
-max_z_ops: int) -> List[party.AlgoArgs]:
+max_z_ops: int) -> List[algarty.AlgoArgs]:
     return ([                                                   # TODO: set weight mode and mp in constructor
     # basin hopping
-        # party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True, mp=const.MULTIPROCESSING),
+        # algarty.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True, mp=const.MULTIPROCESSING),
     # differential evolution
-        party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True, mp=const.MULTIPROCESSING),
+        algarty.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True, mp=const.MULTIPROCESSING),
     # las vegas
-        party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=False, mp=const.MULTIPROCESSING),
-        # party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True, mp=const.MULTIPROCESSING),
+        algarty.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=False, mp=const.MULTIPROCESSING),
+        # algarty.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True, mp=const.MULTIPROCESSING),
     # mc one shot
-        # party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=False),
-        # party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True),
+        # algarty.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=False),
+        # algarty.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True),
     # mc exploit
-        party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=False, j_replace=1, mp=const.MULTIPROCESSING),
-        # party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=False, j_replace=10, mp=const.MULTIPROCESSING),
-        # party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True, j_replace=1, mp=const.MULTIPROCESSING),
-        # party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True, j_replace=10, mp=const.MULTIPROCESSING),
+        algarty.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=False, j_replace=1, mp=const.MULTIPROCESSING),
+        # algarty.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=False, j_replace=10, mp=const.MULTIPROCESSING),
+        # algarty.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True, j_replace=1, mp=const.MULTIPROCESSING),
+        # algarty.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True, j_replace=10, mp=const.MULTIPROCESSING),
     # mc anneal
-        # party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=False, mp=const.MULTIPROCESSING),
-        # party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True, mp=const.MULTIPROCESSING),
-        party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=False, mp=const.MULTIPROCESSING),
-        # party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True, mp=const.MULTIPROCESSING),
+        # algarty.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=False, mp=const.MULTIPROCESSING),
+        # algarty.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True, mp=const.MULTIPROCESSING),
+        algarty.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=False, mp=const.MULTIPROCESSING),
+        # algarty.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True, mp=const.MULTIPROCESSING),
     # mc purge
-        # party.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True, j_replace=1, mp=const.MULTIPROCESSING),
+        # algarty.AlgoArgs(rand_args, target, max_z_ops=max_z_ops, weight_mode=True, j_replace=1, mp=const.MULTIPROCESSING),
     ])
     
 def init_algo_sweep(target: np.ndarray, rand_args: party.PythonSignalRandArgs) -> sweety.AlgoSweep:
