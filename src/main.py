@@ -1,3 +1,4 @@
+import copy
 from pathlib import Path
 
 import const
@@ -13,7 +14,7 @@ if const.TEST_PARAMS:
 else:
     import params
 import param_types as party
-import params_test_spice
+import params_test_spipy
 import param_util
 import sweep_types as sweety
 import gen_signal_spipy
@@ -25,6 +26,8 @@ import matplotlib.pyplot as plt
 
 def post_main(best_sample: sample.Sample, m_target: meta_target.MetaTarget,
     z_ops: int, alg_name: str, plot_time: bool = True, plot_freq: bool = False) -> None:
+    m_target.signal = m_target.y_signal
+    # TODO: x_time
     # normalize target to range 0 1
     target_norm = data_preprocessor.norm1d(m_target.signal)
 
@@ -126,9 +129,21 @@ def run_multi_directional_experiment():
 # TODO: store intermediate pickle of results
 @data_analysis.print_time
 def main():
-    rand_args = params_test_spice.spice_rand_args_uniform
-    m_target = meta_target.MetaTarget(rand_args)
-    algo_sweep = param_util.init_algo_sweep(m_target.signal, rand_args, sig_generator=gen_signal_spipy.SpipySignalGenerator())
+    rand_args = params_test_spipy.spice_rand_args_uniform
+    m_target = meta_target.MetaTargetTime(rand_args)
+
+    # scale the number of samples in the target to the number of samples produced by spice
+    signal_generator = gen_signal_spipy.SpipySignalGenerator()
+    spice_samples = signal_generator.estimate_number_of_samples(rand_args)
+    m_target.adjust_samples(spice_samples)
+
+    # synthetic target signal
+    # from scipy import signal
+    # t = np.linspace(0, 1, spice_samples)
+    # m_target.y_signal = signal.sawtooth(2 * np.pi * 5 * t) * 10
+    # data_analysis.plot_signal(m_target.y_signal, show=True)
+
+    algo_sweep = param_util.init_algo_sweep(m_target.y_signal, rand_args, sig_generator=signal_generator, max_z_ops=30, m_averages=1)
 
     qualitative_algo_sweep(algo_sweep, m_target, visual=True)
 

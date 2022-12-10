@@ -1,10 +1,7 @@
-from pathlib import Path
 from typing import List, Tuple, Union
-import data_io
 import data_analysis
 
 import numpy as np
-from scipy.interpolate import interp1d
 from scipy import signal
 import matplotlib.pyplot as plt
 
@@ -99,7 +96,7 @@ def gen_custom_inv_sawtooth(
     sampling_rate: int,
     ) -> np.ndarray:
     """formula to compute the inverse sawtooth without scipy"""
-    x = np.linspace(1, duration, sampling_rate)
+    x = np.linspace(1, duration, sampling_rate*duration)
     T = 1 / freq # period
     y = offset + (2*amplitude) / np.pi * np.arctan(1 / np.tan(np.pi*phase + np.pi*x / T))
 
@@ -111,14 +108,19 @@ def main():
     if True:
         x, y = gen_custom_inv_sawtooth(
             duration = 10,
-            freq = 1,
+            freq = 2,
             amplitude = 1,
             phase = 0,
             offset = 0,
             sampling_rate = 10000
         )
-        data_analysis.plot_signal(y)
+        data_analysis.plot_signal(y, x)
         plt.show()
+
+        sample_spacing = 1/10000
+        f0=data_analysis.get_freq_from_fft(y, sample_spacing)
+        f1, _, _=data_analysis.get_freq_from_fft_v2(y, sample_spacing)
+        print("fs:", f0, f1)
 
     if True:
         # generate a single signal from deterministic arguments
@@ -164,13 +166,3 @@ def main():
 if __name__ == "__main__":
     main()
 
-def interpolate_signal():
-    """load a ngspice generated oscillation and interpolate the signal"""
-    df = data_io.load_sim_data(Path("data/example_single_oscillator/netlist0.cir.dat"))
-    s = df.iloc[:,1] # column as series
-    arr = s.to_numpy() # arr
-
-    x = range(len(arr))
-    f = interp1d(x, arr, kind="cubic") # interpolate
-    plt.plot(x, arr, 'o', x, f(x), "-")
-    plt.show()

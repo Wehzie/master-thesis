@@ -1,9 +1,9 @@
 
 import shutil
-from params import param_sweep_schedule
 
 import os
 from pathlib import Path
+from typing import Tuple
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -12,8 +12,18 @@ import numpy as np
 
 CIRCUIT_PATH = Path("circuit_lib/single_oscillator_RC.cir")
 DATA_PATH = Path("data")
-CONTROL_PARAMETERS = param_sweep_schedule["vo2_r1"]
+CONTROL_PARAMETERS = {
+    "changed_component": "R1",
+    "dependent_component": "v(\"/A\")",
+    
+    "start": "5k",
+    "stop": "150k",
+    "step": "1k",
 
+    "time_step": "5e-9",
+    "time_stop": "10u",
+    "time_start": "0",
+}
 
 CONTROL_TEMPLATE = """* Control commands
 .control
@@ -75,11 +85,12 @@ def clean_signal(df, points_dropped=200):
     no_offset = no_startup - min(no_startup)
     return no_offset
 
-def sweep(visual=True):
+def sweep(visual=True) -> pd.DataFrame:
     # execute ngspice simulation
     controls = CONTROL_TEMPLATE.format(**CONTROL_PARAMETERS)
     tmp_path = add_controls(CIRCUIT_PATH, controls)
     run_ngspice(tmp_path)
+    time_step = float(CONTROL_PARAMETERS["time_step"])
 
     df = pd.DataFrame()
     # iterate results files
@@ -90,16 +101,8 @@ def sweep(visual=True):
         col_name = f.name[:-4]
         df[col_name] = df_tmp["v(/A)"]
 
-        # apply fourier transform to signal
-        signal = clean_signal(df[col_name])  
-        spectrum = np.fft.fft(signal)
-        abs_spec = abs(spectrum)
-        freq = np.fft.fftfreq(len(abs_spec), d=5e-9)
-
         # compute fundamental frequency
-        nlargest = pd.Series(abs_spec).nlargest(2)
-        nlargest_arg = nlargest.index.values.tolist()
-        f0 = abs(freq[nlargest_arg[1]])
+        f0, freq, abs_spec = get_fundamental_frequency(df[col_name], time_step)
         print(f"fundamental frequency: {f0} Hz")
 
         if visual:
@@ -117,24 +120,26 @@ def sweep(visual=True):
     
     return df
 
-def fundamental_freq(s: pd.Series) -> float:
+def get_fundamental_frequency(s: pd.Series, sample_spacing: float) -> Tuple:
     """compute fundamental frequency of a vector"""
     # apply fourier transform to signal
     signal = clean_signal(s)
     spectrum = np.fft.fft(signal)
     abs_spec = abs(spectrum)
-    freq = np.fft.fftfreq(len(abs_spec), d=5e-9)
+    freq = np.fft.fftfreq(len(abs_spec), d=sample_spacing)
 
     # compute fundamental frequency
     nlargest = pd.Series(abs_spec).nlargest(2)
     nlargest_arg = nlargest.index.values.tolist()
-    return abs(freq[nlargest_arg[1]])
+    return abs(freq[nlargest_arg[1]]), freq, abs_spec
 
 def plot_frequency_dependency(df):
     """dependency between independent variable and oscillator frequency"""
     df = df.drop(["time"], axis=1) # time not needed
+
+    time_step = float(CONTROL_PARAMETERS["time_step"])
     
-    # define x
+    # define resistor values
     # drop last character containing quantifier
     x_start = int(CONTROL_PARAMETERS["start"][:-1])
     x_stop  = int(CONTROL_PARAMETERS["stop"][:-1])
@@ -144,7 +149,7 @@ def plot_frequency_dependency(df):
     # define y
     f0_li = []
     for col in df:
-        f0 = fundamental_freq(df[col])
+        f0, _, _ = get_fundamental_frequency(df[col], time_step)
         f0_li.append(f0)
     
     # plot
@@ -155,14 +160,9 @@ def plot_frequency_dependency(df):
     plt.show()
 
 def main():
-    df = sweep()
+    df = sweep(visual=False)
     print(df)
-    #plot_frequency_dependency(df)
+    plot_frequency_dependency(df)
     
-main()
-
-# TODO:
-# control netlist parameters from within python
-# out.txt should be renameable from within python
-# implement aggregate, tendency and dependency plots
-# random parameter search or hyperband search
+if __name__ == "__main__":
+    main()

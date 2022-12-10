@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Tuple
 import data_io
 import data_preprocessor
 
@@ -8,6 +8,7 @@ import time
 
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 
 def plot_n(data: np.ndarray, show: bool = True, save_path: Path = None) -> None:
     """plot n signals in a single plot"""
@@ -73,24 +74,26 @@ def plot_pred_target(pred: np.ndarray, target: np.ndarray, show: bool = False,
     if save_path:
         plt.savefig(save_path, dpi=300)
 
-def plot_signal(y: np.ndarray, x: np.ndarray = None, ylabel: str = None, title: str = None, show: bool = False, save_path: Path = None) -> None:
+def plot_signal(y: np.ndarray, x_time: np.ndarray = None, ylabel: str = None, title: str = None, show: bool = False, save_path: Path = None) -> None:
     """plot a 2 dimensional time series signal"""
-    _, ax = plt.subplots()
+    fig, ax1 = plt.subplots()
 
-    if x is None:
-        ax.set_xlabel("sample index")
-        x = list(range(len(y)))
-    else:
-        ax.set_xlabel("time")
+    if x_time is not None:
+        ax2 = ax1.twiny()
+        ax2.plot(x_time, y)
+        ax2.set_xlabel("time [s]")
 
     if ylabel is None:
-        ax.set_ylabel("amplitude")
+        ax1.set_ylabel("amplitude")
     else:
-        ax.set_ylabel(ylabel)
+        ax1.set_ylabel(ylabel)
 
     if title: plt.title(title)
     
-    plt.plot(x, y)
+    ax1.set_xlabel("sample index")
+    x_samples = list(range(len(y)))
+    ax1.plot(x_samples, y)
+
     if show:
         plt.show()
     if save_path:
@@ -164,6 +167,18 @@ def get_freq_from_fft(s: np.ndarray, sample_spacing: float) -> float:
     peak = peaks[abs_spec[peaks].argmax()]
     return freqs[peak]
 
+def get_freq_from_fft_v2(s: np.ndarray, sample_spacing: float) -> Tuple:
+    """compute fundamental frequency of an oscillator using FFT,
+    compared to v1, this version seems more numerically stable"""
+    # apply fourier transform to signal
+    spectrum = np.fft.fft(s)
+    abs_spec = abs(spectrum)
+    freq = np.fft.fftfreq(len(abs_spec), d=sample_spacing)
+
+    # compute fundamental frequency
+    nlargest = pd.Series(abs_spec).nlargest(2)
+    nlargest_arg = nlargest.index.values.tolist()
+    return abs(freq[nlargest_arg[1]])
 
 def main():
     sampling_rate, data, _ = data_io.load_data()

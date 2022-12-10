@@ -158,8 +158,14 @@ def init_algo_sweep(target: np.ndarray, rand_args: party.PythonSignalRandArgs, s
     all_algos_with_args = one_shot_algos + exploit_algos + grow_shrink_algos + anneal_algos + las_vegas_algos + other_algos
 
 
+    best = [
+        sweety.AlgoWithArgs(
+            almoca.MCExploit,
+            algarty.AlgoArgs(rand_args, target, max_z_ops, j_replace=1, sig_generator=sig_generator),
+        ),
+    ]
     
-    return sweety.AlgoSweep(all_algos_with_args, m_averages)
+    return sweety.AlgoSweep(best, m_averages)
 
 # TODO: use for tests
 algo_list: List[SearchAlgo] = [

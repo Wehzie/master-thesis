@@ -16,3 +16,5 @@ MAX_TARGET_DURATION: Final[float] = 10  # maximum duration of a target signal in
                                         # frequency 0 shouldn't be possible to generate
                                         # a period of T=1/f=10s is already longer than the longest target I plan to generate
                                         # which yields f=1/T=0.1 Hz
+
+SPICE_PATIENCE: Final[int] = 10 # number of consecutive SPICE numerical failures to tolerate before stopping

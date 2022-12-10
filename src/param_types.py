@@ -73,20 +73,24 @@ class SpiceSumRandArgs:
     weight_dist: dist.WeightDist # scale amplitude ot SPICE signal in Python
     offset_dist: dist.Dist       # alter offset of SPICE signal in Python
 
+    down_sample_factor: Union[int, None] = None # down sample the generated signal by this factor
+
 @dataclass
 class SpiceSingleDetArgs:
     """define deterministic electric components for a single oscillator circuit"""
-    n_osc: int      # number of oscillators
-    v_in: float     # input voltage, influences frequency, and offset
-    r: float        # resistor controls frequency, doesn't affect amplitude
-    r_last: float   # for a single oscillator the effect of r_last is equal to adding the resistance to r
-    r_control: float # resistor following the control terminal, doesn't affect oscillation
-    c: float        # capacitor, impact similar to main resistor
-    time_step: float # simulated time step in seconds
-    time_stop: float # simulation stop time in seconds
-    time_start: float # simulation start time in seconds
-    dependent_component: str = "v(osc1)" # the node to read out and report back to Python
-    phase: float = 0.0 # phase shift in radians, added on Python side
+    n_osc: int          # number of oscillators
+    v_in: float         # input voltage, influences frequency, and offset
+    r: float            # resistor controls frequency, doesn't affect amplitude
+    r_last: float       # for a single oscillator the effect of r_last is equal to adding the resistance to r
+    r_control: float    # resistor following the control terminal, doesn't affect oscillation
+    c: float            # capacitor, impact similar to main resistor
+    time_step: float    # simulated time step in seconds
+    time_stop: float    # simulation stop time in seconds
+    time_start: float   # simulation start time in seconds
+    dependent_component: str = "v(osc1)"        # the node to read out and report back to Python
+    phase: float = 0.0                          # phase shift in radians, added on Python side
+    down_sample_factor: Union[int, None] = None # down sample the generated signal by this factor, None means no downsampling
+                                                # a value of 0.1 means that 1 sample is taken every 10 samples
 
 
 @dataclass

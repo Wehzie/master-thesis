@@ -75,6 +75,15 @@ def align_signals(p: np.ndarray, t: np.ndarray) -> tuple:
     else:
         return p, t
 
+def align_signals_cut(p: np.ndarray, t: np.ndarray) -> tuple:
+    """take two different length signals and return them with the same length by cutting the longer one"""
+    if len(p) < len(t):
+        return p, t[0:len(p)]
+    elif len(t) < len(p):
+        return p[0:len(t)], t
+    else:
+        return p, t
+
 def clean_signal(s: np.ndarray, points_dropped: int = 200) -> np.ndarray:
     """remove startup and y-offset"""
     no_startup = s[points_dropped:]
@@ -85,6 +94,14 @@ def take_middle_third(signal: np.ndarray) -> np.ndarray:
     """return only the middle third of a signal"""
     third = len(signal)//3
     return signal[third:len(signal)-third]
+
+def change_duration(signal: np.ndarray, sampling_rate: int, new_duration: float) -> np.ndarray:
+    """change the duration by taking a piece in the middle according to the new duration"""
+    old_duration = len(signal)/sampling_rate
+    fraction_to_take = new_duration/old_duration
+    samples_to_take = int(fraction_to_take*len(signal))
+    start_index = len(signal)//2 - samples_to_take//2
+    return signal[start_index:start_index+samples_to_take]
 
 def norm1d(signal: np.ndarray) -> np.ndarray:
     """normalize a 1d-signal to the range from 0 to 1"""

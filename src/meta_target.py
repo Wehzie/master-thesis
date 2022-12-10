@@ -3,7 +3,6 @@ import data_io
 import data_preprocessor
 
 from typing import Final
-from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
@@ -29,6 +28,49 @@ class MetaTarget:
         self.signal = target_resampled
         self.sampling_rate = data_preprocessor.get_sampling_rate_after_resample(target_middle, target_resampled, raw_sampling_rate)
         self.dtype = raw_dtype
+    
+    def __repr__(self) -> str:
+        return f"MetaTarget(signal={self.signal}, sampling_rate={self.sampling_rate}, dtype={self.dtype})"
+
+class MetaTargetTime:
+    """signal including meta data"""
+
+    def __init__(self, rand_args: party.SpiceSumRandArgs) -> None:
+        # loading and manipulating the target signal
+        raw_sampling_rate, raw_target, raw_dtype = data_io.load_data()
+
+        # shorten the target to the desired duration
+        new_duration = rand_args.time_stop - rand_args.time_start # seconds
+        x_time = np.arange(0, new_duration, 1/raw_sampling_rate)
+        y_signal = data_preprocessor.change_duration(raw_target, raw_sampling_rate, new_duration)
+        # x_time returns a non-deterministic number of samples, therefore we need to align the signals
+        x_time, y_signal = data_preprocessor.align_signals_cut(x_time, y_signal)
+
+        self.x_time = x_time
+        self.y_signal = y_signal
+        self.sampling_rate = raw_sampling_rate
+        self.duration = new_duration
+        self.dtype = raw_dtype
+
+    def adjust_samples(self, new_samples: int) -> None:
+        """update the signal to the new number of samples"""
+        sampling_rate_increase = new_samples / len(self.y_signal)
+        new_sampling_rate = int(self.sampling_rate * sampling_rate_increase) 
+        
+        # downsample_typesafe gives a much cleaner signal than scipy.resample
+        if new_samples < len(self.y_signal):
+            new_y_signal = data_preprocessor.downsample_typesafe(self.y_signal, new_samples) # downsample
+        else:
+            # scipy.resample works well for upsampling
+            new_y_signal = data_preprocessor.resample(self.y_signal, new_samples) # resample
+            new_y_signal = new_y_signal.astype(self.dtype) # maintain type
+
+        new_x_time = np.arange(0, self.duration, 1/new_sampling_rate)
+        new_x_time, new_y_signal = data_preprocessor.align_signals_cut(new_x_time, new_y_signal)
+
+        self.sampling_rate = new_sampling_rate
+        self.y_signal = new_y_signal
+        self.x_time = new_x_time
     
     def __repr__(self) -> str:
         return f"MetaTarget(signal={self.signal}, sampling_rate={self.sampling_rate}, dtype={self.dtype})"
