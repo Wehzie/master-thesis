@@ -1,13 +1,19 @@
 from __future__ import annotations
+
+from pathlib import Path
 import csv
 import pickle
 import numpy as np
-from pathlib import Path
 from typing import List, Final, Union
-import data_analysis
-import param_types as party
+
 from sklearn.linear_model import LinearRegression
+import matplotlib.pyplot as plt
+
+import param_types as party
+import data_analysis
 import data_preprocessor
+import meta_target
+import data_io
 
 class Sample():
     """a sample consists of n-oscillators with constant parameters
@@ -132,3 +138,45 @@ class Sample():
         weighted_sum = Sample.compute_weighted_sum(signal_matrix, weights, offset)
         rmse = data_analysis.compute_rmse(weighted_sum, target)
         return Sample(signal_matrix, weights, weighted_sum, offset, rmse, sample.signal_args)
+
+def evaluate_prediction(best_sample: Sample, m_target: meta_target.UnionMetaTarget,
+    z_ops: int, alg_name: str, plot_time: bool = True, plot_freq: bool = False) -> None:
+    """evaluate a generated signal (sample) against the target by qualitative (plots) and quantitative (RMSE) means"""
+    # normalize target to range 0 1
+    target_norm = data_preprocessor.norm1d(m_target.signal)
+
+    # find best sample and save
+    print(f"signal_sum mean: {np.mean(best_sample.weighted_sum)}")
+    best_sample.save_sample()
+    data_io.save_signal_to_wav(best_sample.weighted_sum, m_target.sampling_rate, m_target.dtype, Path("data/best_sample.wav"))
+
+    norm_sample = Sample.norm_sample(best_sample, target_norm)
+
+    # compute regression against target
+    reg_sample = Sample.regress_sample(best_sample, m_target.signal)
+    data_io.save_signal_to_wav(reg_sample.weighted_sum, m_target.sampling_rate, m_target.dtype, Path("data/fit.wav"))
+
+    # norm regression after fit (good enough)
+    norm_reg_sample = Sample.norm_sample(reg_sample, target_norm)
+
+    # plots
+    if plot_time: # time-domain
+        #hist_rmse(rmse_list, title="sum distribution")
+        #hist_rmse(rmse_norm_list, title="norm-sum distribution")
+        data_analysis.plot_pred_target(best_sample.weighted_sum, m_target.signal, time=m_target.time, title=f"{alg_name}, sum")
+        data_analysis.plot_pred_target(reg_sample.weighted_sum, m_target.signal, time=m_target.time, title=f"{alg_name}, regression")
+        data_analysis.plot_pred_target(norm_sample.weighted_sum, target_norm, time=m_target.time, title=f"{alg_name}, norm-sum")
+        data_analysis.plot_pred_target(norm_reg_sample.weighted_sum, target_norm, time=m_target.time, title=f"{alg_name}, norm after fit")
+    if plot_freq: # frequency-domain
+        data_analysis.plot_fourier(m_target.signal, title=f"{alg_name}, target")
+        data_analysis.plot_fourier(best_sample.weighted_sum, title=f"{alg_name}, sum")
+        data_analysis.plot_fourier(reg_sample.weighted_sum, title=f"{alg_name}, regression")
+
+    print(f"{alg_name}")
+    print(f"z_ops: {z_ops}")
+    print(f"best_sample.rmse_sum {best_sample.rmse}")
+    print(f"best_sample.rmse_sum-norm {norm_sample.rmse}")
+    print(f"best_sample.rmse_fit {reg_sample.rmse}")
+    print(f"best_sample.rmse_fit-norm {norm_reg_sample.rmse}")
+
+    plt.show()

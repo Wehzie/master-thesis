@@ -20,61 +20,15 @@ import sweep_types as sweety
 import gen_signal_spipy
 
 import numpy as np
-import matplotlib.pyplot as plt
 
-
-
-def post_main(best_sample: sample.Sample, m_target: meta_target.MetaTarget,
-    z_ops: int, alg_name: str, plot_time: bool = True, plot_freq: bool = False) -> None:
-    m_target.signal = m_target.y_signal
-    # TODO: x_time
-    # normalize target to range 0 1
-    target_norm = data_preprocessor.norm1d(m_target.signal)
-
-    # find best sample and save
-    print(f"signal_sum mean: {np.mean(best_sample.weighted_sum)}")
-    best_sample.save_sample()
-    data_io.save_signal_to_wav(best_sample.weighted_sum, m_target.sampling_rate, m_target.dtype, Path("data/best_sample.wav"))
-
-    norm_sample = sample.Sample.norm_sample(best_sample, target_norm)
-
-    # compute regression against target
-    reg_sample = sample.Sample.regress_sample(best_sample, m_target.signal)
-    data_io.save_signal_to_wav(reg_sample.weighted_sum, m_target.sampling_rate, m_target.dtype, Path("data/fit.wav"))
-
-    # norm regression after fit (good enough)
-    norm_reg_sample = sample.Sample.norm_sample(reg_sample, target_norm)
-
-    # plots
-    if plot_time: # time-domain
-        #hist_rmse(rmse_list, title="sum distribution")
-        #hist_rmse(rmse_norm_list, title="norm-sum distribution")
-        data_analysis.plot_pred_target(best_sample.weighted_sum, m_target.signal, title=f"{alg_name}, sum")
-        data_analysis.plot_pred_target(reg_sample.weighted_sum, m_target.signal, title=f"{alg_name}, regression")
-        data_analysis.plot_pred_target(norm_sample.weighted_sum, target_norm, title=f"{alg_name}, norm-sum")
-        data_analysis.plot_pred_target(norm_reg_sample.weighted_sum, target_norm, title=f"{alg_name}, norm after fit")
-    if plot_freq: # frequency-domain
-        data_analysis.plot_fourier(m_target.signal, title=f"{alg_name}, target")
-        data_analysis.plot_fourier(best_sample.weighted_sum, title=f"{alg_name}, sum")
-        data_analysis.plot_fourier(reg_sample.weighted_sum, title=f"{alg_name}, regression")
-
-    print(f"{alg_name}")
-    print(f"z_ops: {z_ops}")
-    print(f"best_sample.rmse_sum {best_sample.rmse}")
-    print(f"best_sample.rmse_sum-norm {norm_sample.rmse}")
-    print(f"best_sample.rmse_fit {reg_sample.rmse}")
-    print(f"best_sample.rmse_fit-norm {norm_reg_sample.rmse}")
-
-    plt.show()
-
-def qualitative_algo_sweep(algo_sweep: sweety.AlgoSweep, m_target: meta_target.MetaTarget, visual: bool = False) -> None:
+def qualitative_algo_sweep(algo_sweep: sweety.AlgoSweep, m_target: meta_target.UnionMetaTarget, visual: bool = False) -> None:
     """algo sweep without averaging or collecting results.
     plots the best sample for each algorithm against the target."""
     for awa in algo_sweep.algo_with_args:
         awa: sweety.AlgoWithArgs
         search_alg = awa.Algo(awa.algo_args)
         best_sample, z_ops = search_alg.search()
-        if visual: post_main(best_sample, m_target, z_ops, search_alg.__class__.__name__)
+        if visual: sample.evaluate_prediction(best_sample, m_target, z_ops, search_alg.__class__.__name__)
 
 @data_analysis.print_time
 def produce_all_results(algo_sweep: sweety.AlgoSweep, target: np.ndarray, base_rand_args: party.PythonSignalRandArgs) -> None:
@@ -129,31 +83,32 @@ def run_multi_directional_experiment():
 # TODO: store intermediate pickle of results
 @data_analysis.print_time
 def main():
-    rand_args = params_test_spipy.spice_rand_args_uniform
-    m_target = meta_target.MetaTargetTime(rand_args)
+    # SpiPy
+    if False:
+        rand_args = params_test_spipy.spice_rand_args_uniform
+        m_target = meta_target.MetaTargetTime(rand_args)
 
-    # scale the number of samples in the target to the number of samples produced by spice
-    signal_generator = gen_signal_spipy.SpipySignalGenerator()
-    spice_samples = signal_generator.estimate_number_of_samples(rand_args)
-    m_target.adjust_samples(spice_samples)
+        # scale the number of samples in the target to the number of samples produced by spice
+        signal_generator = gen_signal_spipy.SpipySignalGenerator()
+        spice_samples = signal_generator.estimate_number_of_samples(rand_args)
+        m_target.adjust_samples(spice_samples)
 
-    # synthetic target signal
-    # from scipy import signal
-    # t = np.linspace(0, 1, spice_samples)
-    # m_target.y_signal = signal.sawtooth(2 * np.pi * 5 * t) * 10
-    # data_analysis.plot_signal(m_target.y_signal, show=True)
+        # synthetic target signal
+        # from scipy import signal
+        # t = np.linspace(0, 1, spice_samples)
+        # m_target.signal = signal.sawtooth(2 * np.pi * 5 * t) * 10
+        # data_analysis.plot_signal(m_target.signal, show=True)
 
-    algo_sweep = param_util.init_algo_sweep(m_target.y_signal, rand_args, sig_generator=signal_generator, max_z_ops=30, m_averages=1)
+        algo_sweep = param_util.init_algo_sweep(m_target.signal, rand_args, sig_generator=signal_generator, max_z_ops=30, m_averages=1)
 
-    qualitative_algo_sweep(algo_sweep, m_target, visual=True)
+        qualitative_algo_sweep(algo_sweep, m_target, visual=True)
 
-    exit()
     rand_args = params.py_rand_args_uniform
-    m_target = meta_target.MetaTarget(rand_args)
+    m_target = meta_target.MetaTargetSample(rand_args)
     algo_sweep = param_util.init_algo_sweep(m_target.signal, rand_args)
 
     qualitative_algo_sweep(algo_sweep, m_target, visual=True)
-    produce_all_results(algo_sweep, m_target.signal, rand_args)
+    # produce_all_results(algo_sweep, m_target.signal, rand_args)
 
 if __name__ == "__main__":
     main()

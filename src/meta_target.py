@@ -2,13 +2,13 @@ import param_types as party
 import data_io
 import data_preprocessor
 
-from typing import Final
+from typing import Final, Union
 from pathlib import Path
 
 import numpy as np
 
-class MetaTarget:
-    """signal including meta data"""
+class MetaTargetSample:
+    """load signal including meta data, sample based processing"""
 
     def __init__(self, rand_args: party.PythonSignalRandArgs) -> None:
         # loading and manipulating the target signal
@@ -24,16 +24,19 @@ class MetaTarget:
         target_resampled: Final = data_preprocessor.downsample_typesafe(target_middle, rand_args.samples)
         # save to wav
         data_io.save_signal_to_wav(target_middle, raw_sampling_rate, raw_dtype, Path("data/target_downsampled.wav"))
+        
         # set state
         self.signal = target_resampled
         self.sampling_rate = data_preprocessor.get_sampling_rate_after_resample(target_middle, target_resampled, raw_sampling_rate)
         self.dtype = raw_dtype
+        self.duration = len(target_resampled) / self.sampling_rate
+        self.time = np.linspace(0, self.duration, int(self.duration * self.sampling_rate))
     
     def __repr__(self) -> str:
         return f"MetaTarget(signal={self.signal}, sampling_rate={self.sampling_rate}, dtype={self.dtype})"
 
 class MetaTargetTime:
-    """signal including meta data"""
+    """load signal including meta data, time based processing"""
 
     def __init__(self, rand_args: party.SpiceSumRandArgs) -> None:
         # loading and manipulating the target signal
@@ -41,36 +44,38 @@ class MetaTargetTime:
 
         # shorten the target to the desired duration
         new_duration = rand_args.time_stop - rand_args.time_start # seconds
-        x_time = np.arange(0, new_duration, 1/raw_sampling_rate)
-        y_signal = data_preprocessor.change_duration(raw_target, raw_sampling_rate, new_duration)
-        # x_time returns a non-deterministic number of samples, therefore we need to align the signals
-        x_time, y_signal = data_preprocessor.align_signals_cut(x_time, y_signal)
+        time = np.arange(0, new_duration, 1/raw_sampling_rate)
+        signal = data_preprocessor.change_duration(raw_target, raw_sampling_rate, new_duration)
+        # time returns a non-deterministic number of samples, therefore we need to align the signals
+        time, signal = data_preprocessor.align_signals_cut(time, signal)
 
-        self.x_time = x_time
-        self.y_signal = y_signal
+        self.time = time
+        self.signal = signal
         self.sampling_rate = raw_sampling_rate
         self.duration = new_duration
         self.dtype = raw_dtype
 
     def adjust_samples(self, new_samples: int) -> None:
         """update the signal to the new number of samples"""
-        sampling_rate_increase = new_samples / len(self.y_signal)
+        sampling_rate_increase = new_samples / len(self.signal)
         new_sampling_rate = int(self.sampling_rate * sampling_rate_increase) 
         
         # downsample_typesafe gives a much cleaner signal than scipy.resample
-        if new_samples < len(self.y_signal):
-            new_y_signal = data_preprocessor.downsample_typesafe(self.y_signal, new_samples) # downsample
+        if new_samples < len(self.signal):
+            new_signal = data_preprocessor.downsample_typesafe(self.signal, new_samples) # downsample
         else:
             # scipy.resample works well for upsampling
-            new_y_signal = data_preprocessor.resample(self.y_signal, new_samples) # resample
-            new_y_signal = new_y_signal.astype(self.dtype) # maintain type
+            new_signal = data_preprocessor.resample(self.signal, new_samples) # resample
+            new_signal = new_signal.astype(self.dtype) # maintain type
 
-        new_x_time = np.arange(0, self.duration, 1/new_sampling_rate)
-        new_x_time, new_y_signal = data_preprocessor.align_signals_cut(new_x_time, new_y_signal)
+        new_time = np.arange(0, self.duration, 1/new_sampling_rate)
+        new_time, new_signal = data_preprocessor.align_signals_cut(new_time, new_signal)
 
         self.sampling_rate = new_sampling_rate
-        self.y_signal = new_y_signal
-        self.x_time = new_x_time
+        self.signal = new_signal
+        self.time = new_time
     
     def __repr__(self) -> str:
         return f"MetaTarget(signal={self.signal}, sampling_rate={self.sampling_rate}, dtype={self.dtype})"
+
+UnionMetaTarget = Union[MetaTargetSample, MetaTargetTime]

@@ -1,4 +1,4 @@
-from typing import Callable, Tuple
+from typing import Callable, Tuple, Union
 import data_io
 import data_preprocessor
 
@@ -57,15 +57,22 @@ def hist_rmse(rmse_li: list, show: bool = False, title: str = None, save_path: P
         plt.savefig(save_path, dpi=300)
 
 
-def plot_pred_target(pred: np.ndarray, target: np.ndarray, show: bool = False,
-    save_path: Path = None, title: str = None) -> None:
+def plot_pred_target(pred: np.ndarray, target: np.ndarray, time: Union[np.ndarray, None] = None,
+    show: bool = False, save_path: Path = None, title: str = None) -> None:
     """plot a 2 dimensional time series signal"""
+    fig, ax1 = plt.subplots()
 
-    plt.figure()
-    plt.plot(target, label="target", linestyle="dashed", alpha=0.9)
-    plt.plot(pred, label="prediction", linestyle="dashdot", alpha=0.9)
-    plt.gca().set_xlabel("sample index")
-    plt.gca().set_ylabel("amplitude")
+    if time is not None: # time axis
+        ax2 = ax1.twiny()
+        ax2.plot(time, target, label="target", linestyle="dashed", alpha=0.9)
+        ax2.plot(time, pred, label="prediction", linestyle="dashdot", alpha=0.9)
+        ax2.set_xlabel("time [s]")
+
+    # sample axis
+    ax1.plot(target, label="target", linestyle="dashed", alpha=0.9)
+    ax1.plot(pred, label="prediction", linestyle="dashdot", alpha=0.9)
+    ax1.set_xlabel("sample index")
+    ax1.set_ylabel("amplitude")
     plt.legend()
     if title: plt.title(title)
 
