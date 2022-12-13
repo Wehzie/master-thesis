@@ -77,8 +77,8 @@ class LasVegas(algo.SearchAlgo):
         for k in tqdm(generator()):
             base_sample = self.init_best_sample()
             i = 0 # number of replaced weights
-            while i < self.rand_args.n_osc and not self.stop_on_z_ops():
-                temp_sample = self.draw_temp_sample(base_sample, [i])
+            while i < self.rand_args.n_osc + 1 and not self.stop_on_z_ops(): # +1 for offset
+                temp_sample = self.draw_temp_sample(base_sample, np.array([i]))
                 base_sample, changed = self.comp_samples(base_sample, temp_sample)
                 if changed: i += 1 # move to next row
                 self.z_ops += 2

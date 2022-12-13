@@ -27,8 +27,9 @@ class DifferentialEvolution(algo.SearchAlgo):
         print(f"searching with {self.__class__.__name__}")
 
         def eval_func(weights, *args):
+            # offset is last element in weights
             signal_matrix, target = args
-            weighted_sum = np.sum(signal_matrix.T * weights, axis=1)
+            weighted_sum = np.sum(signal_matrix.T * weights[:-1], axis=1) + weights[-1]
             return data_analysis.compute_rmse(weighted_sum, target)
 
         self.clear_state()
@@ -38,9 +39,12 @@ class DifferentialEvolution(algo.SearchAlgo):
         best_sample = self.init_best_sample()
         args = (best_sample.signal_matrix, self.target)
         
-        # weight bounds
+        # search bounds
         lo, hi = self.rand_args.weight_dist.get_low_high()
         weight_bounds = [(lo, hi) for _ in range(self.rand_args.n_osc)]
+        lo, hi = self.rand_args.offset_dist.get_low_high()
+        offset_bounds = (lo, hi)
+        weight_offset_bounds = weight_bounds + [offset_bounds]
 
         # compute number of generations from max_z_ops
         num_populations = 15 # scipy default
@@ -48,11 +52,12 @@ class DifferentialEvolution(algo.SearchAlgo):
         num_generations = int((self.max_z_ops - self.rand_args.n_osc) // oscillators_per_generation)
 
         # run search
-        result = differential_evolution(eval_func, weight_bounds,
+        result = differential_evolution(eval_func, weight_offset_bounds,
             args=args, maxiter=num_generations, seed=const.GLOBAL_SEED)
 
         # update best_sample and z_ops
-        best_sample.weights = result.x
+        best_sample.weights = result.x[:-1]
+        best_sample.offset = result.x[-1] # offset is last element
         best_sample.update(self.target)
         self.z_ops += num_generations * oscillators_per_generation
         return best_sample, self.z_ops

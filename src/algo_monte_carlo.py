@@ -53,7 +53,7 @@ class MCOneShot(MonteCarlo):
     # and not an algorithms weight only vs weight and oscillator version
     def infer_k_from_z(self) -> int:
         # cost of initializing best_sample is zero
-        z_loop = self.rand_args.n_osc * 2   # draw a new sample with n oscillators and weights on each loop
+        z_loop = self.rand_args.n_osc * 2 + 1   # draw a new sample with n oscillators and weights on each loop and an offset
         return int(self.max_z_ops // z_loop)
 
     def init_best_sample(self) -> sample.Sample:
@@ -66,8 +66,8 @@ class MCOneShotWeight(MCOneShot):
     """Use the MCOneShot algorithm but only draw new weights for each sample"""
 
     def infer_k_from_z(self) -> int:
-        z_init = self.rand_args.n_osc * 2   # initialize a best sample with n oscillators and weights
-        z_loop = self.rand_args.n_osc       # draw a sample with n new weights each loop
+        z_init = self.rand_args.n_osc * 2 + 1   # initialize a best sample with n oscillators and weights
+        z_loop = self.rand_args.n_osc + 1       # draw a sample with n new weights and one offset each loop
         return int((self.max_z_ops - z_init) // z_loop)
 
     def init_best_sample(self) -> sample.Sample:
@@ -84,8 +84,8 @@ class MCExploit(MonteCarlo):
     self.mp must be set to True or False"""
 
     def infer_k_from_z(self) -> int:
-        z_init = self.rand_args.n_osc * 2 # initialize a best sample with n oscillators and weights
-        z_loop = self.j_replace * 2 # j weights and oscillators updated on each loop
+        z_init = self.rand_args.n_osc * 2 + 1 # initialize a best sample with n oscillators, n weights and an offset (bias)
+        z_loop = self.j_replace * 2 # j weights and oscillators or the offset updated on each loop
         return int((self.max_z_ops - z_init) // z_loop)
 
     def init_best_sample(self) -> sample.Sample:
@@ -122,7 +122,7 @@ class MCExploitFast(MCExploit):
 
     def __init__(self, algo_args: algarty.AlgoArgs):
         super().__init__(algo_args)
-        self.changed_once: List[bool] = [False for _ in range(self.rand_args.n_osc)]
+        self.changed_once: List[bool] = [False for _ in range(self.rand_args.n_osc + 1)] # + 1 for offset
 
     def get_osc_to_replace(self) -> List[int]:
         if all(self.changed_once):
@@ -131,8 +131,8 @@ class MCExploitFast(MCExploit):
             # find first False and get index
             first_false = next(i for (i, val) in enumerate(self.changed_once) if val == False)
             # wrap around max index
-            osc_to_replace = [i % self.rand_args.n_osc for i in range(first_false, first_false+self.j_replace)]
-            return osc_to_replace
+            osc_to_replace = [i % len(self.changed_once) for i in range(first_false, first_false+self.j_replace)]
+            return np.array(osc_to_replace)
 
     def draw_temp_sample(self, base_sample: sample.Sample, *args, **kwargs) -> sample.Sample:
         osc_to_replace = self.get_osc_to_replace()
@@ -144,7 +144,7 @@ class MCExploitFast(MCExploit):
                 # set changed_once to True for all oscillators that have been replaced
                 first_false = next(i for (i, val) in enumerate(self.changed_once) if val == False)
                 # can't exceed max index
-                true_len = min(self.j_replace, self.rand_args.n_osc - first_false)
+                true_len = min(self.j_replace, len(self.changed_once) - first_false)
                 self.changed_once[first_false] = [True] * true_len
             return temp_sample
         return base_sample
@@ -156,7 +156,7 @@ class MCAnneal(MonteCarlo):
     akin to simulated annealing"""
 
     def infer_k_from_z(self) -> int:
-        z_init = self.rand_args.n_osc * 2
+        z_init = self.rand_args.n_osc * 2 + 1 # initialize a best sample with n oscillators, n weights and an offset (bias)
         z_loop = self.rand_args.n_osc
         # we have a linear schedule in the range (n, 1)
         # the total number of operations is then sum(range(n, 1))
@@ -189,7 +189,7 @@ class MCAnnealWeight(MCAnneal):
     """use the MCAnneal algorithm but only draw new weights for each sample"""
 
     def infer_k_from_z(self) -> int:
-        z_init = self.rand_args.n_osc * 2
+        z_init = self.rand_args.n_osc * 2 + 1 # initialize a best sample with n oscillators, n weights and an offset (bias)
         z_loop = self.rand_args.n_osc // 2 # we only draw new weights and omit * 2 for oscillators
         return int((self.max_z_ops - z_init) // z_loop)
 
@@ -223,7 +223,7 @@ class MCGrowShrink(MonteCarlo):
     and lastly we have h the factor by which to dampen or grow weights"""
 
     def infer_k_from_z(self) -> int:
-        z_init = self.rand_args.n_osc * 2
+        z_init = self.rand_args.n_osc * 2 + 1 # initialize a best sample with n oscillators, n weights and an offset (bias)
         z_loop = self.j_replace # j weights are updated on each loop
         return int((self.max_z_ops - z_init) // z_loop)
 
@@ -231,14 +231,17 @@ class MCGrowShrink(MonteCarlo):
         return self.draw_sample()
 
     def draw_temp_sample(self, base_sample: sample.Sample, *args, **kwargs) -> sample.Sample:
+        temp_sample = copy.deepcopy(base_sample)
         rng = np.random.default_rng() if self.mp else const.RNG # each rng needs to be seeded differently for multiprocessing
-        # l_dampen = 0.9, then 90% of the time we dampen
+        # for example, if l_dampen = 0.9 then we dampen 90% of the time
         if self.l_damp_prob > rng.uniform():
             multiplier = self.h_damp_fac
         else:
             multiplier = 1 / self.h_damp_fac # growth factor is inverse of dampening factor
-        osc_to_replace = self.draw_random_indices(self.j_replace)
-        temp_sample = copy.deepcopy(base_sample)
+        osc_to_replace, change_offset = self.draw_weight_indices_or_offset(self.j_replace)
+        
+        if change_offset:
+            temp_sample.offset *= multiplier
         temp_sample.weights[osc_to_replace] *= multiplier
         return temp_sample
 
@@ -254,8 +257,10 @@ class MCDampen(MCGrowShrink):
     """
 
     def draw_temp_sample(self, base_sample: sample.Sample, *args, **kwargs) -> sample.Sample:
-        osc_to_replace = self.draw_random_indices(self.j_replace)
         temp_sample = copy.deepcopy(base_sample)
+        osc_to_replace, change_offset = self.draw_weight_indices_or_offset(self.j_replace)
+        if change_offset:
+            temp_sample.offset *= self.h_damp_fac
         temp_sample.weights[osc_to_replace] *= self.h_damp_fac
         return temp_sample
 
@@ -301,13 +306,18 @@ class BasinHopping(algo.SearchAlgo):
         self.clear_state()
         self.handle_mp(kwargs)
 
-        def eval_func(weights):
-            """adapt weights for simulated annealing"""
-            weighted_sum = np.sum(best_sample.signal_matrix.T * weights, axis=1)
+        best_sample = self.init_best_sample()
+
+        def eval_func_offset(offset):
+            """adapt offset by simulated annealing"""
+            weighted_sum = np.sum(best_sample.signal_matrix.T * best_sample.weights, axis=1) + offset
             return data_analysis.compute_rmse(weighted_sum, self.target)
 
-        best_sample = self.init_best_sample()
-        
+        def eval_func_weight(weights):
+            """adapt weights for simulated annealing"""
+            weighted_sum = np.sum(best_sample.signal_matrix.T * weights, axis=1) + best_sample.offset
+            return data_analysis.compute_rmse(weighted_sum, self.target)
+
         # define bounds
         class Bounds:
             def __init__(self, low: float, high: float):
@@ -319,15 +329,22 @@ class BasinHopping(algo.SearchAlgo):
                 tmax = bool(np.all(x <= self.high))
                 return tmax and tmin
 
+        # optimize the offset before optimizing the weights since SciPy's Bounds class is too restrictive to optimize both simultaneously
+        # the documentation may also just be too confusing at explaining how to do this
+        lo, hi = self.rand_args.offset_dist.get_low_high()
+        offset_bounds = Bounds(lo, hi)
+        niter = int(self.max_z_ops // self.rand_args.n_osc) // 20
+        result = basinhopping(eval_func_offset, best_sample.offset, minimizer_kwargs={"method": "COBYLA"}, niter=niter, accept_test=offset_bounds, seed=const.GLOBAL_SEED)
+        best_sample.offset = result.x
+
+        # optimize weights
         lo, hi = self.rand_args.weight_dist.get_low_high()
         weight_bounds = Bounds(lo, hi)
-
         # using a factor of 1/10, the runtime of the algorithm is similar to that of other algorithms
         niter = int(self.max_z_ops // self.rand_args.n_osc) // 10
-
-        result = basinhopping(eval_func, best_sample.weights, minimizer_kwargs={"method": "COBYLA"}, niter=niter, accept_test=weight_bounds, seed=const.GLOBAL_SEED)
-
+        result = basinhopping(eval_func_weight, best_sample.weights, minimizer_kwargs={"method": "COBYLA"}, niter=niter, accept_test=weight_bounds, seed=const.GLOBAL_SEED)
         best_sample.weights = result.x
+
         best_sample.update(self.target)
         self.z_ops += niter * self.rand_args.n_osc
         

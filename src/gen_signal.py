@@ -93,6 +93,22 @@ class SignalGenerator(ABC):
             rmse = data_analysis.compute_rmse(weighted_sum, target)
         return sample.Sample(signal_matrix, weights, weighted_sum, offset, rmse, det_args)
     
+    @staticmethod
+    def separate_oscillators_from_offset(osc_to_replace: np.ndarray, n_oscillators: int) -> Tuple:
+        """evaluate whether to replace the offset and clean the list of oscillators to replace
+        
+        args:
+            osc_to_replace: list of indices of oscillators to be replaced, index i=number_of_oscillators points to the offset
+            n_oscillators: number of oscillators in a model (sample)
+        
+        returns:
+            osc_to_replace: list of indices of oscillators with the offset removed
+            replace_offset: whether to replace the offset
+        """
+        replace_offset = True if np.max(osc_to_replace) == n_oscillators else False
+        osc_to_replace = np.delete(osc_to_replace, np.where(osc_to_replace == n_oscillators))
+        return osc_to_replace, replace_offset
+
     def draw_partial_sample(self, base_sample: sample.Sample, rand_args: party.UnionRandArgs,
     osc_to_replace: List[int], weight_mode: bool,
     target: Union[None, np.ndarray] = None, store_det_args: bool = False,
@@ -113,6 +129,8 @@ class SignalGenerator(ABC):
         returns:
             a sample containing the generated signal
         """
+        osc_to_replace, replace_offset = self.separate_oscillators_from_offset(osc_to_replace, rand_args.n_osc)
+
         new_sample = copy.deepcopy(base_sample) # copy the base sample
         temp_args = copy.deepcopy(rand_args) # copy to avoid side effects
         
@@ -134,6 +152,10 @@ class SignalGenerator(ABC):
         partial_weights = self.draw_n_weights(temp_args)
         new_sample.weights[osc_to_replace] = partial_weights
 
+        # draw new offset
+        if replace_offset:
+            new_sample.offset = self.draw_offset(temp_args)
+
         new_sample.weighted_sum = sample.Sample.compute_weighted_sum(new_sample.signal_matrix,
             new_sample.weights, new_sample.offset)
         new_sample.rmse = None
@@ -143,7 +165,7 @@ class SignalGenerator(ABC):
         return new_sample
 
     def draw_sample_weights(self, base_sample: sample.Sample, rand_args: party.UnionRandArgs, target: Union[None, np.ndarray] = None) -> sample.Sample:
-        """return the base sample with all weights replaced and recomputed metrics
+        """return the base sample with all weights and the offset replaced and with metrics recomputed
         
         args:
             base_sample: the sample to copy
@@ -154,8 +176,7 @@ class SignalGenerator(ABC):
         """
         updated_sample = copy.deepcopy(base_sample)
         updated_sample.weights = self.draw_n_weights(rand_args)
-        # TODO: draw a new offset! Also fix the algorithms in that way
-        # updated_sample.offset = gen_signal.SignalGenerator.draw_offset(rand_args)
+        updated_sample.offset = self.draw_offset(rand_args)
         updated_sample.weighted_sum = sample.Sample.compute_weighted_sum(updated_sample.signal_matrix, updated_sample.weights, updated_sample.offset)
         updated_sample.rmse = None
         if target is not None:

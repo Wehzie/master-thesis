@@ -138,22 +138,36 @@ class SearchAlgo(ABC):
         return base_sample
 
     def draw_random_indices(self, j_replace: int) -> List[int]:
-        """draw random indices pointing to an oscillator and weight for drawing a partial sample"""
+        """draw random indices pointing to an oscillator and weight for drawing a partial sample
+        
+        the index n points to the offset, where n is the number of oscillators
+        """
         if self.mp: # whether to use multiprocessing
             rng = np.random.default_rng()
-            osc_to_replace = rng.choice(self.rand_args.n_osc, size=j_replace, replace=False)
+            # choice uses an exclusive upper bound
+            osc_to_replace = rng.choice(self.rand_args.n_osc+1, size=j_replace, replace=False)
         else:
-            osc_to_replace = const.RNG.choice(self.rand_args.n_osc, size=j_replace, replace=False)
+            osc_to_replace = const.RNG.choice(self.rand_args.n_osc+1, size=j_replace, replace=False)
         return osc_to_replace
+    
+    def draw_weight_indices_or_offset(self, j_replace: int) -> Tuple[List[int], bool]:
+        """draw random indices pointing to an oscillator and weight for drawing a partial sample
+        
+        compared to draw_random_indices, whether the offset is to be changed is passed as as bool instead of as index i=number_of_oscillators"""
+        # TODO: merge with separate_oscillators_from_offset in gen_signal.py 
+        osc_to_replace = self.draw_random_indices(j_replace)
+        replace_offset = True if max(osc_to_replace) == self.rand_args.n_osc else False
+        osc_to_replace = np.delete(osc_to_replace, np.where(osc_to_replace == self.rand_args.n_osc))
+        return osc_to_replace, replace_offset
 
     def draw_sample(self) -> sample.Sample:
         """draw a sample and update z_ops"""
-        self.z_ops += self.rand_args.n_osc * 2 # weights and oscillators are counted separately
+        self.z_ops += self.rand_args.n_osc * 2 + 1 # n weights, n oscillators, 1 offset 
         return self.sig_generator.draw_sample(self.rand_args, self.target, self.store_det_args)
 
     def draw_sample_weights(self, base_sample: sample.Sample):
-        """update z_ops, draw new weights for the sample and recompute metrics"""
-        self.z_ops += self.rand_args.n_osc
+        """update z_ops, draw new weights and offset for the sample and recompute metrics"""
+        self.z_ops += self.rand_args.n_osc + 1 # n weights and 1 offset
         return self.sig_generator.draw_sample_weights(base_sample, self.rand_args, self.target)
 
     def draw_partial_sample(self, base_sample: sample.Sample, osc_to_replace: List[int]) -> sample.Sample:

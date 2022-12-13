@@ -162,7 +162,7 @@ def main():
         data_analysis.plot_signal(sample.weighted_sum)
         plt.show()
 
-
 if __name__ == "__main__":
     main()
+
 

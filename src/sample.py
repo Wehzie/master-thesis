@@ -26,7 +26,7 @@ class Sample():
         param:
             signal_matrix:  matrix of single-oscillator signals
             weights:        array of weights over signal_matrix
-            signal_sum:     apply weights to signal_matrix then sum and add offset
+            weighted_sum:     apply weights to signal_matrix then sum and add offset
             offset:         offset over matrix
             rmse:           rmse(signal_sum, target)     
             signal_args:    list of parameters generating the signal matrix
@@ -73,10 +73,10 @@ class Sample():
     def update(self, target: np.ndarray) -> None: # TODO: marked for removal
         """recompute sum and rmse"""
         if self.weights is None:
-            self.signal_sum = np.sum(self.signal_matrix, axis=0) + self.offset
+            self.weighted_sum = np.sum(self.signal_matrix, axis=1) + self.offset
         else:
-            self.signal_sum = self.compute_weighted_sum(self.signal_matrix, self.weights, self.offset)
-        self.rmse = data_analysis.compute_rmse(self.signal_sum, target)
+            self.weighted_sum = self.compute_weighted_sum(self.signal_matrix, self.weights, self.offset)
+        self.rmse = data_analysis.compute_rmse(self.weighted_sum, target)
 
     @staticmethod
     def regress1d(p: np.ndarray, t: np.ndarray, verbose: bool = False):
