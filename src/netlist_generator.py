@@ -1,4 +1,4 @@
-import os
+import subprocess
 from pathlib import Path
 from typing import Callable
 import networkx as nx
@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import param_types as party
+import const
 
 # see https://github.com/PySpice-org/PySpice
 
@@ -188,4 +189,7 @@ def select_netlist_generator(builder: str) -> Callable:
 
 def run_ngspice(netlist: Path) -> None:
     """start an ngspice simulation from python"""
-    os.system(f"ngspice {netlist}")
+    try:
+        subprocess.run(["ngspice", netlist], timeout=const.SPICE_TIMEOUT, stdout=subprocess.DEVNULL)
+    except subprocess.TimeoutExpired:
+        print(f"ngspice timed out after {const.SPICE_TIMEOUT} seconds")

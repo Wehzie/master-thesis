@@ -1,4 +1,4 @@
-from typing import Callable, Tuple, Union
+from typing import Callable, List, Tuple, Union
 import data_io
 import data_preprocessor
 
@@ -10,43 +10,88 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 
-def plot_n(data: np.ndarray, show: bool = True, save_path: Path = None) -> None:
-    """plot n signals in a single plot"""
-
-    # generate a grid of subplots
-    n_signals = data.shape[0] # rows
-    n_rows = None
+def plot_individual_oscillators(signal_matrix: np.ndarray, oscillators_per_subplot: Union[None, int] = 25, show: bool = False, save_path: Path = None) -> None:
+    """show n individual oscillator signals in a grid of subplots
     
-    i = 0
-    while i**2 <= n_signals:
-        n_rows = i
-        i += 1
-    remainder = n_signals - (i-1)**2
-    n_cols = n_rows
-    n_rows = n_rows + int(np.ceil(remainder / n_cols))
+    args:
+        signal_matrix: a matrix of single-oscillator signals
+        oscillators_per_subplot: number of oscillators per subplot. If None, plot all oscillators in one subplot
+        show: show the plot
+        save_path: save the plot to a file
+    """
+    def infer_subplot_rows_cols(n_signals: int) -> Tuple[int, int]:
+        """infer the number of rows and columns for a grid of subplots"""
+        n_rows = None
+        
+        i = 0
+        while i**2 <= n_signals:
+            n_rows = i
+            i += 1
+        remainder = n_signals - (i-1)**2
+        n_cols = n_rows
+        n_rows = n_rows + int(np.ceil(remainder / n_cols))
+        return n_rows, n_cols
+    
+    def subset_matrix(signal_matrix: np.ndarray, oscillators_per_subplot: int) -> List[np.ndarray]:
+        """split a matrix into subsets of n rows, returns a view"""
+        subsets = []
+        for row in range(0, signal_matrix.shape[0], oscillators_per_subplot):
+            subsets.append(signal_matrix[row:row+oscillators_per_subplot, :])
+        return subsets
 
-    fig, ax = plt.subplots(n_rows, n_cols)
+    def plot_row_per_plot(signal_matrix: np.ndarray, show: bool, save_path: Path) -> None:
+        """plot one signal per row of a matrix in a grid of subplots"""
+        n_signals = signal_matrix.shape[0] # one signal per row
+        n_rows, n_cols = infer_subplot_rows_cols(n_signals)
 
-    # plot signals into each subplot
-    idx_signal = 0
-    print("rows, cols")
-    print(n_rows, n_cols)
-    for r in range(n_rows):
-        for c in range(n_cols):
-            if idx_signal >= n_signals: break
-            ax[r, c].plot(data[idx_signal, :])
-            idx_signal += 1
+        _, ax = plt.subplots(n_rows, n_cols)
 
+        # plot one signal into each subplot
+        signal_counter = 0
+        for r in range(n_rows):
+            for c in range(n_cols):
+                if signal_counter >= n_signals: break
+                ax[r, c].plot(signal_matrix[signal_counter, :])
+                signal_counter += 1
+        
+        if show:
+            plt.show()
+        if save_path:
+            plt.savefig(save_path, dpi=300)
+
+    
+    if oscillators_per_subplot is None:
+        plot_row_per_plot(signal_matrix, show, save_path)
+    else:
+        subsets = subset_matrix(signal_matrix, oscillators_per_subplot)
+        for i, subset in enumerate(subsets):
+            path = None if save_path is None else Path(save_path.parent, f"{save_path.stem}_{i}{save_path.suffix}")
+            plot_row_per_plot(subset, show, path)
+        
+
+def plot_f0_hist(signal_matrix: np.ndarray, sample_spacing: float, title: str = None, show: bool = False, save_path: Path = None) -> None:
+    """plot a histogram of the fundamental frequency of each oscillator in the matrix"""
+    f0_li = []
+    for i in range(signal_matrix.shape[0]):
+        f0_li.append(get_freq_from_fft_v2(signal_matrix[i, :], sample_spacing))
+
+    plt.figure()
+    plt.hist(f0_li, bins=len(f0_li)//10)
+    plt.gca().set_xlabel("f0 [Hz]")
+    plt.gca().set_ylabel("count")
+
+    if title:
+        plt.title(title)
     if show:
         plt.show()
     if save_path:
         plt.savefig(save_path, dpi=300)
 
 
-def hist_rmse(rmse_li: list, show: bool = False, title: str = None, save_path: Path = None) -> None:
+def plot_rmse_hist(rmse_li: list, show: bool = False, title: str = None, save_path: Path = None) -> None:
     """produce a histogram over n samples"""
     plt.figure()
-    plt.hist(rmse_li, bins=len(rmse_li)//10)
+    plt.hist(rmse_li, bins=len(rmse_li)//5)
     plt.gca().set_xlabel("rmse")
     plt.gca().set_ylabel("count")
     if title: plt.title(title)
@@ -80,6 +125,7 @@ def plot_pred_target(pred: np.ndarray, target: np.ndarray, time: Union[np.ndarra
         plt.show()
     if save_path:
         plt.savefig(save_path, dpi=300)
+
 
 def plot_signal(y: np.ndarray, x_time: np.ndarray = None, ylabel: str = None, title: str = None, show: bool = False, save_path: Path = None) -> None:
     """plot a 2 dimensional time series signal"""
@@ -174,7 +220,8 @@ def get_freq_from_fft(s: np.ndarray, sample_spacing: float) -> float:
     peak = peaks[abs_spec[peaks].argmax()]
     return freqs[peak]
 
-def get_freq_from_fft_v2(s: np.ndarray, sample_spacing: float) -> Tuple:
+
+def get_freq_from_fft_v2(s: np.ndarray, sample_spacing: float) -> float:
     """compute fundamental frequency of an oscillator using FFT,
     compared to v1, this version seems more numerically stable"""
     # apply fourier transform to signal
@@ -183,9 +230,13 @@ def get_freq_from_fft_v2(s: np.ndarray, sample_spacing: float) -> Tuple:
     freq = np.fft.fftfreq(len(abs_spec), d=sample_spacing)
 
     # compute fundamental frequency
+    # usually we want f1, and usually -f0=f1
+    # but sometimes when frequency is low and sampling rate high, f1 yields 0
+    # for example, sampling_rate = 10001, frequency = 300
     nlargest = pd.Series(abs_spec).nlargest(2)
     nlargest_arg = nlargest.index.values.tolist()
-    return abs(freq[nlargest_arg[1]])
+    f0, f1 = freq[nlargest_arg[0]], freq[nlargest_arg[1]]
+    return abs(max(f0, f1, key=abs))
 
 def main():
     sampling_rate, data, _ = data_io.load_data()

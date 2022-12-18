@@ -140,7 +140,7 @@ class Sample():
         return Sample(signal_matrix, weights, weighted_sum, offset, rmse, sample.signal_args)
 
 def evaluate_prediction(best_sample: Sample, m_target: meta_target.UnionMetaTarget,
-    z_ops: int, alg_name: str, plot_time: bool = True, plot_freq: bool = False) -> None:
+    z_ops: int, alg_name: str, plot_time: bool = True, plot_freq: bool = False, decompose_sample: bool = True) -> None:
     """evaluate a generated signal (sample) against the target by qualitative (plots) and quantitative (RMSE) means"""
     # normalize target to range 0 1
     target_norm = data_preprocessor.norm1d(m_target.signal)
@@ -161,8 +161,8 @@ def evaluate_prediction(best_sample: Sample, m_target: meta_target.UnionMetaTarg
 
     # plots
     if plot_time: # time-domain
-        #hist_rmse(rmse_list, title="sum distribution")
-        #hist_rmse(rmse_norm_list, title="norm-sum distribution")
+        #plot_rmse_hist(rmse_list, title="sum distribution")
+        #plot_rmse_hist(rmse_norm_list, title="norm-sum distribution")
         data_analysis.plot_pred_target(best_sample.weighted_sum, m_target.signal, time=m_target.time, title=f"{alg_name}, sum")
         data_analysis.plot_pred_target(reg_sample.weighted_sum, m_target.signal, time=m_target.time, title=f"{alg_name}, regression")
         data_analysis.plot_pred_target(norm_sample.weighted_sum, target_norm, time=m_target.time, title=f"{alg_name}, norm-sum")
@@ -171,6 +171,9 @@ def evaluate_prediction(best_sample: Sample, m_target: meta_target.UnionMetaTarg
         data_analysis.plot_fourier(m_target.signal, title=f"{alg_name}, target")
         data_analysis.plot_fourier(best_sample.weighted_sum, title=f"{alg_name}, sum")
         data_analysis.plot_fourier(reg_sample.weighted_sum, title=f"{alg_name}, regression")
+    if decompose_sample: # show individual signals in best sample
+        data_analysis.plot_individual_oscillators(best_sample.signal_matrix)
+        data_analysis.plot_f0_hist(best_sample.signal_matrix, 1/m_target.sampling_rate, title=f"fundamental frequency distribution")
 
     print(f"{alg_name}")
     print(f"z_ops: {z_ops}")

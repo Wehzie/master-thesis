@@ -18,3 +18,4 @@ MAX_TARGET_DURATION: Final[float] = 10  # maximum duration of a target signal in
                                         # which yields f=1/T=0.1 Hz
 
 SPICE_PATIENCE: Final[int] = 10 # number of consecutive SPICE numerical failures to tolerate before stopping
+SPICE_TIMEOUT: Final[int] = 15 # number of seconds to wait for SPICE to finish simulating a circuit before killing the process

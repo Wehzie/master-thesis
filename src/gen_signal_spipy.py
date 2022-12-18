@@ -103,6 +103,7 @@ class SpipySignalGenerator(gen_signal.SignalGenerator):
         infinity_breaker = 0 # prevent infinite loop
         # non-deterministic runtime due to possible simulation failure
         while i < rand_args.n_osc:
+            print(f"added {i} out of {rand_args.n_osc} oscillators")
             det_params = SpipySignalGenerator.draw_params_random(rand_args)
             single_signal = SpipySignalGenerator.draw_single_oscillator(det_params)
             success = SpipySignalGenerator.simulation_successful(single_signal, num_samples)
@@ -133,6 +134,7 @@ def main():
     if True:
         # test drawing single oscillators from SPICE and summing them up in Python
         rand_args = params.spice_rand_args_uniform
+        rand_args.n_osc = 3
         signal_matrix, det_args = sig_gen.draw_n_oscillators(rand_args)
         sig_sum = sum(signal_matrix)
         data_analysis.plot_signal(sig_sum, show=True)
@@ -140,6 +142,7 @@ def main():
     if True:
         # test drawing a sample
         rand_args = params.spice_rand_args_uniform
+        rand_args.n_osc = 3
         sample = sig_gen.draw_sample(rand_args)
         data_analysis.plot_signal(sample.weighted_sum, show=True)
 

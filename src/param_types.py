@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from typing import List, Union
 
+import numpy as np
+
 import dist
 
 #### #### #### #### PYTHON SIGNALS #### #### #### ####
@@ -27,6 +29,15 @@ class PythonSignalRandArgs:
     phase_dist: dist.Dist # phase=phase_dist.draw()*pi
     offset_dist: dist.Dist # offset=offset_dist.draw()*amplitude*weight
     sampling_rate: int # number of samples per second
+
+    def get_time(self) -> np.ndarray:
+        """get a time array either from the provided duration or number of samples"""
+        if self.duration:
+            time = np.arange(0, self.duration, 1/self.sampling_rate)[0:self.samples]
+        else: # samples given
+            duration = self.samples / self.sampling_rate
+            time = np.linspace(0, duration, self.samples)
+        return time
 
 
 @dataclass
