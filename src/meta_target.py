@@ -44,6 +44,8 @@ class MetaTargetTime:
 
         # shorten the target to the desired duration
         new_duration = rand_args.time_stop - rand_args.time_start # seconds
+        # TODO: comment in when synthetic signals have been refactored
+        # assert 1/raw_sampling_rate < new_duration, "The desired duration is less than the sampling rate"
         time = np.arange(0, new_duration, 1/raw_sampling_rate)
         signal = data_preprocessor.change_duration(raw_target, raw_sampling_rate, new_duration)
         # time returns a non-deterministic number of samples, therefore we need to align the signals

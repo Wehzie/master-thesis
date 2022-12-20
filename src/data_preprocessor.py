@@ -84,12 +84,6 @@ def align_signals_cut(p: np.ndarray, t: np.ndarray) -> tuple:
     else:
         return p, t
 
-def clean_signal(s: np.ndarray, points_dropped: int = 200) -> np.ndarray:
-    """remove startup and y-offset"""
-    no_startup = s[points_dropped:]
-    no_offset = no_startup - min(no_startup)
-    return no_offset
-
 def take_middle_third(signal: np.ndarray) -> np.ndarray:
     """return only the middle third of a signal"""
     third = len(signal)//3
@@ -128,6 +122,30 @@ def add_phase_to_oscillator(s: np.ndarray, phase: float, period: float, sample_s
     if mode == "roll":
         return np.roll(s, samples_to_shift)
     return np.pad(s, (samples_to_shift, 0))[:-samples_to_shift]
+
+def get_first_dx0_index(signal: np.ndarray) -> int:
+    """get the index of the first value in a signal that has a derivative of 0"""
+    d = np.diff(signal)
+    return np.where(d <= 0)[0][0]
+
+def remove_spice_startup(signal: np.ndarray) -> np.ndarray:
+    """remove the spice startup transient from a signal"""
+    return signal[get_first_dx0_index(signal):]
+
+def remove_spice_offset(signal: np.ndarray) -> np.ndarray:
+    """remove the spice offset from a signal"""
+    return signal - np.mean(signal)
+
+def pad_spice_signal(signal: np.ndarray, length: int) -> np.ndarray:
+    """mean pad the beginning of a spice signal to a given length"""
+    to_pad = length - len(signal)
+    return np.pad(signal, (to_pad,0))
+
+def clean_spice_signal(signal: np.ndarray, samples: int) -> np.ndarray:
+    """remove spice startup transient and normalize to the range [0, 1]"""
+    x = remove_spice_startup(signal)
+    x = remove_spice_offset(x)
+    return pad_spice_signal(x, samples)
 
 def main():
     sampling_rate, data = data_io.load_data()

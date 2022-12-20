@@ -2,6 +2,7 @@ from typing import Callable, List, Tuple, Union
 from pathlib import Path
 
 import numpy as np
+import scipy.interpolate
 
 import gen_signal
 import data_analysis
@@ -14,11 +15,11 @@ import const
 
 
 class SpipySignalGenerator(gen_signal.SignalGenerator):
-    """spice netlists generate single signals and python sums them up
+    """spice netlists generate single signals and Python sums them up
     this approach scales better than pure spice signal generation
-    but worse than pure python signal generation
+    but worse than pure Python signal generation
     
-    when a sample is drawn SPICE is called to generate the signals and Pytho is used for post-processing    
+    when a sample is drawn SPICE is called to generate the signals and Python is used for post-processing    
     the underlying time series are SPICE generated
     weights are added in Python, instead of using an operational amplifier for gain in SPICE
     phase is added in Python, instead of using an operational amplifier integrator in SPICE
@@ -43,8 +44,11 @@ class SpipySignalGenerator(gen_signal.SignalGenerator):
         arr = df.iloc[:,1].to_numpy()
         # add phase shift to the netlist
         
-        freq = data_analysis.get_freq_from_fft_v2(arr, det_args.time_step)
-        pred = data_preprocessor.add_phase_to_oscillator(arr, det_args.phase, 1/freq, det_args.time_step)
+        # TODO: make clean a parameter
+        clean = data_preprocessor.clean_spice_signal(arr, len(arr))
+        # TODO: make python phase shift a parameter and offer SPICE phase shift
+        freq = data_analysis.get_freq_from_fft_v2(clean, det_args.time_step)
+        pred = data_preprocessor.add_phase_to_oscillator(clean, det_args.phase, 1/freq, det_args.time_step)
         if det_args.down_sample_factor is not None:
             return data_preprocessor.downsample_by_factor_typesafe(pred, det_args.down_sample_factor)
 
@@ -120,31 +124,47 @@ class SpipySignalGenerator(gen_signal.SignalGenerator):
             if infinity_breaker > const.SPICE_PATIENCE:
                 raise Exception("Infinite loop detected")
         return signal_matrix, det_arg_li
-    
+
+def extrapolate_oscillator(signal: np.ndarray, time: np.ndarray, new_duration: float) -> Tuple[np.ndarray, np.ndarray]:
+    """extrapolate a signal to a new duration"""
+    interpolation_func = scipy.interpolate.interp1d(time, signal, fill_value="extrapolate")
+    new_time = np.arange(0, new_duration, time[1]-time[0])
+    interpolated = interpolation_func(new_time)
+    return interpolated, new_time
+
 def main():
     sig_gen = SpipySignalGenerator()
     
     if True:
         # test single oscillator generation
         det_args = params.spice_single_det_args
+        det_args.time_stop = 1e-5
         single_oscillator = sig_gen.draw_single_oscillator(det_args)
         x_time = np.linspace(0, det_args.time_stop, len(single_oscillator))
         data_analysis.plot_signal(single_oscillator, x_time, show=True)
 
+        print("hi")
+        new_signal, new_time = extrapolate_oscillator(single_oscillator, x_time, 1e-4)
+        data_analysis.plot_signal(new_signal, new_time, show=True)
+
     if True:
         # test drawing single oscillators from SPICE and summing them up in Python
         rand_args = params.spice_rand_args_uniform
-        rand_args.n_osc = 3
+        rand_args.n_osc = 10
+        rand_args.time_stop = 1e-5
         signal_matrix, det_args = sig_gen.draw_n_oscillators(rand_args)
         sig_sum = sum(signal_matrix)
-        data_analysis.plot_signal(sig_sum, show=True)
+        data_analysis.plot_signal(sig_sum)
+        data_analysis.plot_individual_oscillators(signal_matrix, show=True)
 
     if True:
         # test drawing a sample
         rand_args = params.spice_rand_args_uniform
-        rand_args.n_osc = 3
+        rand_args.n_osc = 10
+        rand_args.time_stop = 1e-5
         sample = sig_gen.draw_sample(rand_args)
-        data_analysis.plot_signal(sample.weighted_sum, show=True)
+        data_analysis.plot_signal(sample.weighted_sum)
+        data_analysis.plot_individual_oscillators(signal_matrix, show=True)
 
 if __name__ == "__main__":
     main()

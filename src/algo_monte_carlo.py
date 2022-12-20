@@ -18,8 +18,6 @@ import numpy as np
 from tqdm import tqdm
 from scipy.optimize import basinhopping
 
-# TODO: ensure that offset is treated in the same way as weights
-
 class MonteCarlo(algo.SearchAlgo):
     """abstract class"""
 
@@ -41,7 +39,9 @@ class MonteCarlo(algo.SearchAlgo):
 
 
 class MCOneShot(MonteCarlo):
-    """monte carlo algorithm for samples consisting of independent oscillators"""
+    """This algorithms most closely resembles brute-force search.
+    Compared to brute-force search, this algorithm remembers it's best solution to date.
+    The to-date best solution is returned when allocated resources (z-ops) are exhausted."""
 
     # TODO: evaluate whether redrawing an oscillator is equally expensive to drawing a weight
     # right now drawing a weight costs z=1
@@ -79,9 +79,14 @@ class MCOneShotWeight(MCOneShot):
 
 
 class MCExploit(MonteCarlo):
-    """monte carlo algorithm exploiting a single sample by iterative re-draws
-    
-    self.mp must be set to True or False"""
+    """This algorithm most closely resembles a strictly guided random-walk with random step size.
+    The walk is in n-dimensional space where n is the number of oscillators.
+    A step is only taken if the loss decreases, hence strictly guided.
+    Heuristic is not an appropriate term as selection (which weight or amount) is random, not guided by a heuristic.
+    The step size varies on each step and is drawn from a normal or uniform distribution.
+    We could also say that MCExploit is simulated annealing without temperature and deterministic acceptance.
+    The algorithm remembers the best solution to date.
+    The to-date best solution is returned when allocated resources (z-ops) are exhausted."""
 
     def infer_k_from_z(self) -> int:
         z_init = self.rand_args.n_osc * 2 + 1 # initialize a best sample with n oscillators, n weights and an offset (bias)
@@ -277,6 +282,9 @@ class MCPurge(MCDampen):
         super().__init__(algo_args)
         assert self.h_damp_fac == 0, "h_damp_fac must be 0 for MCPurge"
 
+
+# TODO: proper implementation of Simulated annealing with probability of acceptance of worse solutions
+# TODO: implement proper Metropolis-Hastings algorithm
 
 
 class BasinHopping(algo.SearchAlgo):

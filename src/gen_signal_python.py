@@ -132,22 +132,22 @@ def main():
         data_analysis.plot_signal(signal, time, show=True)
 
     # generate a sum of signals from random variables
-    n_oscillators = 20
+    n_oscillators = 8
     f = 1
     sampling_rate = 20*f
     rand_args = party.PythonSignalRandArgs(
         n_osc = n_oscillators,
         duration = 10,
         samples = None,
-        #freq_dist = dist.Dist(const.RNG.uniform, low=4999, high=5000),
-        freq_dist = dist.Dist(f),
+        freq_dist = dist.Dist(const.RNG.uniform, low=1, high=50),
+        #freq_dist = dist.Dist(f),
         amplitude = 0.5,
-        #weight_dist = dist.Dist(const.RNG.uniform, low=0.1, high=1, n=n_oscillators),
-        weight_dist=dist.Dist(1, n=n_oscillators),
-        #phase_dist = dist.Dist(const.RNG.uniform, low=0, high=2),
-        phase_dist = dist.Dist(0),
-        #offset_dist = dist.Dist(const.RNG.uniform, low=-1, high=1),
-        offset_dist = dist.Dist(0),
+        weight_dist = dist.Dist(const.RNG.uniform, low=0.1, high=10, n=n_oscillators),
+        #weight_dist=dist.Dist(1, n=n_oscillators),
+        phase_dist = dist.Dist(const.RNG.uniform, low=0, high=2),
+        #phase_dist = dist.Dist(0),
+        offset_dist = dist.Dist(const.RNG.uniform, low=-1, high=1),
+        #offset_dist = dist.Dist(0),
         sampling_rate = sampling_rate
     )
     if rand_args.samples == None:
@@ -174,7 +174,7 @@ def main():
         sample = sig_generator.draw_sample(rand_args)
         data_analysis.plot_signal(sample.weighted_sum, time)
         data_analysis.plot_individual_oscillators(sample.signal_matrix)
-        data_analysis.plot_f0_hist(sample.signal_matrix, 1/sampling_rate)
+        #data_analysis.plot_f0_hist(sample.signal_matrix, 1/sampling_rate)
         plt.show()
 
 if __name__ == "__main__":

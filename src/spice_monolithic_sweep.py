@@ -1,8 +1,8 @@
 
 import shutil
 
-import os
 from pathlib import Path
+import subprocess
 from typing import Tuple
 import pandas as pd
 import seaborn as sns
@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
+SPICE_TIMEOUT = 10 # seconds
 CIRCUIT_PATH = Path("circuit_lib/single_oscillator_RC.cir")
 DATA_PATH = Path("data")
 CONTROL_PARAMETERS = {
@@ -76,7 +77,11 @@ def add_controls(netlist: Path, controls: str, temp_name: str = "temp.cir") -> P
     return temp_path
 
 def run_ngspice(netlist: Path) -> None:
-    os.system(f"ngspice {netlist}")
+    """start an ngspice simulation from python"""
+    try:
+        subprocess.run(["ngspice", netlist], timeout=SPICE_TIMEOUT, stdout=subprocess.DEVNULL)
+    except subprocess.TimeoutExpired:
+        print(f"ngspice timed out after {SPICE_TIMEOUT} seconds")
 
 def clean_signal(df, points_dropped=200):
     """remove startup and y-offset"""

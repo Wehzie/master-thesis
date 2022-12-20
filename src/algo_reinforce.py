@@ -2,6 +2,8 @@ import algo
 
 class Reinforce(algo.SearchAlgo):
     """
+    use information about rejecting a candidate to direct the search
+
     Actions:
         - draw weight
         - draw oscillator
@@ -10,5 +12,5 @@ class Reinforce(algo.SearchAlgo):
     Reward:
         - delta rmse
     Utility:
-        - ?
+        - rmse
     """

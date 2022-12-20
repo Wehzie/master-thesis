@@ -91,19 +91,21 @@ def main():
         # scale the number of samples in the target to the number of samples produced by spice
         signal_generator = gen_signal_spipy.SpipySignalGenerator()
         spice_samples = signal_generator.estimate_number_of_samples(rand_args)
-        # m_target.adjust_samples(spice_samples)
+        m_target.adjust_samples(spice_samples)
 
-        # synthetic target signal
-        from scipy import signal
-        t = np.linspace(0, 1, spice_samples)
-        duration = rand_args.time_stop-rand_args.time_start
-        #m_target.signal = signal.sawtooth(2 * np.pi * 5 * t) * 10
-        #m_target.signal = signal.chirp(t, f0=1, f1=100, t1=1, method="linear") * 10
-        m_target.signal = const.RNG.normal(-1, 1, spice_samples)*5 + const.RNG.uniform(-1, 1, spice_samples)*2
-        m_target.time = np.linspace(0, duration, spice_samples)
+        if False:
+            # synthetic target signal
+            from scipy import signal
+            t = np.linspace(0, 1, spice_samples)
+            duration = rand_args.time_stop-rand_args.time_start
+            m_target.signal = signal.sawtooth(2 * np.pi * 5 * t) * 10
+            #m_target.signal = signal.chirp(t, f0=1, f1=100, t1=1, method="linear") * 10
+            #m_target.signal = const.RNG.normal(-1, 1, spice_samples)*5 + const.RNG.uniform(-1, 1, spice_samples)*2
+            m_target.time = np.linspace(0, duration, spice_samples+1)[0:-1]
+        
         data_analysis.plot_signal(m_target.signal, m_target.time, show=True)
 
-        algo_sweep = param_util.init_algo_sweep(m_target.signal, rand_args, sig_generator=signal_generator, max_z_ops=1e4, m_averages=1)
+        algo_sweep = param_util.init_algo_sweep(m_target.signal, rand_args, sig_generator=signal_generator, max_z_ops=5e3, m_averages=1)
 
         qualitative_algo_sweep(algo_sweep, m_target, visual=True)
 
@@ -112,17 +114,17 @@ def main():
         rand_args = params.py_rand_args_uniform
         m_target = meta_target.MetaTargetSample(rand_args)
         
-        # synthetic target signal
-        from scipy import signal
-        t = np.linspace(0, 1, rand_args.samples)
-        m_target.signal = signal.sawtooth(2 * np.pi * 5 * t) * 10
-        m_target.signal = const.RNG.normal(-1, 1, rand_args.samples)*5 + const.RNG.uniform(-1, 1, rand_args.samples)*2
-        data_analysis.plot_signal(m_target.signal, show=True)
+        if False: # synthetic target signal
+            from scipy import signal
+            t = np.linspace(0, 1, rand_args.samples)
+            m_target.signal = signal.sawtooth(2 * np.pi * 5 * t) * 10
+            m_target.signal = const.RNG.normal(-1, 1, rand_args.samples)*5 + const.RNG.uniform(-1, 1, rand_args.samples)*2
+            data_analysis.plot_signal(m_target.signal, show=True)
 
-        algo_sweep = param_util.init_algo_sweep(m_target.signal, rand_args)
+        algo_sweep = param_util.init_algo_sweep(m_target.signal, rand_args, max_z_ops=1e3, m_averages=3)
 
-        qualitative_algo_sweep(algo_sweep, m_target, visual=True)
-        # produce_all_results(algo_sweep, m_target.signal, rand_args)
+        # qualitative_algo_sweep(algo_sweep, m_target, visual=True)
+        produce_all_results(algo_sweep, m_target.signal, rand_args)
 
 if __name__ == "__main__":
     main()

@@ -53,12 +53,13 @@ class SearchAlgo(ABC):
 
     def gen_zero_sample(self) -> sample.Sample:
         """generate a sample with all sensible fields set to 0"""
+        samples = len(self.target)
         return sample.Sample(
-            np.zeros((self.rand_args.n_osc, self.rand_args.samples)),
+            np.zeros((self.rand_args.n_osc, samples)),
             np.zeros(self.rand_args.n_osc),
-            np.zeros(self.rand_args.samples),
+            np.zeros(samples),
             0,
-            data_analysis.compute_rmse(np.zeros(self.rand_args.samples), self.target),
+            data_analysis.compute_rmse(np.zeros(samples), self.target),
             list(),
         )
 

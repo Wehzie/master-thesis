@@ -1,5 +1,4 @@
 import result_types as resty
-from util import add_str2keys
 import const
 import param_types as party
 
@@ -34,6 +33,10 @@ plt.rc('axes', prop_cycle=default_cycler)
 # remove whitespace where possible form plots (right hand side)
 # make legends background more transparent
 # optionally save legend to the side or as a separate figure
+
+def add_str2keys(s: str, d: dict) -> dict:
+    """append the given string to each key of a dictionary"""
+    return {f"{s}_{k}": v for k, v in d.items()}
 
 def compute_dist_ranges(results: List[resty.ResultSweep]) -> List[resty.ResultSweep]:
     """compute the ranges for each distribution in a list of results"""

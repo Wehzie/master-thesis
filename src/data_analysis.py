@@ -44,7 +44,7 @@ def plot_individual_oscillators(signal_matrix: np.ndarray, oscillators_per_subpl
         n_signals = signal_matrix.shape[0] # one signal per row
         n_rows, n_cols = infer_subplot_rows_cols(n_signals)
 
-        _, ax = plt.subplots(n_rows, n_cols)
+        _, ax = plt.subplots(n_rows, n_cols, sharex=True, sharey=True)
 
         # plot one signal into each subplot
         signal_counter = 0
