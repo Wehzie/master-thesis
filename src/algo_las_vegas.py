@@ -57,7 +57,7 @@ class LasVegas(algo.SearchAlgo):
         if temp_sample.rmse < base_sample.rmse:
             return temp_sample, True
         return base_sample, False
-
+        
     def search(self, *args, **kwargs) -> Tuple[sample.Sample, int]:
         """generate k-signals which are a sum of n-oscillators
         model is constructed by aggregation
@@ -81,7 +81,6 @@ class LasVegas(algo.SearchAlgo):
                 temp_sample = self.draw_temp_sample(base_sample, np.array([i]))
                 base_sample, changed = self.comp_samples(base_sample, temp_sample)
                 if changed: i += 1 # move to next row
-                self.z_ops += 2
             
             self.manage_state(base_sample, k)
             best_sample, _ = self.comp_samples(best_sample, base_sample)

@@ -164,7 +164,7 @@ def init_algo_sweep(target: np.ndarray, rand_args: party.PythonSignalRandArgs, s
         ),
     ]
     
-    return sweety.AlgoSweep(best_algo_with_args, m_averages)
+    return sweety.AlgoSweep(all_algos_with_args, m_averages)
 
 # TODO: use for tests
 algo_list: List[SearchAlgo] = [

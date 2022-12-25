@@ -163,7 +163,7 @@ class SearchAlgo(ABC):
 
     def draw_sample(self) -> sample.Sample:
         """draw a sample and update z_ops"""
-        self.z_ops += self.rand_args.n_osc * 2 + 1 # n weights, n oscillators, 1 offset 
+        self.z_ops += self.rand_args.n_osc * 3 + 1 # draw a new sample with n weighted oscillators (phase+frequency+gain --> 3) on each loop and an offset --> 1
         return self.sig_generator.draw_sample(self.rand_args, self.target, self.store_det_args)
 
     def draw_sample_weights(self, base_sample: sample.Sample):
@@ -173,7 +173,8 @@ class SearchAlgo(ABC):
 
     def draw_partial_sample(self, base_sample: sample.Sample, osc_to_replace: List[int]) -> sample.Sample:
         """given a sample replace j oscillators and weights, update z_ops, recompute metrics"""
-        self.z_ops += len(osc_to_replace) * 2 # len(osc_to_replace) == j_replace
+        self.z_ops += len(osc_to_replace) * 3 # len(osc_to_replace) == j_replace
+                                              # draw j weighted oscillators (phase+frequency+gain --> 3)
         return self.sig_generator.draw_partial_sample(base_sample, self.rand_args, osc_to_replace, False, self.target, self.store_det_args)
 
     def draw_partial_sample_weights(self, base_sample: sample.Sample, osc_to_replace: List[int]) -> sample.Sample:

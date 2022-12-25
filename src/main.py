@@ -121,7 +121,7 @@ def main():
             m_target.signal = const.RNG.normal(-1, 1, rand_args.samples)*5 + const.RNG.uniform(-1, 1, rand_args.samples)*2
             data_analysis.plot_signal(m_target.signal, show=True)
 
-        algo_sweep = param_util.init_algo_sweep(m_target.signal, rand_args, max_z_ops=1e3, m_averages=3)
+        algo_sweep = param_util.init_algo_sweep(m_target.signal, rand_args, max_z_ops=5e3, m_averages=3)
 
         # qualitative_algo_sweep(algo_sweep, m_target, visual=True)
         produce_all_results(algo_sweep, m_target.signal, rand_args)

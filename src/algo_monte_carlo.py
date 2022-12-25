@@ -43,17 +43,9 @@ class MCOneShot(MonteCarlo):
     Compared to brute-force search, this algorithm remembers it's best solution to date.
     The to-date best solution is returned when allocated resources (z-ops) are exhausted."""
 
-    # TODO: evaluate whether redrawing an oscillator is equally expensive to drawing a weight
-    # right now drawing a weight costs z=1
-    # the oscillator algos consistently outperform
-    # maybe this is only because essentially it's like drawing a weight, frequency, offset, and phase in one
-    # so we'd have to consider z=4
-    # another thought is to consider number of evaluations as z, this is used by scipy
-    # lastly, maybe this issue isn't so important, since we care about comparing the algorithms
-    # and not an algorithms weight only vs weight and oscillator version
     def infer_k_from_z(self) -> int:
         # cost of initializing best_sample is zero
-        z_loop = self.rand_args.n_osc * 2 + 1   # draw a new sample with n oscillators and weights on each loop and an offset
+        z_loop = self.rand_args.n_osc * 3 + 1 # draw a new sample with n weighted oscillators (phase+frequency+gain --> 3) on each loop and an offset --> 1
         return int(self.max_z_ops // z_loop)
 
     def init_best_sample(self) -> sample.Sample:
@@ -66,7 +58,7 @@ class MCOneShotWeight(MCOneShot):
     """Use the MCOneShot algorithm but only draw new weights for each sample"""
 
     def infer_k_from_z(self) -> int:
-        z_init = self.rand_args.n_osc * 2 + 1   # initialize a best sample with n oscillators and weights
+        z_init = self.rand_args.n_osc * 3 + 1   # draw a new sample with n weighted oscillators (phase+frequency+gain --> 3) on each loop and an offset --> 1
         z_loop = self.rand_args.n_osc + 1       # draw a sample with n new weights and one offset each loop
         return int((self.max_z_ops - z_init) // z_loop)
 
@@ -89,8 +81,8 @@ class MCExploit(MonteCarlo):
     The to-date best solution is returned when allocated resources (z-ops) are exhausted."""
 
     def infer_k_from_z(self) -> int:
-        z_init = self.rand_args.n_osc * 2 + 1 # initialize a best sample with n oscillators, n weights and an offset (bias)
-        z_loop = self.j_replace * 2 # j weights and oscillators or the offset updated on each loop
+        z_init = self.rand_args.n_osc * 3 + 1 # draw a new sample with n weighted oscillators (phase + frequency + gain (weight) --> 3) on each loop and an offset (bias) --> 1
+        z_loop = self.j_replace * 3 # j weights (gain) and oscillators (phase+frequency) or the offset updated on each loop
         return int((self.max_z_ops - z_init) // z_loop)
 
     def init_best_sample(self) -> sample.Sample:
@@ -104,7 +96,7 @@ class MCExploitWeight(MCExploit):
     """Use the MCExploit algorithm but only draw new weights for each sample"""
 
     def infer_k_from_z(self) -> int:
-        z_init = self.rand_args.n_osc * 2
+        z_init = self.rand_args.n_osc * 3 + 1 # draw a new sample with n weighted oscillators (phase+frequency+gain --> 3) on each loop and an offset --> 1
         z_loop = self.j_replace # j weights are updated on each loop
         return int((self.max_z_ops - z_init) // z_loop)
 
@@ -161,14 +153,10 @@ class MCAnneal(MonteCarlo):
     akin to simulated annealing"""
 
     def infer_k_from_z(self) -> int:
-        z_init = self.rand_args.n_osc * 2 + 1 # initialize a best sample with n oscillators, n weights and an offset (bias)
-        z_loop = self.rand_args.n_osc
-        # we have a linear schedule in the range (n, 1)
-        # the total number of operations is then sum(range(n, 1))
-        # the average number of operations is sum(range(1, n)) / n
-        # that's the same as n / 2 because the schedule is linear
-        # because oscillators and weights are updated we add * 2
-        # the result is z_loop = n
+        z_init = self.rand_args.n_osc * 3 + 1 # draw a new sample with n weighted oscillators (phase+frequency+gain --> 3) on each loop and an offset --> 1
+        z_loop = self.rand_args.n_osc * 1.5 + 1 # n oscillators (phase+frequency+gain) and the offset updated on first loop
+        # however we have a linear schedule with the replaced number of oscillator decreasing over time
+        # therefore on average we count 3 * n_osc / 2 + 1 -> 1.5 * n_osc +1
         return int((self.max_z_ops - z_init) // z_loop)
     
     def read_j_from_schedule(self, k: int) -> int:
@@ -194,8 +182,8 @@ class MCAnnealWeight(MCAnneal):
     """use the MCAnneal algorithm but only draw new weights for each sample"""
 
     def infer_k_from_z(self) -> int:
-        z_init = self.rand_args.n_osc * 2 + 1 # initialize a best sample with n oscillators, n weights and an offset (bias)
-        z_loop = self.rand_args.n_osc // 2 # we only draw new weights and omit * 2 for oscillators
+        z_init = self.rand_args.n_osc * 3 + 1 # initialize a best sample with n oscillators (freq [n*1] and phase [n*1]), n weights [n*1] and an offset (bias) [1]
+        z_loop = self.rand_args.n_osc * 0.5 # we only draw new weights and omit * 2 for oscillators
         return int((self.max_z_ops - z_init) // z_loop)
 
     def draw_temp_sample(self, base_sample: sample.Sample, k: int, *args, **kwargs) -> sample.Sample:
@@ -228,8 +216,8 @@ class MCGrowShrink(MonteCarlo):
     and lastly we have h the factor by which to dampen or grow weights"""
 
     def infer_k_from_z(self) -> int:
-        z_init = self.rand_args.n_osc * 2 + 1 # initialize a best sample with n oscillators, n weights and an offset (bias)
-        z_loop = self.j_replace # j weights are updated on each loop
+        z_init = self.rand_args.n_osc * 3 + 1 # initialize a best sample with n oscillators, n weights and an offset (bias)
+        z_loop = self.j_replace # j weights (or bias) are updated on each loop
         return int((self.max_z_ops - z_init) // z_loop)
 
     def init_best_sample(self) -> sample.Sample:
