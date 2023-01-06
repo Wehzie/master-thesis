@@ -13,10 +13,11 @@ import sample
 import const
 import data_analysis
 import algo_args_types as algarty
+import gen_signal
 
 import numpy as np
 from tqdm import tqdm
-from scipy.optimize import basinhopping
+from scipy.optimize import basinhopping, dual_annealing
 
 class MonteCarlo(algo.SearchAlgo):
     """abstract class"""
@@ -31,7 +32,7 @@ class MonteCarlo(algo.SearchAlgo):
         best_sample = self.init_best_sample()
         for k in tqdm(range(self.k_samples)):
             temp_sample = self.draw_temp_sample(best_sample, k)
-            best_sample = self.comp_samples(best_sample, temp_sample)
+            best_sample = self.comp_samples(best_sample, temp_sample, k)
             self.manage_state(temp_sample, k)
 
         return best_sample, self.z_ops
@@ -92,6 +93,34 @@ class MCExploit(MonteCarlo):
         osc_to_replace = self.draw_random_indices(self.j_replace)
         return self.draw_partial_sample(base_sample, osc_to_replace)
 
+class MCExploitDecoupled(MCExploit):
+    """decouple weight and oscillator shocks.
+    pick oscillator, pick whether to change weight or oscillator, change, accept or reject, repeat."""
+
+    def infer_k_from_z(self) -> int:
+        z_init = self.rand_args.n_osc * 3 + 1 # draw a new sample with n weighted oscillators (phase + frequency + gain (weight) --> 3) on each loop and an offset (bias) --> 1
+        z_loop = self.j_replace * 1.5 # j weights (gain) [1] and oscillators (phase+frequency [2]) or the offset [1] updated on each loop
+                                      # on average that's 1.5 operations per loop
+        return int((self.max_z_ops - z_init) // z_loop)
+
+    def draw_temp_sample(self, base_sample: sample.Sample, *args, **kwargs) -> sample.Sample:
+        osc_to_replace = self.draw_random_indices(self.j_replace)
+        temp_sample = self.draw_partial_sample(base_sample, osc_to_replace)
+        
+        # offset is passed as number_of_oscillators+1, can be removed once the sample has been drawn
+        osc_to_replace, _ = gen_signal.SignalGenerator.separate_oscillators_from_offset(osc_to_replace, self.rand_args.n_osc)
+        
+        # throw coin to decide whether to replace oscillators or weights and offset
+        replace_oscillator = const.RNG.uniform() < 0.5
+        replace_weight_offset = not replace_oscillator
+
+        if replace_oscillator: # set weights and offset back to their original state
+            temp_sample.weights[osc_to_replace] = base_sample.weights[osc_to_replace]
+            temp_sample.offset = base_sample.offset
+        elif replace_weight_offset: # set the oscillator back to its original state
+            temp_sample.signal_matrix[osc_to_replace,] = base_sample.signal_matrix[osc_to_replace,]
+        return temp_sample
+
 class MCExploitWeight(MCExploit):
     """Use the MCExploit algorithm but only draw new weights for each sample"""
 
@@ -104,8 +133,6 @@ class MCExploitWeight(MCExploit):
         osc_to_replace = self.draw_random_indices(self.j_replace)
         return self.draw_partial_sample_weights(base_sample, osc_to_replace)
 
-# TODO: during the initialization phase, the position of replaced oscillators may better be random,
-# only must memory be kept of which has been updated, and the list from which to draw must be updated to shrink
 class MCExploitFast(MCExploit):
     """algorithm is equivalent to MCExploit after an initialization phase.
     the duration of the initialization phase is non deterministic and inspired by las vegas algorithms.
@@ -135,7 +162,7 @@ class MCExploitFast(MCExploit):
         osc_to_replace = self.get_osc_to_replace()
         return self.draw_partial_sample(base_sample, osc_to_replace)
 
-    def comp_samples(self, base_sample: sample.Sample, temp_sample: sample.Sample) -> sample.Sample:
+    def comp_samples(self, base_sample: sample.Sample, temp_sample: sample.Sample, *args, **kwargs) -> sample.Sample:
         if temp_sample.rmse < base_sample.rmse:
             if not all(self.changed_once):
                 # set changed_once to True for all oscillators that have been replaced
@@ -148,7 +175,7 @@ class MCExploitFast(MCExploit):
 
         
 
-class MCAnneal(MonteCarlo):
+class MCOscillatorAnneal(MonteCarlo):
     """use a schedule to reduce the number of oscillators across iterations.
     akin to simulated annealing"""
 
@@ -178,7 +205,7 @@ class MCAnneal(MonteCarlo):
         osc_to_replace = self.draw_random_indices(j_replace)
         return self.draw_partial_sample(base_sample, osc_to_replace)
 
-class MCAnnealWeight(MCAnneal):
+class MCOscillatorAnnealWeight(MCOscillatorAnneal):
     """use the MCAnneal algorithm but only draw new weights for each sample"""
 
     def infer_k_from_z(self) -> int:
@@ -191,7 +218,7 @@ class MCAnnealWeight(MCAnneal):
         osc_to_replace = self.draw_random_indices(j_replace)
         return self.draw_partial_sample_weights(base_sample, osc_to_replace)
 
-class MCAnnealLog(MCAnneal):
+class MCOscillatorAnnealLog(MCOscillatorAnneal):
     """use logarithmic schedule to reduce the number of oscillators across iterations."""
 
     def read_j_from_schedule(self, k: int) -> int:
@@ -199,7 +226,7 @@ class MCAnnealLog(MCAnneal):
         temperature = (1 - k / self.k_samples)**np.e
         return np.ceil(self.rand_args.n_osc*temperature).astype(int)
 
-class MCAnnealLogWeight(MCAnnealWeight):
+class MCOscillatorAnnealLogWeight(MCOscillatorAnnealWeight):
     """use logarithmic schedule and optimize only weights"""
 
     def read_j_from_schedule(self, k: int) -> int:
@@ -270,9 +297,6 @@ class MCPurge(MCDampen):
         super().__init__(algo_args)
         assert self.h_damp_fac == 0, "h_damp_fac must be 0 for MCPurge"
 
-
-# TODO: proper implementation of Simulated annealing with probability of acceptance of worse solutions
-# TODO: implement proper Metropolis-Hastings algorithm
 
 
 class BasinHopping(algo.SearchAlgo):
@@ -346,3 +370,47 @@ class BasinHopping(algo.SearchAlgo):
         
         return best_sample, self.z_ops
 
+class ScipyAnneal(algo.SearchAlgo):
+
+    def __init__(self, algo_args: algarty.AlgoArgs):
+        super().__init__(algo_args)
+        self.no_local_search = True
+
+    def draw_temp_sample(self) -> sample.Sample:
+        return super().draw_temp_sample()
+    
+    def infer_k_from_z(self) -> int:
+        return None
+
+    def init_best_sample(self) -> sample.Sample:
+        return self.draw_sample()
+
+    def search(self, *args, **kwargs):
+        print(f"searching with {self.__class__.__name__}")
+        self.clear_state()
+        self.handle_mp(kwargs)
+        best_sample = self.init_best_sample()
+
+        lo, hi = self.rand_args.weight_dist.get_low_high()
+        weight_bounds = list(zip([lo]*self.rand_args.n_osc, [hi]*self.rand_args.n_osc))
+
+        def eval_func_weight(weights):
+            """adapt weights for simulated annealing"""
+            weighted_sum = np.sum(best_sample.signal_matrix.T * weights, axis=1) + best_sample.offset
+            return data_analysis.compute_rmse(weighted_sum, self.target)
+
+        maxfun = int(self.max_z_ops // self.rand_args.n_osc)
+
+        result = dual_annealing(eval_func_weight, bounds=weight_bounds, no_local_search=self.no_local_search, maxfun=maxfun, seed=const.GLOBAL_SEED)
+        best_sample.weights = result.x
+
+        best_sample.update(self.target)
+        self.z_ops += maxfun * self.rand_args.n_osc
+        
+        return best_sample, self.z_ops
+
+class ScipyDualAnneal(ScipyAnneal):
+
+    def __init__(self, algo_args: algarty.AlgoArgs):
+        super().__init__(algo_args)
+        self.no_local_search = False

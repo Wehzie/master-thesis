@@ -132,9 +132,15 @@ class SearchAlgo(ABC):
             return True
         return False
 
-    def comp_samples(self, base_sample: sample.Sample, temp_sample: sample.Sample) -> sample.Sample:
-        """compare two samples and return the one with lower rmse"""
-        if temp_sample.rmse < base_sample.rmse:
+    def accept_candidate_sample(self, rmse_base: float, rmse_temp: float) -> bool:
+        """decide whether to accept a candidate sample"""
+        if rmse_temp < rmse_base:
+            return True
+        return False
+
+    def comp_samples(self, base_sample: sample.Sample, temp_sample: sample.Sample, *args, **kwargs) -> sample.Sample:
+        """compare two samples loss and greedily return the one with lower rmse"""
+        if self.accept_candidate_sample(base_sample.rmse, temp_sample.rmse):
             return temp_sample
         return base_sample
 
@@ -181,6 +187,12 @@ class SearchAlgo(ABC):
         """given a sample replace j weights, update z_ops, recompute metrics"""
         self.z_ops += len(osc_to_replace) # len(osc_to_replace) == j_replace
         return self.sig_generator.draw_partial_sample(base_sample, self.rand_args, osc_to_replace, True, self.target, self.store_det_args)
+
+    def draw_partial_weight_neighbor_sample(self, base_sample: sample.Sample, osc_to_replace: List[int]) -> sample.Sample:
+        """given a sample replace j weights, update z_ops, recompute metrics
+        weights are drawn from a neighborhood gaussian of the base sample instead of being drawn from the initial distribution"""
+        self.z_ops += len(osc_to_replace)
+        return self.sig_generator.draw_partial_weight_neighbor_sample(base_sample, self.rand_args, osc_to_replace, self.target)
 
     def handle_mp(self, sup_func_kwargs: dict) -> None:
         """handle multi processing by modifying numpy the random number generator

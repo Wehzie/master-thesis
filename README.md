@@ -31,3 +31,12 @@
 - Plot Improvement: For oscillators vs. rmse. Show up to 1k oscillators, but draw a dotted line into the plot at around 300 oscillators to indicate what's technologically feasible.
 - Plot Improvement: For number of samples vs. rmse; Convert this to signal duration vs. rmse.
 - Plot Improvement: save mean, mode, stddev to frequency diversity plot title.
+
+- Renaming:
+    - algo_monte_carlo -> algo_monte_carlo_greedy
+    - algo_mcmc -> algo_monte_carlo_ergodic
+    - param_util -> param_funcs
+    - param_test_py -> param_py_test
+    - param_test_spipy -> param_hybrid_test
+    - param -> param_py, param_hybrid
+    

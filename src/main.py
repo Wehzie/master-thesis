@@ -123,8 +123,8 @@ def main():
 
         algo_sweep = param_util.init_algo_sweep(m_target.signal, rand_args, max_z_ops=5e3, m_averages=3)
 
-        # qualitative_algo_sweep(algo_sweep, m_target, visual=True)
-        produce_all_results(algo_sweep, m_target.signal, rand_args)
+        qualitative_algo_sweep(algo_sweep, m_target, visual=False)
+        # produce_all_results(algo_sweep, m_target.signal, rand_args)
 
 if __name__ == "__main__":
     main()

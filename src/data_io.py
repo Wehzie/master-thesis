@@ -24,10 +24,10 @@ def load_data(data_path: Path = DATA_PATH, verbose: bool = True) -> tuple:
     """
     sampling_rate, data = read(data_path)
     
-    msg_convert_stereo = False
+    msg_convert_to_mono = False
     if len(data.shape) == 2:
         data = (np.sum(data, axis=1)//2).T
-        msg_converted = True
+        msg_convert_to_mono = True
 
     # remove y-offset of unsigned encoding
     msg_convert_uint8 = False
@@ -37,7 +37,7 @@ def load_data(data_path: Path = DATA_PATH, verbose: bool = True) -> tuple:
 
     if verbose:
         print(f"loading file: {data_path}")
-        if msg_convert_stereo: print("converting signal from stereo to mono")
+        if msg_convert_to_mono: print("converting signal from stereo to mono")
         if msg_convert_uint8: print("convert uint8 to int16 to remove y-offset")
         print(f"sampling rate: {sampling_rate}")
         print(f"data type: {data.dtype}")

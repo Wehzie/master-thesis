@@ -7,7 +7,8 @@ from typing import Union, Tuple, List, Callable
 import data_analysis
 import param_types as party
 import sample
-
+import dist
+import const
 
 
 class SignalGenerator(ABC):
@@ -57,6 +58,7 @@ class SignalGenerator(ABC):
         """
         raise NotImplementedError
 
+
     @staticmethod
     @abstractmethod
     def draw_n_oscillators(rand_args: party.UnionRandArgs, store_det_args: bool = False
@@ -71,6 +73,7 @@ class SignalGenerator(ABC):
             det_arg_li: a list of arguments used to generate each oscillator
         """
         raise NotImplementedError
+
 
     def draw_sample(self, rand_args: party.UnionRandArgs, target: Union[None, np.ndarray] = None, store_det_args: bool = False) -> sample.Sample:
         """draw a sample from scratch and compute available metrics
@@ -92,9 +95,30 @@ class SignalGenerator(ABC):
         if target is not None:
             rmse = data_analysis.compute_rmse(weighted_sum, target)
         return sample.Sample(signal_matrix, weights, weighted_sum, offset, rmse, det_args)
-    
+
+
+    def draw_sample_weights(self, base_sample: sample.Sample, rand_args: party.UnionRandArgs, target: Union[None, np.ndarray] = None) -> sample.Sample:
+        """replace only the weights and offset of a sample
+        
+        args:
+            base_sample: the sample to copy
+            rand_args: a dataclass containing deterministic and random variables from which the weights are drawn
+        
+        returns:
+            the base sample with new weights and re-computed metrics
+        """
+        updated_sample = copy.deepcopy(base_sample)
+        updated_sample.weights = self.draw_n_weights(rand_args)
+        updated_sample.offset = self.draw_offset(rand_args)
+        updated_sample.weighted_sum = sample.Sample.compute_weighted_sum(updated_sample.signal_matrix, updated_sample.weights, updated_sample.offset)
+        updated_sample.rmse = None
+        if target is not None:
+            updated_sample.rmse = data_analysis.compute_rmse(updated_sample.weighted_sum, target)   
+        return updated_sample
+
+
     @staticmethod
-    def separate_oscillators_from_offset(osc_to_replace: np.ndarray, n_oscillators: int) -> Tuple:
+    def separate_oscillators_from_offset(osc_to_replace: np.ndarray, n_oscillators: int) -> Tuple[np.ndarray, bool]:
         """evaluate whether to replace the offset and clean the list of oscillators to replace
         
         args:
@@ -109,6 +133,8 @@ class SignalGenerator(ABC):
         osc_to_replace = np.delete(osc_to_replace, np.where(osc_to_replace == n_oscillators))
         return osc_to_replace, replace_offset
 
+
+    # TODO: split into two functions: draw_partial_sample and draw_partial_sample_weights
     def draw_partial_sample(self, base_sample: sample.Sample, rand_args: party.UnionRandArgs,
     osc_to_replace: List[int], weight_mode: bool,
     target: Union[None, np.ndarray] = None, store_det_args: bool = False,
@@ -163,22 +189,39 @@ class SignalGenerator(ABC):
             new_sample.rmse = data_analysis.compute_rmse(new_sample.weighted_sum, target)
 
         return new_sample
+    
 
-    def draw_sample_weights(self, base_sample: sample.Sample, rand_args: party.UnionRandArgs, target: Union[None, np.ndarray] = None) -> sample.Sample:
-        """return the base sample with all weights and the offset replaced and with metrics recomputed
-        
-        args:
-            base_sample: the sample to copy
-            rand_args: a dataclass containing deterministic and random variables from which the weights are drawn
-        
-        returns:
-            the base sample with new weights and re-computed metrics
+    def draw_partial_weight_neighbor_sample(self, base_sample: sample.Sample, rand_args: party.UnionRandArgs,
+    osc_to_replace: List[int], target: np.ndarray,
+    ) -> sample.Sample:
+        """take a base sample and replace j weights.
+
+        compared to draw_partial_sample, this function draws weights from a distribution centered around the
+        mean weight of the oscillators to be reweighted.
         """
-        updated_sample = copy.deepcopy(base_sample)
-        updated_sample.weights = self.draw_n_weights(rand_args)
-        updated_sample.offset = self.draw_offset(rand_args)
-        updated_sample.weighted_sum = sample.Sample.compute_weighted_sum(updated_sample.signal_matrix, updated_sample.weights, updated_sample.offset)
-        updated_sample.rmse = None
+        osc_to_replace, replace_offset = self.separate_oscillators_from_offset(osc_to_replace, rand_args.n_osc)
+
+        new_sample = copy.deepcopy(base_sample) # copy the base sample
+        temp_args = copy.deepcopy(rand_args) # copy to avoid side effects
+        
+        # update the underlying distributions to get the right number of oscillators
+        # and to get adjacent neighbors instead of uniform random draws
+        temp_args.n_osc = len(osc_to_replace)
+        mean_weight = np.mean(base_sample.weights[osc_to_replace])
+        stddev = np.std(base_sample.weights)
+        temp_args.weight_dist = dist.WeightDist(const.RNG.normal, loc=mean_weight, scale=stddev, n=len(osc_to_replace))
+        # NOTE: would be cool to do this with frequency, phase, offset as well
+
+        partial_weights = self.draw_n_weights(temp_args)
+        new_sample.weights[osc_to_replace] = partial_weights
+
+        if replace_offset:
+            new_sample.offset = self.draw_offset(temp_args)
+
+        new_sample.weighted_sum = sample.Sample.compute_weighted_sum(new_sample.signal_matrix,
+            new_sample.weights, new_sample.offset)
+        new_sample.rmse = None
         if target is not None:
-            updated_sample.rmse = data_analysis.compute_rmse(updated_sample.weighted_sum, target)   
-        return updated_sample
+            new_sample.rmse = data_analysis.compute_rmse(new_sample.weighted_sum, target)
+
+        return new_sample

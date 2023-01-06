@@ -18,8 +18,8 @@ import data_io
 class Sample():
     """a sample consists of n-oscillators with constant parameters
     the sum of oscillators approximates a target signal"""
-    def __init__(self, signal_matrix: np.ndarray, weights: Union(None, np.ndarray), weighted_sum: np.ndarray,
-        offset: Union(None, float), rmse: float, signal_args: List[party.PythonSignalDetArgs]) -> Sample:
+    def __init__(self, signal_matrix: np.ndarray, weights: Union[None, np.ndarray], weighted_sum: np.ndarray,
+        offset: Union[None, float], rmse: float, signal_args: Union[List[None], List[party.PythonSignalDetArgs]]) -> Sample:
         """
         initialize a sample
 
