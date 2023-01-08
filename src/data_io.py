@@ -8,6 +8,8 @@ import wave
 import copy
 import pickle
 
+import const
+
 from scipy.io.wavfile import write
 from scipy.io.wavfile import read
 import matplotlib.pyplot as plt
@@ -121,11 +123,18 @@ def load_pickled_samples(data_path: Path) -> List: # List[Sample]
     flat = functools.reduce(operator.iconcat, obj_li, [])
     return flat
 
-                            # List[resty.ResultSweep] (gives circular import)
-def pickle_results(results: List, data_path: Path) -> None:
-    """pickle the result of a sweep"""
+def pickle_object(obj: object, data_path: Path) -> None:
+    """pickle an object"""
     with open(data_path, "wb") as f:
-        pickle.dump(results, f)
+        pickle.dump(obj, f)
+    
+def hoard_experiment_results(experiment_description: str, results: List, df: pd.DataFrame, directory: Path = Path("data")) -> None:
+    """save experiment results to file"""
+    if not const.HOARD_DATA: return
+    pickle_object(results, directory / (experiment_description + "_results.pickle"))
+    pickle_object(df, directory / (experiment_description + "_dataframe.pickle"))
+    df.to_csv(directory / (experiment_description + "_dataframe.csv"), index=False)
+    print(f"saved {experiment_description} results to {directory}")
     
 def main():
     sampling_rate, data, dtype = load_data()

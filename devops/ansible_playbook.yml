@@ -1,0 +1,49 @@
+# this playbook sets up the required software to run the experiment
+# on Debian derivatives with Python Version >= 3.8,
+# for example Ubuntu 22.04 or newer
+
+# steps to consider before execution
+# 1) create assistant user on server
+#    adduser assistant
+#    usermod -aG sudo sf
+# 2) setup authentication to server with ssh-copy-id
+# for private repos:
+# 3) install github cli, see https://cli.github.com/
+# 4) authenticate to github as assistant (not root!)
+#       gh auth login
+
+# run as
+#       ansible-playbook -i ansible_hosts.ini ansible_playbook.yml -K
+# where 
+# -K queries sudo password
+# use lowercase -k in addition when ssh-copy-id hasn't been used to establish password-less authentication
+
+- hosts: servers
+  # AWFUL-SYNTAX: basically playbooks expect 2-space indentation
+  remote_user: assistant
+  tasks:
+
+    # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/apt_module.html
+    - ansible.builtin.apt:
+        pkg:
+            - vim
+            - python3
+            - pip
+            - python-is-python3
+            - git
+            - ngspice
+        state: latest
+        update_cache: true
+      become: yes
+      name: install packages via apt
+
+    - ansible.builtin.git:
+        repo: "https://github.com/Wehzie/master-thesis"
+        dest: ~/{{ app_name}}
+        force: yes
+      name: clone repo
+
+    - ansible.builtin.pip:
+        requirements: /home/{{ ansible_user_id }}/{{ app_name }}/requirements.txt
+      become: yes
+      name: use pip to install dependencies globally

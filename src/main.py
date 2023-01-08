@@ -38,38 +38,46 @@ def produce_all_results(algo_sweep: sweety.AlgoSweep, target: np.ndarray, base_r
 
     results = exp.run_rand_args_sweep(algo_sweep, params.n_osc_sweep, base_rand_args)
     df = expan.conv_results_to_pd(results)
-    expan.plot_n_vs_rmse(df, len(target), show=show_all)
+    experiment_description = expan.plot_n_vs_rmse(df, len(target), show=show_all)
+    data_io.hoard_experiment_results(experiment_description, results, df)
 
     results = exp.run_z_ops_sweep(algo_sweep, params.z_ops_sweep)
     df = expan.conv_results_to_pd(results)
-    expan.plot_z_vs_rmse(df, len(target), show=show_all)
+    experiment_description = expan.plot_z_vs_rmse(df, len(target), show=show_all)
+    data_io.hoard_experiment_results(experiment_description, results, df)
 
     results = exp.run_sampling_rate_sweep(params.sampling_rate_sweep, base_rand_args)
     df = expan.conv_results_to_pd(results)
-    expan.plot_samples_vs_rmse(df, show=show_all)
+    experiment_description = expan.plot_samples_vs_rmse(df, show=show_all)
+    data_io.hoard_experiment_results(experiment_description, results, df)
 
     freq_sweeps = [params.freq_sweep_from_zero, params.freq_sweep_around_vo2]
     freq_sweep_names = ["freq_range_from_zero", "freq_range_around_vo2"]
     for freq_sweep, freq_sweep_name in zip(freq_sweeps, freq_sweep_names):
         results = exp.run_rand_args_sweep(algo_sweep, freq_sweep, base_rand_args)
         df = expan.conv_results_to_pd(results)
-        expan.plot_freq_range_vs_rmse(df, len(target), freq_sweep_name, show=show_all)
+        experiment_description = expan.plot_freq_range_vs_rmse(df, len(target), freq_sweep_name, show=show_all)
+        data_io.hoard_experiment_results(experiment_description, results, df)
         
     results = exp.run_rand_args_sweep(algo_sweep, params.weight_sweep, base_rand_args)
     df = expan.conv_results_to_pd(results)
-    expan.plot_weight_range_vs_rmse(df, len(target), show=show_all)
+    experiment_description = expan.plot_weight_range_vs_rmse(df, len(target), show=show_all)
+    data_io.hoard_experiment_results(experiment_description, results, df)
 
     results = exp.run_rand_args_sweep(algo_sweep, params.phase_sweep, base_rand_args)
     df = expan.conv_results_to_pd(results)
-    expan.plot_phase_range_vs_rmse(df, len(target), show=show_all)
+    experiment_description = expan.plot_phase_range_vs_rmse(df, len(target), show=show_all)
+    data_io.hoard_experiment_results(experiment_description, results, df)
 
     results = exp.run_rand_args_sweep(algo_sweep, params.offset_sweep, base_rand_args)
     df = expan.conv_results_to_pd(results)
-    expan.plot_offset_range_vs_rmse(df, len(target), show=show_all)
+    experiment_description = expan.plot_offset_range_vs_rmse(df, len(target), show=show_all)
+    data_io.hoard_experiment_results(experiment_description, results, df)
 
     results = exp.run_rand_args_sweep(algo_sweep, params.amplitude_sweep, base_rand_args)
     df = expan.conv_results_to_pd(results)
-    expan.plot_amplitude_vs_rmse(df, len(target), show=show_all)
+    experiment_description = expan.plot_amplitude_vs_rmse(df, len(target), show=show_all)
+    data_io.hoard_experiment_results(experiment_description, results, df)
 
 def run_multi_directional_experiment():
     """experiments whose parameters are based on other experiments"""
@@ -79,8 +87,14 @@ def run_multi_directional_experiment():
     # also for frequency band
 
 
-# TODO: pickle figures after save to png
+
 # TODO: store intermediate pickle of results
+# TODO:
+# solve the problem of too many open figures
+# https://stackoverflow.com/questions/21884271/warning-about-too-many-open-figures
+# https://stackoverflow.com/questions/16334588/create-a-figure-that-is-reference-counted/16337909#16337909
+# https://stackoverflow.com/questions/3783217/get-the-list-of-figures-in-matplotlib
+# TODO: legend frame too small
 @data_analysis.print_time
 def main():
     # SpiPy
@@ -121,10 +135,10 @@ def main():
             m_target.signal = const.RNG.normal(-1, 1, rand_args.samples)*5 + const.RNG.uniform(-1, 1, rand_args.samples)*2
             data_analysis.plot_signal(m_target.signal, show=True)
 
-        algo_sweep = param_util.init_algo_sweep(m_target.signal, rand_args, max_z_ops=5e3, m_averages=3)
+        algo_sweep_test = param_util.init_algo_sweep(m_target.signal, rand_args, max_z_ops=5e2, m_averages=2)
 
-        qualitative_algo_sweep(algo_sweep, m_target, visual=False)
-        # produce_all_results(algo_sweep, m_target.signal, rand_args)
+        # qualitative_algo_sweep(algo_sweep_test, m_target, visual=False)
+        produce_all_results(algo_sweep_test, m_target.signal, rand_args)
 
 if __name__ == "__main__":
     main()

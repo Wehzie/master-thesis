@@ -10,29 +10,29 @@ import param_util
 import dist
 rng = const.RNG
 
-py_rand_args_n_osc = 50
+py_rand_args_n_osc = 25
 
 py_rand_args_uniform = party.PythonSignalRandArgs(
     n_osc = py_rand_args_n_osc,
     duration = None,
     samples = 50,
     freq_dist = dist.Dist(rng.uniform, low=1e5, high=1e6),
-    amplitude = 0.5,                                                    # resembling 0.5 V amplitude of V02
+    amplitude = 0.5,                                              # resembling 0.5 V amplitude of V02
     weight_dist = dist.WeightDist(rng.uniform, low=0, high=10, n=py_rand_args_n_osc),   # scale down when <1 and scale up when >1
     phase_dist = dist.Dist(rng.uniform, low=-1/3, high=1/3), # uniform 0 to 2 pi phase shift seems too wild
-    offset_dist = dist.Dist(rng.uniform, low=-5, high=5),    # offset should be reasonable and bounded by amplitude*weight
-    sampling_rate = 1e5                               # the sampling rate of the Magpie signal
+    offset_dist = dist.Dist(rng.uniform, low=0, high=0),
+    sampling_rate = 11025                               # the sampling rate of the Magpie signal
 )
 
 py_rand_args_normal = party.PythonSignalRandArgs(
     n_osc = py_rand_args_n_osc,
     duration = None,
-    samples = 300,
+    samples = 50,
     freq_dist = dist.Dist(rng.normal, loc=5e5, scale=4e5),
     amplitude = 0.5,                                    # resembling 0.5 V amplitude of V02
     weight_dist = dist.WeightDist(rng.normal, loc=0.5, scale=0.5, n=py_rand_args_n_osc),   # resistor doesn't amplify so not > 1
     phase_dist = dist.Dist(rng.normal, loc=0, scale=1/3), # uniform 0 to 2 pi phase shift seems too wild
-    offset_dist = dist.Dist(rng.normal, loc=0, scale=100/3),    # offset should be reasonable and bounded by amplitude*weight
+    offset_dist = dist.Dist(rng.normal, loc=0, scale=0),    
     sampling_rate = 11025                               # the sampling rate of the Magpie signal
 )
 
@@ -67,7 +67,6 @@ weight_sweep = init_weight_sweep(py_rand_args_uniform)
 
 # negative phase shift is unnecessary, as -1/2 pi is equivalent to 3/2 pi
 phase_sweep = sweety.PhaseSweep(param_util.append_normal([
-        dist.Dist(rng.uniform, low=0, high=1/3),
         dist.Dist(rng.uniform, low=0, high=1/2),
         dist.Dist(rng.uniform, low=0, high=1),
         dist.Dist(rng.uniform, low=0, high=2),

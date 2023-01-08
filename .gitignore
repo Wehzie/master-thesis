@@ -2,6 +2,7 @@
 peregrine.sh
 src/test.py
 results
+ansible_hosts.ini
 
 # data directories
 circuit_lib/temp.cir

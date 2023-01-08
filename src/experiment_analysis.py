@@ -1,7 +1,9 @@
 import result_types as resty
 import const
 import param_types as party
+import data_io
 
+import copy
 from typing import List, Union, Tuple
 from pathlib import Path
 import itertools
@@ -18,7 +20,7 @@ rb_colors = [cmap(i) for i in np.linspace(0, 0.9, 10)]
 # tableau colors
 colors = plt.cm.tab10.colors
 # set up plotting
-linestyles = ["solid", "dashed"]
+linestyles = ["solid", "dashed", "dotted"]
 color_list = colors * len(linestyles)
 linestyle_list = [[style] * len(colors) for style in linestyles]
 # flatten from [[style1, ...], [style2, ...]] to [style1, style1, ..., style2, ...]
@@ -28,6 +30,7 @@ default_cycler = (
     cycler(linestyle=linestyle_list)
 )
 plt.rc('axes', prop_cycle=default_cycler)
+plt.rc('legend', fontsize=8) # using a size in points
 
 # TODO: style multiple algo lines with a cycler to increase number of colors
 # remove whitespace where possible form plots (right hand side)
@@ -113,7 +116,7 @@ def filter_df_by_dist_name(df: pd.DataFrame, attr_name: str, dist_name: str) -> 
     if dist_name == "normal":
         return df[df[f"{attr_name}_dist_loc"].notna()]
 
-def plot_rmse_by_algo(df: pd.DataFrame, column_name: str, separate_legend: bool = const.SEPARATE_LEGEND) -> Tuple[plt.Figure, plt.Figure]:
+def plot_rmse_by_algo(df: pd.DataFrame, column_name: str, separate_legend: bool = const.HOARD_DATA) -> Tuple[plt.Figure, plt.Figure, plt.Figure]:
     """plot one line for each algorithm given an attribute column in a dataframe
 
     args:
@@ -131,36 +134,44 @@ def plot_rmse_by_algo(df: pd.DataFrame, column_name: str, separate_legend: bool 
     if separate_legend == False: return fig, None
     
     fig.gca().legend().set_visible(False) # hide legend on main plot
-    legend_as_fig = plt.figure()
+    legend_as_fig = plt.figure() # create new figure for legend
     plt.figlegend(*fig.gca().get_legend_handles_labels(), loc="upper left", title="algorithm")
     
     return fig, legend_as_fig
 
 def save_fig_n_legend(fig: plt.Figure, legend_as_fig: plt.Figure, name: str, show: bool = False) -> None:
     fig.savefig(Path("data") / (name + ".png"), dpi=300)
-    if legend_as_fig is not None:
+    if legend_as_fig is not None: # const.HOARD_DATA == True
+        fig.savefig(Path("data") / (name + ".svg"), transparent=True)
         legend_as_fig.savefig(Path("data") / (name + "_legend.png"), dpi=300)
+        fig.gca().legend().set_visible(True) # save figure with legend
+        fig.savefig(Path("data") / (name + "_with_legend.png"), dpi=300)
+        data_io.pickle_object(fig, Path("data") / (name + "_figure.pickle"))
     if show: plt.show()
 
-def plot_n_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool = False) -> None:
+def plot_n_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool = False) -> str:
     """exp1: plot number of oscillators, n, against rmse for multiple algorithms with z_ops and rand_args fixed"""
     title = get_plot_title(df, target_samples)
     df = df.filter(items=["algo_name", "n_osc", "mean_rmse", "std_rmse"])
     fig, legend_as_fig = plot_rmse_by_algo(df, "n_osc")
     fig.gca().set_title(title)
     fig.gca().set_xlabel("number of oscillators")
-    save_fig_n_legend(fig, legend_as_fig, "n_on_rmse", show)
+    figure_description = "n_osc_vs_rmse"
+    save_fig_n_legend(fig, legend_as_fig, figure_description, show)
+    return figure_description
 
-def plot_z_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool = False) -> None:
+def plot_z_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool = False) -> str:
     """exp2: plot number of operations, z_ops, against rmse for multiple algorithms with rand_args fixed"""
     title = get_plot_title(df, target_samples, z_ops=False)
     df = df.filter(items=["algo_name", "max_z_ops", "mean_rmse", "std_rmse"])
     fig, legend_as_fig = plot_rmse_by_algo(df, "max_z_ops")
     fig.gca().set_title(title)
     fig.gca().set_xlabel("z-operations")
-    save_fig_n_legend(fig, legend_as_fig, "z_vs_rmse", show)
+    figure_description = "z_ops_vs_rmse"
+    save_fig_n_legend(fig, legend_as_fig, figure_description, show)
+    return figure_description
 
-def plot_samples_vs_rmse(df: pd.DataFrame, show: bool = False) -> None:
+def plot_samples_vs_rmse(df: pd.DataFrame, show: bool = False) -> str:
     """exp3: plot number of samples against rmse for multiple algorithms with rand_args and target fixed"""
     # before filtering df
     m_averages = int(df["m_averages"].iloc[[0]])
@@ -172,7 +183,9 @@ def plot_samples_vs_rmse(df: pd.DataFrame, show: bool = False) -> None:
     fig, legend_as_fig = plot_rmse_by_algo(df, "samples")
     fig.gca().set_title(title)
     fig.gca().set_xlabel("number of samples")
-    save_fig_n_legend(fig, legend_as_fig, "samples_vs_rmse", show)
+    figure_description = "samples_vs_rmse"
+    save_fig_n_legend(fig, legend_as_fig, figure_description, show)
+    return figure_description
 
 def plot_range_vs_rmse(df: pd.DataFrame, target_samples: int, attr_name: str, dist_name: str) -> List[plt.Figure]:
     """
@@ -199,7 +212,7 @@ def plot_range_vs_rmse(df: pd.DataFrame, target_samples: int, attr_name: str, di
 
     return fig, legend_as_fig
 
-def plot_freq_range_vs_rmse(df: pd.DataFrame, target_samples: int, sweep_name: str, show: bool = False) -> None:
+def plot_freq_range_vs_rmse(df: pd.DataFrame, target_samples: int, sweep_name: str, show: bool = False) -> str:
     """exp4+5: plot frequency range against rmse for multiple algorithms with rand_args and target fixed"""
     for dist_name in const.LEGAL_DISTS:
         fig, legend_as_fig = plot_range_vs_rmse(df, target_samples, "freq", dist_name)
@@ -217,8 +230,10 @@ def plot_freq_range_vs_rmse(df: pd.DataFrame, target_samples: int, sweep_name: s
         fig.gca().set_xscale("log")
         save_fig_n_legend(fig, legend_as_fig, f"{sweep_name}_{dist_name}_vs_rmse", show=False)
     if show: plt.show()
+    return f"{sweep_name}_vs_rmse"
 
-def plot_weight_range_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool = False) -> None:
+
+def plot_weight_range_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool = False) -> str:
     """exp6: plot weight range against rmse for multiple algorithms with rand_args and target fixed"""
     for dist_name in const.LEGAL_DISTS:
         fig, legend_as_fig = plot_range_vs_rmse(df, target_samples, "weight", dist_name)
@@ -228,8 +243,9 @@ def plot_weight_range_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool 
         fig.gca().set_xscale("log")
         save_fig_n_legend(fig, legend_as_fig, f"weight_range_{dist_name}_vs_rmse", show=False)
     if show: plt.show()
+    return "weight_range_vs_rmse"
 
-def plot_phase_range_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool = False) -> None:
+def plot_phase_range_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool = False) -> str:
     """exp7: plot phase range against rmse for multiple algorithms with rand_args and target fixed"""
     for dist_name in const.LEGAL_DISTS:
         fig, legend_as_fig = plot_range_vs_rmse(df, target_samples, "phase", dist_name)
@@ -237,16 +253,18 @@ def plot_phase_range_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool =
         fig.gca().xaxis.set_major_formatter("{x:.2f}"+r"$\pi$")
         save_fig_n_legend(fig, legend_as_fig, f"phase_range_{dist_name}_vs_rmse", show=False)
     if show: plt.show()
+    return "phase_range_vs_rmse"
 
-def plot_offset_range_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool = False) -> None:
+def plot_offset_range_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool = False) -> str:
     """exp8: plot offset range against rmse for multiple algorithms with rand_args and target fixed"""
     for dist_name in const.LEGAL_DISTS:
         fig, legend_as_fig = plot_range_vs_rmse(df, target_samples, "offset", dist_name)
         fig.gca().set_xlabel("offset diversity") # width of offset distribution
         save_fig_n_legend(fig, legend_as_fig, f"offset_range_{dist_name}_vs_rmse", show=False)
     if show: plt.show()
+    return "offset_range_vs_rmse"
 
-def plot_amplitude_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool = False) -> None:
+def plot_amplitude_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool = False) -> str:
     "exp9: plot amplitude against rmse for multiple algorithms with rand_args and target fixed"
     title = get_plot_title(df, target_samples) # before filtering df
     weight_range = df["weight_range"].iloc[0]
@@ -256,4 +274,6 @@ def plot_amplitude_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool = F
     fig.gca().set_title(title)
     fig.gca().set_ylabel("RMSE(generated, target)")
     fig.gca().set_xlabel("unweighted amplitude")
-    save_fig_n_legend(fig, legend_as_fig, "amplitude_vs_rmse", show)
+    figure_description = "amplitude_vs_rmse"
+    save_fig_n_legend(fig, legend_as_fig, figure_description, show)
+    return figure_description
