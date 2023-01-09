@@ -81,16 +81,12 @@ def produce_all_results(algo_sweep: sweety.AlgoSweep, target: np.ndarray, base_r
 
 def run_multi_directional_experiment():
     """experiments whose parameters are based on other experiments"""
-    # TODO: take best algorithm
+    # take best algorithm
     # then also increase the z_ops to see if the weight-range-to-rmse curve flattens
     # same for rmse vs n_osc
     # also for frequency band
 
 
-# TODO: address running multiple targets automatically
-# TODO: check that multiprocessing works
-# TODO: consider different signal generation function for Python, more similar to spice
-# TODO: fix aliasing for Python
 @data_analysis.print_time
 def main():
     # SpiPy
@@ -106,12 +102,12 @@ def main():
         if False:
             # synthetic target signal
             from scipy import signal
-            t = np.linspace(0, 1, spice_samples)
+            t = np.linspace(0, 1, spice_samples, endpoint=False)
             duration = rand_args.time_stop-rand_args.time_start
             m_target.signal = signal.sawtooth(2 * np.pi * 5 * t) * 10
             #m_target.signal = signal.chirp(t, f0=1, f1=100, t1=1, method="linear") * 10
             #m_target.signal = const.RNG.normal(-1, 1, spice_samples)*5 + const.RNG.uniform(-1, 1, spice_samples)*2
-            m_target.time = np.linspace(0, duration, spice_samples+1)[0:-1]
+            m_target.time = np.linspace(0, duration, spice_samples, endpoint=False)
         
         data_analysis.plot_signal(m_target.signal, m_target.time, show=True)
 
@@ -123,18 +119,19 @@ def main():
     if True:
         rand_args = params.py_rand_args_uniform
         m_target = meta_target.MetaTargetSample(rand_args)
+        print(m_target)
         
         if False: # synthetic target signal
             from scipy import signal
-            t = np.linspace(0, 1, rand_args.samples)
+            t = np.linspace(0, 1, rand_args.samples, endpoint=False)
             m_target.signal = signal.sawtooth(2 * np.pi * 5 * t) * 10
             m_target.signal = const.RNG.normal(-1, 1, rand_args.samples)*5 + const.RNG.uniform(-1, 1, rand_args.samples)*2
             data_analysis.plot_signal(m_target.signal, show=True)
 
-        algo_sweep_test = param_util.init_algo_sweep(m_target.signal, rand_args, max_z_ops=1e2, m_averages=2)
+        algo_sweep_test = param_util.init_algo_sweep(m_target.signal, rand_args, max_z_ops=5e2, m_averages=2)
 
-        # qualitative_algo_sweep(algo_sweep_test, m_target, visual=False)
-        produce_all_results(algo_sweep_test, m_target.signal, rand_args)
+        qualitative_algo_sweep(algo_sweep_test, m_target, visual=True)
+        # produce_all_results(algo_sweep_test, m_target.signal, rand_args)
 
 if __name__ == "__main__":
     main()

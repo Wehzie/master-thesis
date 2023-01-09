@@ -10,11 +10,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 
-def plot_individual_oscillators(signal_matrix: np.ndarray, oscillators_per_subplot: Union[None, int] = 25, show: bool = False, save_path: Path = None) -> None:
+def plot_individual_oscillators(signal_matrix: np.ndarray, time: np.ndarray = None, oscillators_per_subplot: Union[None, int] = 25, show: bool = False, save_path: Path = None) -> None:
     """show n individual oscillator signals in a grid of subplots
     
     args:
         signal_matrix: a matrix of single-oscillator signals
+        time: times at which the signals were sampled
         oscillators_per_subplot: number of oscillators per subplot. If None, plot all oscillators in one subplot
         show: show the plot
         save_path: save the plot to a file
@@ -39,35 +40,61 @@ def plot_individual_oscillators(signal_matrix: np.ndarray, oscillators_per_subpl
             subsets.append(signal_matrix[row:row+oscillators_per_subplot, :])
         return subsets
 
-    def plot_row_per_plot(signal_matrix: np.ndarray, show: bool, save_path: Path) -> None:
+    def plot_row_per_plot(signal_matrix: np.ndarray, axes: plt.Axes) -> None:
         """plot one signal per row of a matrix in a grid of subplots"""
         n_signals = signal_matrix.shape[0] # one signal per row
         n_rows, n_cols = infer_subplot_rows_cols(n_signals)
-
-        _, ax = plt.subplots(n_rows, n_cols, sharex=True, sharey=True)
 
         # plot one signal into each subplot
         signal_counter = 0
         for r in range(n_rows):
             for c in range(n_cols):
                 if signal_counter >= n_signals: break
-                ax[r, c].plot(signal_matrix[signal_counter, :])
+                if time is None:
+                    axes[r, c].plot(signal_matrix[signal_counter, :])
+                else:
+                    axes[r, c].plot(time, signal_matrix[signal_counter, :])
                 signal_counter += 1
-        
-        if show:
-            plt.show()
-        if save_path:
-            plt.savefig(save_path, dpi=300)
 
+    def init_axes(signal_matrix: np.ndarray) -> plt.Axes:
+        """initialize a grid of subplots"""
+        n_signals = signal_matrix.shape[0]
+        rows, cols = infer_subplot_rows_cols(n_signals)
+        fig, axes = plt.subplots(rows, cols, sharex=True, sharey=True)
+        return fig, axes
     
-    if oscillators_per_subplot is None:
-        plot_row_per_plot(signal_matrix, show, save_path)
-    else:
+    def add_labels(axes: plt.Axes, signal_matrix: np.ndarray) -> None:
+        """add labels to the subplots"""
+        n_signals = signal_matrix.shape[0]
+        rows, cols = infer_subplot_rows_cols(n_signals)
+        plt.suptitle("individual oscillators")
+        if time is None: # samples
+            axes[rows-1, cols//2].set_xlabel("time [a.u.]")
+        else: # time
+            axes[rows-1, cols//2].set_xlabel("time [s]")
+        axes[rows//2, 0].set_ylabel("amplitude [a.u.]")
+
+    figures = []
+    if oscillators_per_subplot is None: # plot all oscillators in one figure
+        fig, axes = init_axes(signal_matrix)
+        figures.append(fig)
+        plot_row_per_plot(signal_matrix, axes)
+        add_labels(axes, signal_matrix)
+
+    else: # divide oscillators across figures
         subsets = subset_matrix(signal_matrix, oscillators_per_subplot)
         for i, subset in enumerate(subsets):
+            fig, axes = init_axes(subset)
+            figures.append(fig)
+            plot_row_per_plot(subset, axes)
+            add_labels(axes, subset)
+
+    if save_path: # save all figures generated in this function
+        for i, fig in enumerate(figures):
             path = None if save_path is None else Path(save_path.parent, f"{save_path.stem}_{i}{save_path.suffix}")
-            plot_row_per_plot(subset, show, path)
-        
+            fig.savefig(path, dpi=300)    
+    if show:
+        plt.show()
 
 def plot_f0_hist(signal_matrix: np.ndarray, sample_spacing: float, title: str = None, show: bool = False, save_path: Path = None) -> None:
     """plot a histogram of the fundamental frequency of each oscillator in the matrix"""
@@ -103,21 +130,39 @@ def plot_rmse_hist(rmse_li: list, show: bool = False, title: str = None, save_pa
 
 
 def plot_pred_target(pred: np.ndarray, target: np.ndarray, time: Union[np.ndarray, None] = None,
-    show: bool = False, save_path: Path = None, title: str = None) -> None:
+    show: bool = False, save_path: Path = None, title: str = None, ylabel = "amplitude [a.u.]") -> None:
     """plot a 2 dimensional time series signal"""
-    fig, ax1 = plt.subplots()
+    fig, ax1 = plt.subplots() # ax1 is on the bottom
 
     if time is not None: # time axis
-        ax2 = ax1.twiny()
-        ax2.plot(time, target, label="target", linestyle="dashed", alpha=0.9)
-        ax2.plot(time, pred, label="prediction", linestyle="dashdot", alpha=0.9)
-        ax2.set_xlabel("time [s]")
+        ax2 = ax1.twiny() # ax2 is on the top
+        
+        # assign which axis goes top or bottom
+        ax_time = ax1
+        ax_samples = ax2
+
+        # time axis
+        ax_time.plot(time, target, label="target", linestyle="dashed", alpha=0.9)
+        ax_time.plot(time, pred, label="prediction", linestyle="dashdot", alpha=0.9)
+        ax_time.set_xlabel("time [s]")
+        ax_time.set_ylabel(ylabel)
+    else:
+        ax_samples = ax1
 
     # sample axis
-    ax1.plot(target, label="target", linestyle="dashed", alpha=0.9)
-    ax1.plot(pred, label="prediction", linestyle="dashdot", alpha=0.9)
-    ax1.set_xlabel("sample index")
-    ax1.set_ylabel("amplitude")
+    ax_samples.plot(target, label="target", linestyle="dashed", alpha=0.9)
+    ax_samples.plot(pred, label="prediction", linestyle="dashdot", alpha=0.9)
+    ax_samples.set_ylabel(ylabel)
+    if time is None:
+        ax_samples.set_xlabel("time [a.u.]")
+    else:
+        # hide sample ticks
+        ax_samples.get_xaxis().set_visible(False)
+        # add sampling rate to title
+        duration = time[-1] - time[0]
+        samples = len(time)
+        sampling_rate = int(1 / (duration/samples))
+        title += r"; $f_s$=" + f"{sampling_rate} [1/s]"
     plt.legend()
     if title: plt.title(title)
 
@@ -127,25 +172,40 @@ def plot_pred_target(pred: np.ndarray, target: np.ndarray, time: Union[np.ndarra
         plt.savefig(save_path, dpi=300)
 
 
-def plot_signal(y: np.ndarray, x_time: np.ndarray = None, ylabel: str = None, title: str = None, show: bool = False, save_path: Path = None) -> None:
+def plot_signal(y: np.ndarray, x_time: np.ndarray = None, ylabel: str = None, title: str = "", show: bool = False, save_path: Path = None) -> None:
     """plot a 2 dimensional time series signal"""
-    fig, ax1 = plt.subplots()
+    _, ax1 = plt.subplots()
 
     if x_time is not None:
         ax2 = ax1.twiny()
-        ax2.plot(x_time, y)
-        ax2.set_xlabel("time [s]")
 
+        # assign which axis goes top or bottom
+        ax_time = ax1
+        
+        # hide samples axis
+        ax_samples = ax2
+        ax_samples.get_xaxis().set_visible(False)
+
+        ax_time.plot(x_time, y)
+        ax_time.set_xlabel("time [s]")
+    else: # no time axis
+        ax_samples = ax1
+
+    # add ylabel
     if ylabel is None:
-        ax1.set_ylabel("amplitude")
+        ax1.set_ylabel("amplitude [a.u.]")
     else:
         ax1.set_ylabel(ylabel)
 
-    if title: plt.title(title)
+    # add number of samples to title
+    if len(title) == 0:
+        title = f"{len(y)} samples"
+    else:
+        title += f"; {len(y)} samples"
+    plt.title(title)
     
-    ax1.set_xlabel("sample index")
-    x_samples = list(range(len(y)))
-    ax1.plot(x_samples, y)
+    ax_samples.set_xlabel("time [a.u.]")
+    ax_samples.plot(y)
 
     if show:
         plt.show()

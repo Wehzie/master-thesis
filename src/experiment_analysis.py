@@ -185,7 +185,7 @@ def plot_samples_vs_rmse(df: pd.DataFrame, show: bool = False) -> str:
     df = df.filter(items=["algo_name", "samples", "mean_rmse", "std_rmse"])
     fig, legend_as_fig = plot_rmse_by_algo(df, "samples")
     fig.gca().set_title(title)
-    fig.gca().set_xlabel("number of samples")
+    fig.gca().set_xlabel("time [a.u.]")
     figure_description = "samples_vs_rmse"
     save_fig_n_legend(fig, legend_as_fig, figure_description, show)
     return figure_description

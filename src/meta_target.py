@@ -30,10 +30,10 @@ class MetaTargetSample:
         self.sampling_rate = data_preprocessor.get_sampling_rate_after_resample(target_middle, target_resampled, raw_sampling_rate)
         self.dtype = raw_dtype
         self.duration = len(target_resampled) / self.sampling_rate
-        self.time = np.linspace(0, self.duration, int(self.duration * self.sampling_rate))
+        self.time = np.linspace(0, self.duration, int(self.duration * self.sampling_rate), endpoint=False)
     
     def __repr__(self) -> str:
-        return f"MetaTarget(signal={self.signal}, sampling_rate={self.sampling_rate}, dtype={self.dtype})"
+        return f"MetaTargetSample(samples={len(self.signal)}, duration={self.duration}, sampling_rate={self.sampling_rate}, dtype={self.dtype})"
 
 class MetaTargetTime:
     """load signal including meta data, time based processing"""

@@ -56,8 +56,9 @@ class PythonSigGen(gen_signal.SignalGenerator):
         # ceil is used to handle float durations
         ceil_duration = np.ceil(duration)
         ceil_samples = int(ceil_duration * sampling_rate)
-        
-        time = np.linspace(0, ceil_duration, ceil_samples)[0:samples]
+
+        # NOTE: endpoint=True might yield lower RMSE, but also samples unevenly for fixed frequency signals
+        time = np.linspace(0, ceil_duration, ceil_samples, endpoint=False)[0:samples]
         signal = amplitude * scipy.signal.sawtooth(phase * np.pi + 2 * np.pi * freq * time, width=0.15)
         return signal, time
 
@@ -93,7 +94,7 @@ def gen_custom_inv_sawtooth(
     sampling_rate: int,
     ) -> np.ndarray:
     """formula to compute the inverse sawtooth without scipy"""
-    x = np.linspace(1, duration, sampling_rate*duration)
+    x = np.linspace(1, duration, sampling_rate*duration, endpoint=False)
     T = 1 / freq # period
     y = offset + (2*amplitude) / np.pi * np.arctan(1 / np.tan(np.pi*phase + np.pi*x / T))
 
@@ -173,7 +174,7 @@ def main():
         print("sample from rand_args")
         sample = sig_generator.draw_sample(rand_args)
         data_analysis.plot_signal(sample.weighted_sum, time)
-        data_analysis.plot_individual_oscillators(sample.signal_matrix)
+        data_analysis.plot_individual_oscillators(sample.signal_matrix, time)
         #data_analysis.plot_f0_hist(sample.signal_matrix, 1/sampling_rate)
         plt.show()
 

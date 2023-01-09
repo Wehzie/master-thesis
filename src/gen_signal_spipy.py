@@ -140,31 +140,36 @@ def main():
         det_args = params.spice_single_det_args
         det_args.time_stop = 1e-5
         single_oscillator = sig_gen.draw_single_oscillator(det_args)
-        x_time = np.linspace(0, det_args.time_stop, len(single_oscillator))
+        x_time = np.linspace(0, det_args.time_stop, len(single_oscillator), endpoint=False)
         data_analysis.plot_signal(single_oscillator, x_time, show=True)
 
-        print("hi")
         new_signal, new_time = extrapolate_oscillator(single_oscillator, x_time, 1e-4)
         data_analysis.plot_signal(new_signal, new_time, show=True)
 
+    # test drawing single oscillators from SPICE and summing them up in Python
     if True:
-        # test drawing single oscillators from SPICE and summing them up in Python
+        print("test drawing single oscillators from SPICE and summing them up in Python")
         rand_args = params.spice_rand_args_uniform
-        rand_args.n_osc = 10
+        rand_args.n_osc = 25
         rand_args.time_stop = 1e-5
         signal_matrix, det_args = sig_gen.draw_n_oscillators(rand_args)
+        x_time = np.linspace(0, rand_args.time_stop, signal_matrix.shape[1], endpoint=False)
         sig_sum = sum(signal_matrix)
-        data_analysis.plot_signal(sig_sum)
-        data_analysis.plot_individual_oscillators(signal_matrix, show=True)
+        data_analysis.plot_signal(sig_sum, x_time)
+        data_analysis.plot_individual_oscillators(signal_matrix, x_time, show=True, save_path=Path("data/hybrid_oscillators.png"))
 
+    # test drawing a sample
     if True:
-        # test drawing a sample
+        print("test drawing a sample")
         rand_args = params.spice_rand_args_uniform
-        rand_args.n_osc = 10
+        n_osc = 10
+        rand_args.n_osc = n_osc
+        rand_args.weight_dist.n = n_osc
         rand_args.time_stop = 1e-5
         sample = sig_gen.draw_sample(rand_args)
-        data_analysis.plot_signal(sample.weighted_sum)
-        data_analysis.plot_individual_oscillators(signal_matrix, show=True)
+        x_time = np.linspace(0, rand_args.time_stop, sample.signal_matrix.shape[1], endpoint=False)
+        data_analysis.plot_signal(sample.weighted_sum, x_time)
+        data_analysis.plot_individual_oscillators(sample.signal_matrix, x_time, show=True)
 
 if __name__ == "__main__":
     main()

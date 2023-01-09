@@ -36,7 +36,7 @@ class PythonSignalRandArgs:
             time = np.arange(0, self.duration, 1/self.sampling_rate)[0:self.samples]
         else: # samples given
             duration = self.samples / self.sampling_rate
-            time = np.linspace(0, duration, self.samples)
+            time = np.linspace(0, duration, self.samples, endpoint=False)
         return time
 
 

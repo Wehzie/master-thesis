@@ -15,7 +15,7 @@ py_rand_args_n_osc = 10
 py_rand_args_uniform = party.PythonSignalRandArgs(
     n_osc = py_rand_args_n_osc,
     duration = None,
-    samples = 50,
+    samples = 30,
     freq_dist = dist.Dist(rng.uniform, low=1e5, high=1e6),
     amplitude = 0.5,                                              # resembling 0.5 V amplitude of V02
     weight_dist = dist.WeightDist(rng.uniform, low=0, high=10, n=py_rand_args_n_osc),   # scale down when <1 and scale up when >1

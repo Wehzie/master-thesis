@@ -41,6 +41,7 @@ class Sample():
         self.offset = offset
         self.rmse = rmse
         self.signal_args = signal_args
+        # time axis is stored in the target or signal generation args (rand_args)
                                         
 
     def __str__(self) -> str:
@@ -172,7 +173,7 @@ def evaluate_prediction(best_sample: Sample, m_target: meta_target.UnionMetaTarg
         data_analysis.plot_fourier(best_sample.weighted_sum, title=f"{alg_name}, sum")
         data_analysis.plot_fourier(reg_sample.weighted_sum, title=f"{alg_name}, regression")
     if decompose_sample: # show individual signals in best sample
-        data_analysis.plot_individual_oscillators(best_sample.signal_matrix)
+        data_analysis.plot_individual_oscillators(best_sample.signal_matrix, m_target.time)
         data_analysis.plot_f0_hist(best_sample.signal_matrix, 1/m_target.sampling_rate, title=f"fundamental frequency distribution")
 
     print(f"{alg_name}")
