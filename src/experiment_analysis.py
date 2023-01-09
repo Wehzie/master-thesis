@@ -148,6 +148,9 @@ def save_fig_n_legend(fig: plt.Figure, legend_as_fig: plt.Figure, name: str, sho
         fig.savefig(Path("data") / (name + "_with_legend.png"), dpi=300)
         data_io.pickle_object(fig, Path("data") / (name + "_figure.pickle"))
     if show: plt.show()
+    # close figures to save memory
+    if legend_as_fig is not None: plt.close(legend_as_fig)
+    plt.close(fig)
 
 def plot_n_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool = False) -> str:
     """exp1: plot number of oscillators, n, against rmse for multiple algorithms with z_ops and rand_args fixed"""

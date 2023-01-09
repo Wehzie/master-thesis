@@ -1,7 +1,7 @@
 from typing import Final
 import numpy as np
 MULTIPROCESSING: Final = False
-if MULTIPROCESSING: 
+if MULTIPROCESSING:
     GLOBAL_SEED = None # TODO: array of seeds and generators, one for each process
 else:
     GLOBAL_SEED = 5

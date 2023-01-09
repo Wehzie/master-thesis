@@ -87,14 +87,10 @@ def run_multi_directional_experiment():
     # also for frequency band
 
 
-
-# TODO: store intermediate pickle of results
-# TODO:
-# solve the problem of too many open figures
-# https://stackoverflow.com/questions/21884271/warning-about-too-many-open-figures
-# https://stackoverflow.com/questions/16334588/create-a-figure-that-is-reference-counted/16337909#16337909
-# https://stackoverflow.com/questions/3783217/get-the-list-of-figures-in-matplotlib
-# TODO: legend frame too small
+# TODO: address running multiple targets automatically
+# TODO: check that multiprocessing works
+# TODO: consider different signal generation function for Python, more similar to spice
+# TODO: fix aliasing for Python
 @data_analysis.print_time
 def main():
     # SpiPy
@@ -135,7 +131,7 @@ def main():
             m_target.signal = const.RNG.normal(-1, 1, rand_args.samples)*5 + const.RNG.uniform(-1, 1, rand_args.samples)*2
             data_analysis.plot_signal(m_target.signal, show=True)
 
-        algo_sweep_test = param_util.init_algo_sweep(m_target.signal, rand_args, max_z_ops=5e2, m_averages=2)
+        algo_sweep_test = param_util.init_algo_sweep(m_target.signal, rand_args, max_z_ops=1e2, m_averages=2)
 
         # qualitative_algo_sweep(algo_sweep_test, m_target, visual=False)
         produce_all_results(algo_sweep_test, m_target.signal, rand_args)

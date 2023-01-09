@@ -10,7 +10,7 @@ import param_util
 import dist
 rng = const.RNG
 
-py_rand_args_n_osc = 25
+py_rand_args_n_osc = 10
 
 py_rand_args_uniform = party.PythonSignalRandArgs(
     n_osc = py_rand_args_n_osc,
