@@ -61,7 +61,7 @@ def init_target2rand_args(rand_args: party.PythonSignalRandArgs, scale_factor: f
     return rand_args, (sampling_rate, target, raw_dtype)
 
 
-def init_algo_sweep(target: np.ndarray, rand_args: party.PythonSignalRandArgs, sig_generator: gen_signal.SignalGenerator = gensi_python.PythonSigGen(), max_z_ops: int = 3e3, m_averages: int = 1) -> sweety.AlgoSweep:
+def init_algo_sweep(target: np.ndarray, rand_args: party.PythonSignalRandArgs, sig_generator: gen_signal.SignalGenerator = gensi_python.PythonSigGen(), max_z_ops: int = 3e3, m_averages: int = 1, test_mode: bool = False) -> sweety.AlgoSweep:
     """initialize a set of algorithms with varying arguments for a fixed target and a fixed set of rand_args from which to draw oscillators
     
     args:
@@ -90,6 +90,10 @@ def init_algo_sweep(target: np.ndarray, rand_args: party.PythonSignalRandArgs, s
         ),
         sweety.AlgoWithArgs(
             almoca.MCExploitWeight,
+            algarty.AlgoArgs(rand_args, target, max_z_ops, j_replace=1, sig_generator=sig_generator),
+        ),
+        sweety.AlgoWithArgs(
+            almoca.MCExploitNeighborWeight,
             algarty.AlgoArgs(rand_args, target, max_z_ops, j_replace=1, sig_generator=sig_generator),
         ),
         sweety.AlgoWithArgs(
@@ -143,19 +147,7 @@ def init_algo_sweep(target: np.ndarray, rand_args: party.PythonSignalRandArgs, s
             algarty.AlgoArgs(rand_args, target, max_z_ops, sig_generator=sig_generator),
         ),
     ]
-    scipy_algos = [
-        sweety.AlgoWithArgs(
-            almoca.BasinHopping,
-            algarty.AlgoArgs(rand_args, target, max_z_ops, sig_generator=sig_generator),
-        ),
-        sweety.AlgoWithArgs(
-            almoca.ScipyAnneal,
-            algarty.AlgoArgs(rand_args, target, max_z_ops, sig_generator=sig_generator),
-        ),
-        sweety.AlgoWithArgs(
-            almoca.ScipyDualAnneal,
-            algarty.AlgoArgs(rand_args, target, max_z_ops, sig_generator=sig_generator),
-        ),
+    population_algos = [
         sweety.AlgoWithArgs(
             alevo.DifferentialEvolution,
             algarty.AlgoArgs(rand_args, target, max_z_ops, sig_generator=sig_generator),
@@ -167,12 +159,24 @@ def init_algo_sweep(target: np.ndarray, rand_args: party.PythonSignalRandArgs, s
             algarty.AlgoArgs(rand_args, target, max_z_ops, j_replace=1, sig_generator=sig_generator),
         ),
         sweety.AlgoWithArgs(
-            almcmc.MCAnneal,
+            almcmc.MCExploitAnneal,
             algarty.AlgoArgs(rand_args, target, max_z_ops, j_replace=1, sig_generator=sig_generator),
         ),
         sweety.AlgoWithArgs(
-            almcmc.MCAnnealWeight,
+            almcmc.MCExploitAnnealWeight,
             algarty.AlgoArgs(rand_args, target, max_z_ops, j_replace=1, sig_generator=sig_generator),
+        ),
+        sweety.AlgoWithArgs(
+            almcmc.BasinHopping,
+            algarty.AlgoArgs(rand_args, target, max_z_ops, sig_generator=sig_generator),
+        ),
+        sweety.AlgoWithArgs(
+            almcmc.ScipyAnneal,
+            algarty.AlgoArgs(rand_args, target, max_z_ops, sig_generator=sig_generator),
+        ),
+        sweety.AlgoWithArgs(
+            almcmc.ScipyDualAnneal,
+            algarty.AlgoArgs(rand_args, target, max_z_ops, sig_generator=sig_generator),
         ),
     ]
     gradient_algos = [
@@ -182,9 +186,11 @@ def init_algo_sweep(target: np.ndarray, rand_args: party.PythonSignalRandArgs, s
         ),
     ]
 
-    all_algos_with_args = one_shot_algos + exploit_algos + grow_shrink_algos + oscillator_anneal_algos + las_vegas_algos + scipy_algos + mcmc_algos + gradient_algos
-    some_algos_with_args = exploit_algos + mcmc_algos + scipy_algos + gradient_algos
+    all_algos_with_args = one_shot_algos + exploit_algos + grow_shrink_algos + oscillator_anneal_algos + las_vegas_algos + population_algos + mcmc_algos + gradient_algos
+    if test_mode:
+        return sweety.AlgoSweep(all_algos_with_args, m_averages)
 
+    some_algos_with_args = one_shot_algos + exploit_algos + grow_shrink_algos + oscillator_anneal_algos + las_vegas_algos + population_algos + mcmc_algos + gradient_algos
     single_algo_with_args = [
         sweety.AlgoWithArgs(
             almoca.MCExploit,
@@ -192,14 +198,14 @@ def init_algo_sweep(target: np.ndarray, rand_args: party.PythonSignalRandArgs, s
         ),
     ]
     
-    return sweety.AlgoSweep(all_algos_with_args, m_averages)
+    return sweety.AlgoSweep(some_algos_with_args, m_averages)
 
-# TODO: use for tests
 algo_list: List[SearchAlgo] = [
     almoca.MCExploit,
     almoca.MCExploitDecoupled,
     almoca.MCExploitWeight,
     almoca.MCExploitFast,
+    almoca.MCExploitNeighborWeight,
     almoca.MCOneShot,
     almoca.MCOneShotWeight,
     almoca.MCGrowShrink,
@@ -209,14 +215,14 @@ algo_list: List[SearchAlgo] = [
     almoca.MCOscillatorAnnealWeight,
     almoca.MCOscillatorAnnealLog,
     almoca.MCOscillatorAnnealLogWeight,
-    almoca.BasinHopping,
-    almoca.ScipyAnneal,
-    almoca.ScipyDualAnneal,
     alave.LasVegas,
     alave.LasVegasWeight,
     alevo.DifferentialEvolution,
-    algra.LinearRegression,
     almcmc.MCExploitErgodic,
-    almcmc.MCAnneal,
-    almcmc.MCAnnealWeight,
+    almcmc.MCExploitAnneal,
+    almcmc.MCExploitAnnealWeight,
+    almcmc.BasinHopping,
+    almcmc.ScipyAnneal,
+    almcmc.ScipyDualAnneal,
+    algra.LinearRegression,
 ]

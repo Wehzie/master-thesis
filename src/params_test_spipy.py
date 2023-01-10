@@ -19,7 +19,7 @@ spice_single_det_args = party.SpiceSingleDetArgs(
     down_sample_factor=1/100,
 )
 
-spice_rand_args_n_osc = 50
+spice_rand_args_n_osc = 10
 v_in = 14
 weight_dist_low = 0
 weight_dist_high = 10

@@ -2,7 +2,7 @@ import numpy as np
 
 import copy
 from abc import ABC, abstractmethod
-from typing import Union, Tuple, List, Callable
+from typing import Final, Union, Tuple, List, Callable
 
 import data_analysis
 import param_types as party
@@ -73,6 +73,31 @@ class SignalGenerator(ABC):
             det_arg_li: a list of arguments used to generate each oscillator
         """
         raise NotImplementedError
+
+
+    @staticmethod
+    def get_adjacent_neighbors(osc_to_replace: np.ndarray, num_oscillators: int) -> List[int]:
+        """add the two adjacent neighbors to a list of oscillators"""
+        if len(osc_to_replace) < 1: return osc_to_replace
+
+        neighbors = list(osc_to_replace)
+        lower_neighbor = int(np.min(osc_to_replace) - 1)
+        upper_neighbor = int(np.max(osc_to_replace) + 1)
+        if lower_neighbor >= 0:
+            neighbors = [lower_neighbor] + neighbors
+        if upper_neighbor < num_oscillators:
+            neighbors = neighbors + [upper_neighbor]
+        return np.array(neighbors)
+
+
+    @staticmethod
+    def update_weight_distribution(base_sample: sample.Sample, temp_args: party.UnionRandArgs, neighborhood: List[int]) -> party.UnionRandArgs:
+        """update the weight distribution to draw from a gaussian over the neighborhood"""
+        temp_args.n_osc = len(neighborhood)
+        mean_weight = np.mean(base_sample.weights[neighborhood])
+        stddev = np.std(base_sample.weights)
+        temp_args.weight_dist = dist.WeightDist(const.RNG.normal, loc=mean_weight, scale=stddev, n=len(neighborhood))
+        return temp_args
 
 
     def draw_sample(self, rand_args: party.UnionRandArgs, target: Union[None, np.ndarray] = None, store_det_args: bool = False) -> sample.Sample:
@@ -191,7 +216,7 @@ class SignalGenerator(ABC):
         return new_sample
     
 
-    def draw_partial_weight_neighbor_sample(self, base_sample: sample.Sample, rand_args: party.UnionRandArgs,
+    def draw_weight_neighbor(self, base_sample: sample.Sample, rand_args: party.UnionRandArgs,
     osc_to_replace: List[int], target: np.ndarray,
     ) -> sample.Sample:
         """take a base sample and replace j weights.
@@ -199,22 +224,25 @@ class SignalGenerator(ABC):
         compared to draw_partial_sample, this function draws weights from a distribution centered around the
         mean weight of the oscillators to be reweighted.
         """
+
+        def update_weights(new_sample: sample.Sample, temp_args: party.UnionRandArgs, neighborhood: List[int]) -> sample.Sample:
+            """draw new weights and update a sample"""
+            partial_weights = self.draw_n_weights(temp_args)
+            new_sample.weights[neighborhood] = partial_weights
+            return new_sample
+
+        # separate offset from weights
         osc_to_replace, replace_offset = self.separate_oscillators_from_offset(osc_to_replace, rand_args.n_osc)
 
-        new_sample = copy.deepcopy(base_sample) # copy the base sample
-        temp_args = copy.deepcopy(rand_args) # copy to avoid side effects
-        
-        # update the underlying distributions to get the right number of oscillators
-        # and to get adjacent neighbors instead of uniform random draws
-        temp_args.n_osc = len(osc_to_replace)
-        mean_weight = np.mean(base_sample.weights[osc_to_replace])
-        stddev = np.std(base_sample.weights)
-        temp_args.weight_dist = dist.WeightDist(const.RNG.normal, loc=mean_weight, scale=stddev, n=len(osc_to_replace))
-        # NOTE: would be cool to do this with frequency, phase, offset as well
+        # avoid side effects
+        new_sample = copy.deepcopy(base_sample)
+        temp_args = copy.deepcopy(rand_args)
 
-        partial_weights = self.draw_n_weights(temp_args)
-        new_sample.weights[osc_to_replace] = partial_weights
+        neighborhood = self.get_adjacent_neighbors(osc_to_replace, temp_args.n_osc)
+        temp_args = self.update_weight_distribution(new_sample, temp_args, neighborhood)
+        new_sample = update_weights(new_sample, temp_args, neighborhood)
 
+        # draw new offset
         if replace_offset:
             new_sample.offset = self.draw_offset(temp_args)
 

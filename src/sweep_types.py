@@ -17,7 +17,16 @@ class AlgoSweep:
     produces a mean rmse, standard deviation and number of operations (z_ops) for a given configuration"""
     algo_with_args: List[AlgoWithArgs]
     m_averages: int            # number of averages for each experimental configuration
-
+    # TODO: finish implementing experiment masks
+    #algo_groups: List[Tuple[List[algo.SearchAlgo]] = None 
+                                                    # list of groups of algorithms, that are interesting to compare
+                                                    # for example
+                                                    # gradient based vs random search based algorithms
+                                                    # each 
+                                                    #   the purpose is
+                                                    #   1) plotting the results of each group in a different color
+                                                    #   2) averaging the results of each group
+                                                    #   3) plotting the results of each group separately
 
 
 @dataclass

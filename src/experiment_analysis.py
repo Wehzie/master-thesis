@@ -122,11 +122,20 @@ def plot_rmse_by_algo(df: pd.DataFrame, column_name: str, separate_legend: bool 
     args:
         column_name: for example amplitude or freq_range
     """
+    # const.ALGO_COLORS = {
+    #     "MCOneShot": "blue",
+    #     "MCOneShotWeight": "red",
+    # }
+
     fig = plt.figure()
     algo_names = set(df["algo_name"])
     algo_names = sorted(algo_names)
     dfs_by_algo = [df.loc[df["algo_name"] == name] for name in algo_names]        
     for data, name in zip(dfs_by_algo, algo_names):
+        # TODO: finish implementation
+        # color = const.ALGO_COLORS[name]
+        # color = None
+        #plt.errorbar(data[column_name], data["mean_rmse"], data["std_rmse"], elinewidth=1, capsize=5, capthick=1, markeredgewidth=1, label=name, color=color)
         plt.errorbar(data[column_name], data["mean_rmse"], data["std_rmse"], elinewidth=1, capsize=5, capthick=1, markeredgewidth=1, label=name)
     plt.legend(title="Algorithm", framealpha=0.5)
     plt.gca().set_ylabel("RMSE(generated, target)")
@@ -152,10 +161,13 @@ def save_fig_n_legend(fig: plt.Figure, legend_as_fig: plt.Figure, name: str, sho
     if legend_as_fig is not None: plt.close(legend_as_fig)
     plt.close(fig)
 
-def plot_n_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool = False) -> str:
+def plot_n_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool = False, algo_filter: List[str] = None) -> str:
     """exp1: plot number of oscillators, n, against rmse for multiple algorithms with z_ops and rand_args fixed"""
     title = get_plot_title(df, target_samples)
     df = df.filter(items=["algo_name", "n_osc", "mean_rmse", "std_rmse"])
+    # TODO: finish implementation
+    # if algo_filter is not None:
+    #     df = df.loc[df["algo_name"].isin(algo_filter)]
     fig, legend_as_fig = plot_rmse_by_algo(df, "n_osc")
     fig.gca().set_title(title)
     fig.gca().set_xlabel("number of oscillators")

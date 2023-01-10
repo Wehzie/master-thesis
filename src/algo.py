@@ -12,6 +12,7 @@ import numpy as np
 class SearchAlgo(ABC):
 
     def __init__(self, algo_args: algarty.AlgoArgs):
+        if algo_args is None: return # empty instance to get the class name 
         self.rand_args = algo_args.rand_args
         self.target = algo_args.target
         self.max_z_ops = algo_args.max_z_ops
@@ -188,11 +189,11 @@ class SearchAlgo(ABC):
         self.z_ops += len(osc_to_replace) # len(osc_to_replace) == j_replace
         return self.sig_generator.draw_partial_sample(base_sample, self.rand_args, osc_to_replace, True, self.target, self.store_det_args)
 
-    def draw_partial_weight_neighbor_sample(self, base_sample: sample.Sample, osc_to_replace: List[int]) -> sample.Sample:
+    def draw_weight_neighbor(self, base_sample: sample.Sample, osc_to_replace: List[int]) -> sample.Sample:
         """given a sample replace j weights, update z_ops, recompute metrics
         weights are drawn from a neighborhood gaussian of the base sample instead of being drawn from the initial distribution"""
         self.z_ops += len(osc_to_replace)
-        return self.sig_generator.draw_partial_weight_neighbor_sample(base_sample, self.rand_args, osc_to_replace, self.target)
+        return self.sig_generator.draw_weight_neighbor(base_sample, self.rand_args, osc_to_replace, self.target)
 
     def handle_mp(self, sup_func_kwargs: dict) -> None:
         """handle multi processing by modifying numpy the random number generator
