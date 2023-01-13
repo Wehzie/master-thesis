@@ -3,6 +3,7 @@ from params import bird_params
 
 from pathlib import Path
 import networkx as nx
+from networkx.drawing.nx_pydot import graphviz_layout
 import matplotlib.pyplot as plt
 
 PARAM = bird_params["magpie"]
@@ -30,8 +31,9 @@ def simple_graph() -> nx.Graph:
 
 def main():
     G = nx.balanced_tree(2, 2, create_using=nx.DiGraph())
-    nx.draw(G, with_labels=True)
+    pos = graphviz_layout(G, prog="dot")
+    nx.draw(G, pos, with_labels=True)
     plt.show()
-    build_tree_netlist(G, Path("yolo.cir"), PARAM)
+    build_tree_netlist(G, Path("tree_netlist.cir"), PARAM)
 
 main()

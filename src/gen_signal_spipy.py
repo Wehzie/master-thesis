@@ -29,7 +29,7 @@ class SpipySignalGenerator(gen_signal.SignalGenerator):
     # ability to generate single oscillator in ngspice
     # ability to generate k oscillators and sum them in ngspice
     @staticmethod
-    def draw_single_oscillator(det_args: party.SpiceSingleDetArgs, work_dir: Path = Path("data")) -> np.ndarray:
+    def draw_single_oscillator(det_args: party.SpiceSingleDetArgs, work_dir: Path = const.WRITE_DIR) -> np.ndarray:
         """generate a time series from a single spice oscillator"""
         # generate path to save signal and circuit
         experiment_path = data_io.find_dir_name(work_dir)

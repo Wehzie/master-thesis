@@ -124,7 +124,7 @@ class SearchAlgo(ABC):
         
         return best_sample, rmse_li, rmse_norm_li
 
-    def stop_on_z_ops(self, verbose: bool = True) -> bool:
+    def stop_on_z_ops(self, verbose: bool = False) -> bool:
         """return true when an algorithm exceeds the maximum number of allowed operations"""
         if self.max_z_ops is None: return False
         if self.z_ops >= self.max_z_ops:

@@ -6,3 +6,4 @@ pandas
 networkx
 scikit-learn
 tqdm
+pydot

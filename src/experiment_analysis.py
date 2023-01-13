@@ -2,9 +2,10 @@ import result_types as resty
 import const
 import param_types as party
 import data_io
+import param_mask
 
 import copy
-from typing import List, Union, Tuple
+from typing import Callable, List, Union, Tuple
 from pathlib import Path
 import itertools
 
@@ -116,27 +117,36 @@ def filter_df_by_dist_name(df: pd.DataFrame, attr_name: str, dist_name: str) -> 
     if dist_name == "normal":
         return df[df[f"{attr_name}_dist_loc"].notna()]
 
-def plot_rmse_by_algo(df: pd.DataFrame, column_name: str, separate_legend: bool = const.HOARD_DATA) -> Tuple[plt.Figure, plt.Figure, plt.Figure]:
+
+# TODO: the better approach here is to pass the unmodified algorithm name in the df
+def clean_algo_name_from_args(algo_name: str) -> str:
+    """remove the arguments that are part of an algorithm's name.
+    for example 'MCExploit, j=1' -> 'MCExploit'."""
+    return algo_name.split(",", 1)[0]
+
+
+def pick_color_linestyle(mask: param_mask.ExperimentMask, algo_name: str) -> Tuple[Union[None, str]]:
+    """map an algorithm to a color according to the mask"""
+    if mask is None:
+        return None, None
+    algo_name = clean_algo_name_from_args(algo_name)
+    return mask.get_color_map()[algo_name], "solid"
+
+
+def plot_rmse_by_algo(df: pd.DataFrame, column_name: str, separate_legend: bool = const.HOARD_DATA, mask: param_mask.ExperimentMask = None,
+) -> Tuple[plt.Figure, plt.Figure]:
     """plot one line for each algorithm given an attribute column in a dataframe
 
     args:
         column_name: for example amplitude or freq_range
     """
-    # const.ALGO_COLORS = {
-    #     "MCOneShot": "blue",
-    #     "MCOneShotWeight": "red",
-    # }
-
     fig = plt.figure()
     algo_names = set(df["algo_name"])
     algo_names = sorted(algo_names)
     dfs_by_algo = [df.loc[df["algo_name"] == name] for name in algo_names]        
     for data, name in zip(dfs_by_algo, algo_names):
-        # TODO: finish implementation
-        # color = const.ALGO_COLORS[name]
-        # color = None
-        #plt.errorbar(data[column_name], data["mean_rmse"], data["std_rmse"], elinewidth=1, capsize=5, capthick=1, markeredgewidth=1, label=name, color=color)
-        plt.errorbar(data[column_name], data["mean_rmse"], data["std_rmse"], elinewidth=1, capsize=5, capthick=1, markeredgewidth=1, label=name)
+        color, linestyle = pick_color_linestyle(mask, name)
+        plt.errorbar(data[column_name], data["mean_rmse"], data["std_rmse"], elinewidth=1, capsize=5, capthick=1, markeredgewidth=1, label=name, color=color, linestyle=linestyle)
     plt.legend(title="Algorithm", framealpha=0.5)
     plt.gca().set_ylabel("RMSE(generated, target)")
 
@@ -148,31 +158,59 @@ def plot_rmse_by_algo(df: pd.DataFrame, column_name: str, separate_legend: bool 
     
     return fig, legend_as_fig
 
-def save_fig_n_legend(fig: plt.Figure, legend_as_fig: plt.Figure, name: str, show: bool = False) -> None:
-    fig.savefig(Path("data") / (name + ".png"), dpi=300)
+def save_mask_plot(fig: plt.Figure, legend_as_fig: plt.Figure, name: str, save_dir: Path, mask: param_mask.ExperimentMask) -> None:
+    if legend_as_fig is not None: plt.close(legend_as_fig) # legend is already on main plot
+    name = name + "_MASK_" + mask.filename
+    fig.gca().legend().set_visible(True) # save figure with legend
+    fig.savefig(save_dir / (name + ".png"), dpi=300)
+
+def save_unmasked_plot(fig: plt.Figure, legend_as_fig: plt.Figure, name: str, save_dir: Path) -> None:
+    fig.savefig(save_dir / (name + ".png"), dpi=300)
     if legend_as_fig is not None: # const.HOARD_DATA == True
-        fig.savefig(Path("data") / (name + ".svg"), transparent=True)
-        legend_as_fig.savefig(Path("data") / (name + "_legend.png"), dpi=300)
+        legend_as_fig.savefig(save_dir / (name + "_legend.png"), dpi=300)
         fig.gca().legend().set_visible(True) # save figure with legend
-        fig.savefig(Path("data") / (name + "_with_legend.png"), dpi=300)
-        data_io.pickle_object(fig, Path("data") / (name + "_figure.pickle"))
+        fig.savefig(save_dir / (name + "_with_legend.png"), dpi=300)
+        data_io.pickle_object(fig, save_dir / (name + "_figure.pickle"))
+        fig.gca().legend().set_visible(False) # hide legend on main plot for viewing
+
+def save_fig_n_legend(fig: plt.Figure, legend_as_fig: plt.Figure, name: str, save_dir: Path = const.WRITE_DIR, show: bool = False, mask: param_mask.ExperimentMask = None) -> None:
+    """save a figure and its legend to disk"""
+    if mask is None:
+        save_unmasked_plot(fig, legend_as_fig, name, save_dir)
+    else: # there is a mask
+        save_mask_plot(fig, legend_as_fig, name, save_dir, mask)
     if show: plt.show()
-    # close figures to save memory
-    if legend_as_fig is not None: plt.close(legend_as_fig)
+    if legend_as_fig is not None: plt.close(legend_as_fig) # close figures to save memory
     plt.close(fig)
 
-def plot_n_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool = False, algo_filter: List[str] = None) -> str:
+def clean_algo_name_column(df: pd.DataFrame) -> pd.DataFrame:
+    """remove the arguments that are part of an algorithm's name in the dataframe"""
+    return df["algo_name"].apply(clean_algo_name_from_args)
+
+def apply_mask(df: pd.DataFrame, mask: param_mask.ExperimentMask):
+    """filter out algorithms that are not in the list"""
+    if mask is not None:
+        mask_algo_names = mask.get_algo_names()
+        df_algo_names = clean_algo_name_column(df)
+        return df.loc[df_algo_names.isin(mask_algo_names)]
+    return df
+
+def plot_masks(masks: List[param_mask.ExperimentMask], plot_func: Callable, *args, **kwargs):
+    """call a plot function with all masks"""
+    for mask in masks:
+        plot_func(*args, mask=mask, **kwargs)
+
+def plot_n_vs_rmse(df: pd.DataFrame, target_samples: int, save_dir: Path = const.WRITE_DIR,
+show: bool = False, mask: param_mask.ExperimentMask = None) -> str:
     """exp1: plot number of oscillators, n, against rmse for multiple algorithms with z_ops and rand_args fixed"""
     title = get_plot_title(df, target_samples)
     df = df.filter(items=["algo_name", "n_osc", "mean_rmse", "std_rmse"])
-    # TODO: finish implementation
-    # if algo_filter is not None:
-    #     df = df.loc[df["algo_name"].isin(algo_filter)]
-    fig, legend_as_fig = plot_rmse_by_algo(df, "n_osc")
+    df = apply_mask(df, mask)
+    fig, legend_as_fig = plot_rmse_by_algo(df, "n_osc", mask=mask)
     fig.gca().set_title(title)
     fig.gca().set_xlabel("number of oscillators")
     figure_description = "n_osc_vs_rmse"
-    save_fig_n_legend(fig, legend_as_fig, figure_description, show)
+    save_fig_n_legend(fig, legend_as_fig, figure_description, save_dir, show, mask)
     return figure_description
 
 def plot_z_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool = False) -> str:

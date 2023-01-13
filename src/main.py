@@ -1,5 +1,6 @@
 import copy
 from pathlib import Path
+from typing import Callable, List
 
 import const
 import sample
@@ -36,10 +37,13 @@ def produce_all_results(algo_sweep: sweety.AlgoSweep, target: np.ndarray, base_r
     show_all = False
     exp = experimenteur.Experimenteur()
 
+    # exp call increase
     results = exp.run_rand_args_sweep(algo_sweep, params.n_osc_sweep, base_rand_args)
     df = expan.conv_results_to_pd(results)
-    experiment_description = expan.plot_n_vs_rmse(df, len(target), show=show_all)
-    data_io.hoard_experiment_results(experiment_description, results, df)
+    experiment_description = expan.plot_n_vs_rmse(df, len(target), exp.work_dir, show=show_all)
+    expan.plot_masks(algo_sweep.algo_masks, expan.plot_n_vs_rmse, df, len(target), exp.work_dir, show=show_all)
+    data_io.hoard_experiment_results(experiment_description, results, df, exp.work_dir)
+    exit()
 
     results = exp.run_z_ops_sweep(algo_sweep, params.z_ops_sweep)
     df = expan.conv_results_to_pd(results)

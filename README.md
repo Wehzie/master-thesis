@@ -18,6 +18,10 @@ In order of priority:
 ### High priority
 
 - Group algorithms for plots without re-running the entire experiment.
+    - saving to folders
+    - MCExploitJ10 as separate class
+
+- Experiment production parameters
 
 - Python: increase sampling rate to avoid aliasing. Verify with individual oscillator plots.
 
@@ -26,11 +30,11 @@ In order of priority:
     1.2 Optimize bias separately (e.g. at start and end of runtime)
     1.3 Choose normal distribution for bias instead of uniform.
 
-- Reproducibility issue: Maffezzoni et al. report different oscillator frequencies than I have.
-
 - Automate qualitative run against a list of targets (sine, beat, chirp, magpie, yes, okay)
 
 ## Medium priority
+
+- Reproducibility issue: Maffezzoni et al. report different oscillator frequencies than I have.
 
 - Plot Improvement: For oscillators vs. rmse. Show up to 1k oscillators, but draw a dotted line into the plot at around 300 oscillators to indicate what's technologically feasible.
 
@@ -44,7 +48,7 @@ In order of priority:
 
 - Plot Improvement: Histogram over the frequencies in an ensemble of oscillators currently doesn't accurately measure the frequencies, and the bins are too large.
 
-- Plot: Frequency band (y-axis) vs. number of oscillators (x-axis)
+- Plot: Frequency diversity (band) (y-axis) vs. number of oscillators (x-axis) for n algorithms. Hypothesis: As the number of oscillators increases, the frequency diversity increases.
 
 - Algorithm: Algorithm finds the best combination of parameters iteratively.
 
@@ -63,4 +67,12 @@ In order of priority:
     - param_test_py -> param_py_test
     - param_test_spipy -> param_hybrid_test
     - param -> param_py, param_hybrid
-    
+
+## Requirements
+
+Pydot is used with NetworkX for drawing graphs.
+Pydot requires GraphViz to be installed.
+Installation instructions are found [here](https://graphviz.org/download/).
+
+    # Debian/Ubuntu
+    sudo apt install graphviz

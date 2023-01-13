@@ -1,9 +1,10 @@
 from abc import ABC
 from dataclasses import dataclass
-from typing import List
+from typing import List, Union
 import dist
 import algo
 import algo_args_types as algarty
+import param_mask
 
 @dataclass
 class AlgoWithArgs:
@@ -12,21 +13,24 @@ class AlgoWithArgs:
 
 @dataclass
 class AlgoSweep:
-    """repeat experiments over multiple algorithms
+    """
+    repeat experiments over multiple algorithms.
     
-    produces a mean rmse, standard deviation and number of operations (z_ops) for a given configuration"""
+    produces a mean rmse, standard deviation and number of operations (z_ops) for a given configuration.
+    """
     algo_with_args: List[AlgoWithArgs]
     m_averages: int            # number of averages for each experimental configuration
-    # TODO: finish implementing experiment masks
-    #algo_groups: List[Tuple[List[algo.SearchAlgo]] = None 
-                                                    # list of groups of algorithms, that are interesting to compare
-                                                    # for example
-                                                    # gradient based vs random search based algorithms
-                                                    # each 
-                                                    #   the purpose is
-                                                    #   1) plotting the results of each group in a different color
-                                                    #   2) averaging the results of each group
-                                                    #   3) plotting the results of each group separately
+
+    # list of groups of algorithms, that are interesting to compare
+    # for example
+    # gradient based vs random search based algorithms
+    # each 
+    #   the purpose is
+    #   1) plotting the results of each group in a different color
+    #   2) averaging the results of each group
+    #   3) plotting the results of each group separately
+    algo_masks: Union[None,
+                 List[param_mask.ExperimentMask]] = None
 
 
 @dataclass
@@ -59,9 +63,22 @@ class OffsetSweep(ConstTimeSweep):
 
 
 @dataclass
-class ExpoTimeSweep:
+class ExpoTimeSweep(ABC):
     """sweeps of PythonRandSignalArgs where time complexity between experiments is worse then constant, mostly exponential"""
-    pass
+    NotImplemented
+    # TODO: using fixed field names I can replace
+    #   for val_schedule in fields(sweep_args)
+    #       for awa in algo_sweep.algo_with_args:
+    #           for val in getattr(sweep_args, val_schedule):
+    #               ...
+    # in the experimenteur class module with
+    #   for awa in algo_sweep.algo_with_args:
+    #       for val in sweep_args.val_schedule:
+    #           ...
+    # filename: str                       # filename for saving the results
+    # iv_name: str                        # type of the independent variable
+    # val_schedule: List                  # values of the independent variable
+    # dv_name: str                        # type of the dependent variable
 
 @dataclass
 class NOscSweep(ExpoTimeSweep):

@@ -1,5 +1,7 @@
 from typing import Final
+from pathlib import Path
 import numpy as np
+WRITE_DIR: Final[Path] = Path("data/")
 MULTIPROCESSING: Final = False
 if MULTIPROCESSING:
     GLOBAL_SEED = None # TODO: array of seeds and generators, one for each process

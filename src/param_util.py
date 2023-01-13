@@ -14,6 +14,7 @@ import param_types as party
 import sweep_types as sweety
 import gen_signal as gen_signal
 import gen_signal_python as gensi_python
+import param_mask
 
 import dist
 import data_preprocessor
@@ -84,10 +85,11 @@ def init_algo_sweep(target: np.ndarray, rand_args: party.PythonSignalRandArgs, s
             almoca.MCExploit,
             algarty.AlgoArgs(rand_args, target, max_z_ops, j_replace=1, sig_generator=sig_generator),
         ),
-        sweety.AlgoWithArgs(
-            almoca.MCExploit,
-            algarty.AlgoArgs(rand_args, target, max_z_ops, j_replace=10, sig_generator=sig_generator),
-        ),
+        # TODO: give MCExploit j=10 a separate class to work with masks
+        # sweety.AlgoWithArgs(
+        #     almoca.MCExploit,
+        #     algarty.AlgoArgs(rand_args, target, max_z_ops, j_replace=10, sig_generator=sig_generator),
+        # ),
         sweety.AlgoWithArgs(
             almoca.MCExploitWeight,
             algarty.AlgoArgs(rand_args, target, max_z_ops, j_replace=1, sig_generator=sig_generator),
@@ -180,13 +182,13 @@ def init_algo_sweep(target: np.ndarray, rand_args: party.PythonSignalRandArgs, s
         ),
     ]
     gradient_algos = [
-            sweety.AlgoWithArgs(
+        sweety.AlgoWithArgs(
             algra.LinearRegression,
             algarty.AlgoArgs(rand_args, target, sig_generator=sig_generator),
         ),
     ]
 
-    all_algos_with_args = one_shot_algos + exploit_algos + grow_shrink_algos + oscillator_anneal_algos + las_vegas_algos + population_algos + mcmc_algos + gradient_algos
+    all_algos_with_args: Final = one_shot_algos + exploit_algos + grow_shrink_algos + oscillator_anneal_algos + las_vegas_algos + population_algos + mcmc_algos + gradient_algos
     if test_mode:
         return sweety.AlgoSweep(all_algos_with_args, m_averages)
 
@@ -198,7 +200,7 @@ def init_algo_sweep(target: np.ndarray, rand_args: party.PythonSignalRandArgs, s
         ),
     ]
     
-    return sweety.AlgoSweep(some_algos_with_args, m_averages)
+    return sweety.AlgoSweep(all_algos_with_args, m_averages, param_mask.algo_masks)
 
 algo_list: List[SearchAlgo] = [
     almoca.MCExploit,

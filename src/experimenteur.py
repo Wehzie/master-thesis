@@ -11,6 +11,8 @@ import algo
 import meta_target
 import const
 import param_util
+import data_io
+import const
 
 import numpy as np
 
@@ -22,6 +24,7 @@ class Experimenteur:
         """
         self.mp = mp
         self.cpu_count = cpu_count()
+        self.work_dir = data_io.find_dir_name(const.WRITE_DIR, "quantitative_experiment")
 
     @staticmethod
     def mean_std():
@@ -63,7 +66,7 @@ class Experimenteur:
         """
         args:
             algo_sweep: a list of algorithms and algorithm arguments, the algorithm arguments will be modified
-            sweep_args: a attributes within a rand_args type, for each attribute a list of values is tested"""
+            sweep_args: an attribute within a rand_args type, for each attribute a list of values is tested"""
         print("sweeping with", sweep_args.__class__.__name__)
         results = []
         for val_schedule in fields(sweep_args): # for example frequency distribution

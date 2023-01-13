@@ -3,7 +3,7 @@ import glob
 import json
 import operator
 from pathlib import Path
-from typing import List
+from typing import List, Union
 import wave
 import copy
 import pickle
@@ -77,10 +77,11 @@ def save_signal_to_wav(data: np.ndarray, samplerate: int, dtype: np.dtype, path:
     data_copy *= norm_factor
     write(path, samplerate, data_copy.astype(dtype))
 
-def find_dir_name(parent_path: Path) -> Path:
+def find_dir_name(parent_path: Path, experiment_description: Union[str, None]) -> Path:
     """find unused directory name for a search experiment and make directory"""
+    if experiment_description is None: experiment_description = "experiment"
     for i in range(100):
-        path = Path(parent_path / f"experiment{i}")
+        path = Path(parent_path / f"{experiment_description}{i}")
         if not path.exists():
             path.mkdir()
             break
@@ -128,11 +129,10 @@ def pickle_object(obj: object, data_path: Path) -> None:
     with open(data_path, "wb") as f:
         pickle.dump(obj, f)
     
-def hoard_experiment_results(experiment_description: str, results: List, df: pd.DataFrame, directory: Path = Path("data")) -> None:
+def hoard_experiment_results(experiment_description: str, results: List, df: pd.DataFrame, directory: Path = const.WRITE_DIR) -> None:
     """save experiment results to file"""
     if not const.HOARD_DATA: return
     pickle_object(results, directory / (experiment_description + "_results.pickle"))
-    pickle_object(df, directory / (experiment_description + "_dataframe.pickle"))
     df.to_csv(directory / (experiment_description + "_dataframe.csv"), index=False)
     print(f"saved {experiment_description} results to {directory}")
     

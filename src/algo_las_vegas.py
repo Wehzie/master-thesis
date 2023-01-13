@@ -67,6 +67,7 @@ class LasVegas(algo.SearchAlgo):
             best_sample: the best sample found
             z_ops: the number of operations performed
         """
+        print(f"searching with {self.__class__.__name__}")
         self.clear_state()
         self.handle_mp(kwargs)
 
@@ -74,7 +75,7 @@ class LasVegas(algo.SearchAlgo):
             while not self.stop_on_z_ops(): yield
 
         best_sample = self.init_best_sample()
-        for k in tqdm(generator()):
+        for k in generator():
             base_sample = self.init_best_sample()
             i = 0 # number of replaced weights
             while i < self.rand_args.n_osc + 1 and not self.stop_on_z_ops(): # +1 for offset
