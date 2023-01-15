@@ -64,7 +64,15 @@ class OffsetSweep(ConstTimeSweep):
 
 @dataclass
 class ExpoTimeSweep(ABC):
-    """sweeps of PythonRandSignalArgs where time complexity between experiments is worse then constant, mostly exponential"""
+    """sweeps of PythonRandSignalArgs where time complexity between experiments is worse then constant, mostly exponential
+    
+    args:
+        filename: filename for saving the results
+        iv_identifier: independent variable identifier, must match a corresponding field in the RandSignalArgs class
+        iv_description: description of the independent variable
+        val_schedule: values of the independent variable
+        dv_identifier: dependent variable identifier; not yet implemented; must match a corresponding field in a dataframe returned by the Experimenteur class
+    """
     NotImplemented
     # TODO: using fixed field names I can replace
     #   for val_schedule in fields(sweep_args)
@@ -75,10 +83,12 @@ class ExpoTimeSweep(ABC):
     #   for awa in algo_sweep.algo_with_args:
     #       for val in sweep_args.val_schedule:
     #           ...
+
     # filename: str                       # filename for saving the results
-    # iv_name: str                        # type of the independent variable
+    # iv_identifier: str                  # mu
+    # iv_description: str                 # description of the independent variable
     # val_schedule: List                  # values of the independent variable
-    # dv_name: str                        # type of the dependent variable
+    # dv_identifier: str                        # type of the dependent variable
 
 @dataclass
 class NOscSweep(ExpoTimeSweep):

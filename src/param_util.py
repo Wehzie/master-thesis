@@ -192,7 +192,7 @@ def init_algo_sweep(target: np.ndarray, rand_args: party.PythonSignalRandArgs, s
     if test_mode:
         return sweety.AlgoSweep(all_algos_with_args, m_averages)
 
-    some_algos_with_args = one_shot_algos + exploit_algos + grow_shrink_algos + oscillator_anneal_algos + las_vegas_algos + population_algos + mcmc_algos + gradient_algos
+    some_algos_with_args = one_shot_algos# + exploit_algos + grow_shrink_algos + oscillator_anneal_algos + las_vegas_algos + population_algos + mcmc_algos + gradient_algos
     single_algo_with_args = [
         sweety.AlgoWithArgs(
             almoca.MCExploit,
@@ -200,7 +200,7 @@ def init_algo_sweep(target: np.ndarray, rand_args: party.PythonSignalRandArgs, s
         ),
     ]
     
-    return sweety.AlgoSweep(all_algos_with_args, m_averages, param_mask.algo_masks)
+    return sweety.AlgoSweep(some_algos_with_args, m_averages, param_mask.algo_masks)
 
 algo_list: List[SearchAlgo] = [
     almoca.MCExploit,

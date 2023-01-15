@@ -7,6 +7,7 @@ from typing import List, Union
 import wave
 import copy
 import pickle
+import shutil
 
 import const
 
@@ -135,7 +136,17 @@ def hoard_experiment_results(experiment_description: str, results: List, df: pd.
     pickle_object(results, directory / (experiment_description + "_results.pickle"))
     df.to_csv(directory / (experiment_description + "_dataframe.csv"), index=False)
     print(f"saved {experiment_description} results to {directory}")
-    
+
+def clean_dir(path: Path) -> None:
+    """delete all files in a directory"""
+    for file in path.glob("*"):
+        if file.is_dir():
+            shutil.rmtree(file)
+        elif file.is_file():
+            file.unlink()
+        else:
+            print(f"unknown file type: {file}")
+
 def main():
     sampling_rate, data, dtype = load_data()
     save_signal_to_wav(data, sampling_rate, dtype)

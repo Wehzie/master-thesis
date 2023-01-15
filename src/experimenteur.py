@@ -17,14 +17,25 @@ import const
 import numpy as np
 
 class Experimenteur:
-    def __init__(self, mp: bool = const.MULTIPROCESSING) -> None:
+    def __init__(self, mp: bool = const.MULTIPROCESSING, clean_work_dir: bool = True, show_plots: bool = False) -> None:
         """
         args:
             mp: if true use multiple CPUs for processing
+            clean_work_dir: if true delete all files in the work directory
         """
         self.mp = mp
         self.cpu_count = cpu_count()
-        self.work_dir = data_io.find_dir_name(const.WRITE_DIR, "quantitative_experiment")
+        if clean_work_dir:
+            data_io.clean_dir(const.WRITE_DIR)
+        self.work_dir = data_io.find_dir_name(const.WRITE_DIR, "quantitative_experiment") # directory in which to write all results
+        self.sweep_dir = None # directory in which to write results of a sweep for an independent variable
+        self.sweep_name = None # name of the sweep for an independent variable
+        
+
+    def set_sweep_name_and_dir(self, sweep_name: str) -> None:
+        """set the name and directory of the sweep for the next experiment"""
+        self.sweep_name = sweep_name
+        self.sweep_dir = data_io.find_dir_name(self.work_dir, sweep_name)
 
     @staticmethod
     def mean_std():

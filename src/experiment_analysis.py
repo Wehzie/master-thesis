@@ -4,7 +4,6 @@ import param_types as party
 import data_io
 import param_mask
 
-import copy
 from typing import Callable, List, Union, Tuple
 from pathlib import Path
 import itertools
@@ -173,7 +172,8 @@ def save_unmasked_plot(fig: plt.Figure, legend_as_fig: plt.Figure, name: str, sa
         data_io.pickle_object(fig, save_dir / (name + "_figure.pickle"))
         fig.gca().legend().set_visible(False) # hide legend on main plot for viewing
 
-def save_fig_n_legend(fig: plt.Figure, legend_as_fig: plt.Figure, name: str, save_dir: Path = const.WRITE_DIR, show: bool = False, mask: param_mask.ExperimentMask = None) -> None:
+def save_fig_n_legend(fig: plt.Figure, legend_as_fig: plt.Figure, name: str, save_dir: Path = const.WRITE_DIR,
+mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
     """save a figure and its legend to disk"""
     if mask is None:
         save_unmasked_plot(fig, legend_as_fig, name, save_dir)
@@ -200,8 +200,8 @@ def plot_masks(masks: List[param_mask.ExperimentMask], plot_func: Callable, *arg
     for mask in masks:
         plot_func(*args, mask=mask, **kwargs)
 
-def plot_n_vs_rmse(df: pd.DataFrame, target_samples: int, save_dir: Path = const.WRITE_DIR,
-show: bool = False, mask: param_mask.ExperimentMask = None) -> str:
+def plot_n_vs_rmse(df: pd.DataFrame, target_samples: int, sweep_name: str, save_dir: Path,
+mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
     """exp1: plot number of oscillators, n, against rmse for multiple algorithms with z_ops and rand_args fixed"""
     title = get_plot_title(df, target_samples)
     df = df.filter(items=["algo_name", "n_osc", "mean_rmse", "std_rmse"])
@@ -209,22 +209,23 @@ show: bool = False, mask: param_mask.ExperimentMask = None) -> str:
     fig, legend_as_fig = plot_rmse_by_algo(df, "n_osc", mask=mask)
     fig.gca().set_title(title)
     fig.gca().set_xlabel("number of oscillators")
-    figure_description = "n_osc_vs_rmse"
-    save_fig_n_legend(fig, legend_as_fig, figure_description, save_dir, show, mask)
-    return figure_description
+    save_fig_n_legend(fig, legend_as_fig, sweep_name, save_dir, mask, show)
 
-def plot_z_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool = False) -> str:
+
+def plot_z_vs_rmse(df: pd.DataFrame, target_samples: int, sweep_name: str, save_dir: Path,
+mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
     """exp2: plot number of operations, z_ops, against rmse for multiple algorithms with rand_args fixed"""
     title = get_plot_title(df, target_samples, z_ops=False)
     df = df.filter(items=["algo_name", "max_z_ops", "mean_rmse", "std_rmse"])
-    fig, legend_as_fig = plot_rmse_by_algo(df, "max_z_ops")
+    df = apply_mask(df, mask)
+    fig, legend_as_fig = plot_rmse_by_algo(df, "max_z_ops", mask=mask)
     fig.gca().set_title(title)
     fig.gca().set_xlabel("z-operations")
-    figure_description = "z_ops_vs_rmse"
-    save_fig_n_legend(fig, legend_as_fig, figure_description, show)
-    return figure_description
+    save_fig_n_legend(fig, legend_as_fig, sweep_name, save_dir, mask, show)
 
-def plot_samples_vs_rmse(df: pd.DataFrame, show: bool = False) -> str:
+
+def plot_samples_vs_rmse(df: pd.DataFrame, sweep_name: str, save_dir: Path,
+mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
     """exp3: plot number of samples against rmse for multiple algorithms with rand_args and target fixed"""
     # before filtering df
     m_averages = int(df["m_averages"].iloc[[0]])
@@ -233,14 +234,15 @@ def plot_samples_vs_rmse(df: pd.DataFrame, show: bool = False) -> str:
     title = f"m={m_averages}, n={n_osc}, max z-ops={max_z_ops}"
 
     df = df.filter(items=["algo_name", "samples", "mean_rmse", "std_rmse"])
-    fig, legend_as_fig = plot_rmse_by_algo(df, "samples")
+    df = apply_mask(df, mask)
+    fig, legend_as_fig = plot_rmse_by_algo(df, "samples", mask=mask)
     fig.gca().set_title(title)
     fig.gca().set_xlabel("time [a.u.]")
-    figure_description = "samples_vs_rmse"
-    save_fig_n_legend(fig, legend_as_fig, figure_description, show)
-    return figure_description
+    save_fig_n_legend(fig, legend_as_fig, sweep_name, save_dir, mask, show)
 
-def plot_range_vs_rmse(df: pd.DataFrame, target_samples: int, attr_name: str, dist_name: str) -> List[plt.Figure]:
+
+def plot_range_vs_rmse(df: pd.DataFrame, target_samples: int, attr_name: str, dist_name: str,
+mask: param_mask.ExperimentMask) -> Tuple[plt.Figure]:
     """
     exp4-8: plot range of distribution against rmse for multiple algorithms with rand_args fixed
     
@@ -249,7 +251,7 @@ def plot_range_vs_rmse(df: pd.DataFrame, target_samples: int, attr_name: str, di
         dist_name: uniform or normal
 
     returns:
-        a list of figures, one for each distribution type
+        the main figure and the legend as a figure
     """
     # assign strings for subsetting the dataframe and for injection to plot
     assert attr_name in ["freq", "weight", "phase", "offset"]
@@ -259,74 +261,86 @@ def plot_range_vs_rmse(df: pd.DataFrame, target_samples: int, attr_name: str, di
     # filter df
     df = filter_df_by_dist_name(df, attr_name, dist_name)
     df = df.filter(items=["algo_name", "mean_rmse", "std_rmse", "mean_z_ops", range_name])
+    df = apply_mask(df, mask)
 
-    fig, legend_as_fig = plot_rmse_by_algo(df, range_name)
+    fig, legend_as_fig = plot_rmse_by_algo(df, range_name, mask=mask)
     fig.gca().set_title(f"{title}, dist={dist_name}")
 
     return fig, legend_as_fig
 
-def plot_freq_range_vs_rmse(df: pd.DataFrame, target_samples: int, sweep_name: str, show: bool = False) -> str:
+
+def get_freq_plot_label(dist_name: str, sweep_name: str, df: pd.DataFrame) -> str:
+    """get the x label for the frequency plots"""
+    x_label = "frequency diversity [Hz]"
+    if dist_name == "uniform" and sweep_name == "freq_range_from_zero":
+        x_label += r", lower bound $\rightarrow$ 0, upper bound = $x$"
+    elif dist_name == "uniform" and sweep_name == "freq_range_around_vo2":
+        x_label += r", lower + upper bound = $x$"
+    elif dist_name == "normal" and sweep_name == "freq_range_from_zero":
+        x_label += r", $\mu + \sigma = x$ , $\mu \approx \sigma$"
+    elif dist_name == "normal" and sweep_name == "freq_range_around_vo2":
+        mu = df["freq_dist_loc"].dropna().iloc[0]
+        x_label += r", $\mu$=" + f"{mu:.0f}, " + r"$\sigma = x/2$"
+    return x_label
+
+
+def plot_freq_range_vs_rmse(df: pd.DataFrame, target_samples: int, sweep_name: str, save_dir: Path,
+mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
     """exp4+5: plot frequency range against rmse for multiple algorithms with rand_args and target fixed"""
     for dist_name in const.LEGAL_DISTS:
-        fig, legend_as_fig = plot_range_vs_rmse(df, target_samples, "freq", dist_name)
-        x_label = "frequency diversity [Hz]"
-        if dist_name == "uniform" and sweep_name == "freq_range_from_zero":
-            x_label += r", lower bound $\rightarrow$ 0, upper bound = $x$"
-        elif dist_name == "uniform" and sweep_name == "freq_range_around_vo2":
-            x_label += r", lower + upper bound = $x$"
-        elif dist_name == "normal" and sweep_name == "freq_range_from_zero":
-            x_label += r", $\mu + \sigma = x$ , $\mu \approx \sigma$"
-        elif dist_name == "normal" and sweep_name == "freq_range_around_vo2":
-            mu = df["freq_dist_loc"].dropna().iloc[0]
-            x_label += r", $\mu$=" + f"{mu:.0f}, " + r"$\sigma = x/2$"
+        fig, legend_as_fig = plot_range_vs_rmse(df, target_samples, "freq", dist_name, mask)
+        x_label = get_freq_plot_label(dist_name, sweep_name, df)
         fig.gca().set_xlabel(x_label) # width of frequency band
         fig.gca().set_xscale("log")
-        save_fig_n_legend(fig, legend_as_fig, f"{sweep_name}_{dist_name}_vs_rmse", show=False)
+        sweep_name_with_dist = f"{sweep_name}_{dist_name}_vs_rmse"
+        save_fig_n_legend(fig, legend_as_fig, sweep_name_with_dist, save_dir, mask, show)
     if show: plt.show()
-    return f"{sweep_name}_vs_rmse"
 
 
-def plot_weight_range_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool = False) -> str:
+def plot_weight_range_vs_rmse(df: pd.DataFrame, target_samples: int, save_dir: Path,
+mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
     """exp6: plot weight range against rmse for multiple algorithms with rand_args and target fixed"""
     for dist_name in const.LEGAL_DISTS:
-        fig, legend_as_fig = plot_range_vs_rmse(df, target_samples, "weight", dist_name)
+        fig, legend_as_fig = plot_range_vs_rmse(df, target_samples, "weight", dist_name, mask)
         inv_amplitude = 1/df["amplitude"].iloc[0]
         fig.gca().set_xlabel(f"dynamic range (scaled by inverse-of-amplitude={inv_amplitude:.0f})") # width of weight band
         # dynamic range would be given with amplitude=1
         fig.gca().set_xscale("log")
-        save_fig_n_legend(fig, legend_as_fig, f"weight_range_{dist_name}_vs_rmse", show=False)
+        save_fig_n_legend(fig, legend_as_fig, f"weight_range_{dist_name}_vs_rmse", save_dir, mask, show)
     if show: plt.show()
-    return "weight_range_vs_rmse"
 
-def plot_phase_range_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool = False) -> str:
+
+def plot_phase_range_vs_rmse(df: pd.DataFrame, target_samples: int, save_dir: Path,
+mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
     """exp7: plot phase range against rmse for multiple algorithms with rand_args and target fixed"""
     for dist_name in const.LEGAL_DISTS:
-        fig, legend_as_fig = plot_range_vs_rmse(df, target_samples, "phase", dist_name)
+        fig, legend_as_fig = plot_range_vs_rmse(df, target_samples, "phase", dist_name, mask)
         fig.gca().set_xlabel("phase diversity") # width of phase band
         fig.gca().xaxis.set_major_formatter("{x:.2f}"+r"$\pi$")
-        save_fig_n_legend(fig, legend_as_fig, f"phase_range_{dist_name}_vs_rmse", show=False)
+        save_fig_n_legend(fig, legend_as_fig, f"phase_range_{dist_name}_vs_rmse", save_dir, mask, show)
     if show: plt.show()
-    return "phase_range_vs_rmse"
 
-def plot_offset_range_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool = False) -> str:
+
+def plot_offset_range_vs_rmse(df: pd.DataFrame, target_samples: int, save_dir: Path,
+mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
     """exp8: plot offset range against rmse for multiple algorithms with rand_args and target fixed"""
     for dist_name in const.LEGAL_DISTS:
-        fig, legend_as_fig = plot_range_vs_rmse(df, target_samples, "offset", dist_name)
+        fig, legend_as_fig = plot_range_vs_rmse(df, target_samples, "offset", dist_name, mask)
         fig.gca().set_xlabel("offset diversity") # width of offset distribution
-        save_fig_n_legend(fig, legend_as_fig, f"offset_range_{dist_name}_vs_rmse", show=False)
+        save_fig_n_legend(fig, legend_as_fig, f"offset_range_{dist_name}_vs_rmse", save_dir, mask, show)
     if show: plt.show()
-    return "offset_range_vs_rmse"
 
-def plot_amplitude_vs_rmse(df: pd.DataFrame, target_samples: int, show: bool = False) -> str:
+
+def plot_amplitude_vs_rmse(df: pd.DataFrame, target_samples: int, sweep_name: str, save_dir: Path,
+mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
     "exp9: plot amplitude against rmse for multiple algorithms with rand_args and target fixed"
     title = get_plot_title(df, target_samples) # before filtering df
     weight_range = df["weight_range"].iloc[0]
     title += f", weight_range={weight_range:.1f}"
     df = df.filter(items=["algo_name", "mean_rmse", "std_rmse", "amplitude"])
-    fig, legend_as_fig = plot_rmse_by_algo(df, "amplitude")
+    df = apply_mask(df, mask)
+    fig, legend_as_fig = plot_rmse_by_algo(df, "amplitude", mask=mask)
     fig.gca().set_title(title)
     fig.gca().set_ylabel("RMSE(generated, target)")
     fig.gca().set_xlabel("unweighted amplitude")
-    figure_description = "amplitude_vs_rmse"
-    save_fig_n_legend(fig, legend_as_fig, figure_description, show)
-    return figure_description
+    save_fig_n_legend(fig, legend_as_fig, sweep_name, save_dir, mask, show)

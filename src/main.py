@@ -37,54 +37,67 @@ def produce_all_results(algo_sweep: sweety.AlgoSweep, target: np.ndarray, base_r
     show_all = False
     exp = experimenteur.Experimenteur()
 
-    # exp call increase
+    exp.set_sweep_name_and_dir("n_osc_vs_rmse")
     results = exp.run_rand_args_sweep(algo_sweep, params.n_osc_sweep, base_rand_args)
     df = expan.conv_results_to_pd(results)
-    experiment_description = expan.plot_n_vs_rmse(df, len(target), exp.work_dir, show=show_all)
-    expan.plot_masks(algo_sweep.algo_masks, expan.plot_n_vs_rmse, df, len(target), exp.work_dir, show=show_all)
-    data_io.hoard_experiment_results(experiment_description, results, df, exp.work_dir)
-    exit()
+    expan.plot_n_vs_rmse(df, len(target), exp.sweep_name, exp.sweep_dir, show=show_all)
+    expan.plot_masks(algo_sweep.algo_masks, expan.plot_n_vs_rmse, df, len(target), exp.sweep_name, exp.sweep_dir, show=show_all)
+    data_io.hoard_experiment_results(exp.sweep_name, results, df, exp.sweep_dir)
 
+    exp.set_sweep_name_and_dir("z_ops_vs_rmse")
     results = exp.run_z_ops_sweep(algo_sweep, params.z_ops_sweep)
     df = expan.conv_results_to_pd(results)
-    experiment_description = expan.plot_z_vs_rmse(df, len(target), show=show_all)
-    data_io.hoard_experiment_results(experiment_description, results, df)
+    expan.plot_z_vs_rmse(df, len(target), exp.sweep_name, exp.sweep_dir, show=show_all)
+    expan.plot_masks(algo_sweep.algo_masks, expan.plot_z_vs_rmse, df, len(target), exp.sweep_name, exp.sweep_dir, show=show_all)
+    data_io.hoard_experiment_results(exp.sweep_name, results, df, exp.sweep_dir)
 
+    exp.set_sweep_name_and_dir("samples_vs_rmse")
     results = exp.run_sampling_rate_sweep(params.sampling_rate_sweep, base_rand_args)
     df = expan.conv_results_to_pd(results)
-    experiment_description = expan.plot_samples_vs_rmse(df, show=show_all)
-    data_io.hoard_experiment_results(experiment_description, results, df)
+    expan.plot_samples_vs_rmse(df, exp.sweep_name, exp.sweep_dir, show=show_all)
+    expan.plot_masks(algo_sweep.algo_masks, expan.plot_samples_vs_rmse, df, exp.sweep_name, exp.sweep_dir, show=show_all)
+    data_io.hoard_experiment_results(exp.sweep_name, results, df, exp.sweep_dir)
 
     freq_sweeps = [params.freq_sweep_from_zero, params.freq_sweep_around_vo2]
     freq_sweep_names = ["freq_range_from_zero", "freq_range_around_vo2"]
     for freq_sweep, freq_sweep_name in zip(freq_sweeps, freq_sweep_names):
+        exp.set_sweep_name_and_dir(freq_sweep_name)
         results = exp.run_rand_args_sweep(algo_sweep, freq_sweep, base_rand_args)
         df = expan.conv_results_to_pd(results)
-        experiment_description = expan.plot_freq_range_vs_rmse(df, len(target), freq_sweep_name, show=show_all)
-        data_io.hoard_experiment_results(experiment_description, results, df)
-        
+        expan.plot_freq_range_vs_rmse(df, len(target), freq_sweep_name, exp.sweep_dir, show=show_all)
+        expan.plot_masks(algo_sweep.algo_masks, expan.plot_freq_range_vs_rmse, df, len(target), freq_sweep_name, exp.sweep_dir, show=show_all)
+        data_io.hoard_experiment_results(exp.sweep_name, results, df, exp.sweep_dir)
+
+    exp.set_sweep_name_and_dir("weight_range_vs_rmse")
     results = exp.run_rand_args_sweep(algo_sweep, params.weight_sweep, base_rand_args)
     df = expan.conv_results_to_pd(results)
-    experiment_description = expan.plot_weight_range_vs_rmse(df, len(target), show=show_all)
-    data_io.hoard_experiment_results(experiment_description, results, df)
+    expan.plot_weight_range_vs_rmse(df, len(target), exp.sweep_dir, show=show_all)
+    expan.plot_masks(algo_sweep.algo_masks, expan.plot_weight_range_vs_rmse, df, len(target),exp.sweep_dir, show=show_all)
+    data_io.hoard_experiment_results(exp.sweep_name, results, df, exp.sweep_dir)
 
+    exp.set_sweep_name_and_dir("phase_range_vs_rmse")
     results = exp.run_rand_args_sweep(algo_sweep, params.phase_sweep, base_rand_args)
     df = expan.conv_results_to_pd(results)
-    experiment_description = expan.plot_phase_range_vs_rmse(df, len(target), show=show_all)
-    data_io.hoard_experiment_results(experiment_description, results, df)
+    expan.plot_phase_range_vs_rmse(df, len(target), exp.sweep_dir, show=show_all)
+    expan.plot_masks(algo_sweep.algo_masks, expan.plot_phase_range_vs_rmse, df, len(target), exp.sweep_dir, show=show_all)
+    data_io.hoard_experiment_results(exp.sweep_name, results, df, exp.sweep_dir)
 
+    exp.set_sweep_name_and_dir("offset_range_vs_rmse")
     results = exp.run_rand_args_sweep(algo_sweep, params.offset_sweep, base_rand_args)
     df = expan.conv_results_to_pd(results)
-    experiment_description = expan.plot_offset_range_vs_rmse(df, len(target), show=show_all)
-    data_io.hoard_experiment_results(experiment_description, results, df)
+    expan.plot_offset_range_vs_rmse(df, len(target), exp.sweep_dir, show=show_all)
+    expan.plot_masks(algo_sweep.algo_masks, expan.plot_offset_range_vs_rmse, df, len(target), exp.sweep_dir, show=show_all)
+    data_io.hoard_experiment_results(exp.sweep_name, results, df, exp.sweep_dir)
 
+    exp.set_sweep_name_and_dir("amplitude_vs_rmse")
     results = exp.run_rand_args_sweep(algo_sweep, params.amplitude_sweep, base_rand_args)
     df = expan.conv_results_to_pd(results)
-    experiment_description = expan.plot_amplitude_vs_rmse(df, len(target), show=show_all)
-    data_io.hoard_experiment_results(experiment_description, results, df)
+    expan.plot_amplitude_vs_rmse(df, len(target), exp.sweep_name, exp.sweep_dir, show=show_all)
+    expan.plot_masks(algo_sweep.algo_masks, expan.plot_amplitude_vs_rmse, df, len(target), exp.sweep_name, exp.sweep_dir, show=show_all)
+    data_io.hoard_experiment_results(exp.sweep_name, results, df, exp.sweep_dir)
 
-def run_multi_directional_experiment():
-    """experiments whose parameters are based on other experiments"""
+def run_hyperparameter_optimization():
+    """run experiments to determine the best experimental parameters"""
     # take best algorithm
     # then also increase the z_ops to see if the weight-range-to-rmse curve flattens
     # same for rmse vs n_osc
