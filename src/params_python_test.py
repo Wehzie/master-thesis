@@ -1,7 +1,11 @@
-"""parameters for testing the pipeline with low computational requirements
+"""
+Parameters for the Python signal generator.
+Compared to params_python, the parameters in this file aim at low computational requirements.
 
-use like:
-import test_params as params
+Parameters are defined for both quantitative and qualitative experiments.
+
+For each type of experiment three values are defined to generate a plot with a visible trend.
+For example: 10, 20 and 30 oscillators.
 """
 import param_types as party
 import sweep_types as sweety
@@ -10,9 +14,12 @@ import param_util
 import dist
 rng = const.RNG
 
+#### #### #### #### BASE PARAMETERS FOR SIGNAL GENERATION #### #### #### ####
+
 py_rand_args_n_osc = 10
 
 py_rand_args_uniform = party.PythonSignalRandArgs(
+    description = "test base-parameters for drawing oscillators from a uniform distribution",
     n_osc = py_rand_args_n_osc,
     duration = None,
     samples = 30,
@@ -25,9 +32,10 @@ py_rand_args_uniform = party.PythonSignalRandArgs(
 )
 
 py_rand_args_normal = party.PythonSignalRandArgs(
+    description = "test base-parameters for drawing from a normal distribution",
     n_osc = py_rand_args_n_osc,
     duration = None,
-    samples = 50,
+    samples = 30,
     freq_dist = dist.Dist(rng.normal, loc=5e5, scale=4e5),
     amplitude = 0.5,                                    # resembling 0.5 V amplitude of V02
     weight_dist = dist.WeightDist(rng.normal, loc=0.5, scale=0.5, n=py_rand_args_n_osc),   # resistor doesn't amplify so not > 1
@@ -35,6 +43,12 @@ py_rand_args_normal = party.PythonSignalRandArgs(
     offset_dist = dist.Dist(rng.normal, loc=0, scale=0),    
     sampling_rate = 11025                               # the sampling rate of the Magpie signal
 )
+
+
+
+#### #### #### #### BASE PARAMETERS MODIFIERS #### #### #### ####
+
+
 
 # sweep band from narrow to wide centering around 5e5, the median VO2 freq 
 freq_sweep_around_vo2 = sweety.FreqSweep(

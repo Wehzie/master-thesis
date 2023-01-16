@@ -1,3 +1,4 @@
+"""utility functions for parameter generation"""
 import numpy as np
 
 from pathlib import Path
@@ -32,8 +33,16 @@ def comp_scale(low: float, high: float) -> float:
     return (high - low) / 2
 
 
-def append_normal(uniform_li: List[dist.Dist]) -> List[dist.Dist]:
-    """given a list of Dists, repeat the list with normal distributions"""
+def append_normal(uniform_li: List[dist.Dist], only_uniform: bool = True, only_normal: bool = False) -> List[dist.Dist]:
+    """given a list of uniform distributions, compute the corresponding normal distributions and append them to the list
+    
+    args:
+        uniform_li: list of uniform distributions
+        only_uniform: if True, return uniform_li without appending normal distributions
+        only_normal: if True, return only normal distributions
+    """
+    if only_uniform:
+        return uniform_li
     DistType = type(uniform_li[0])
     norm_li = list()
     for d in uniform_li:
@@ -42,6 +51,8 @@ def append_normal(uniform_li: List[dist.Dist]) -> List[dist.Dist]:
         loc = comp_loc(d.kwargs["low"], d.kwargs["high"])
         scale = comp_scale(d.kwargs["low"], d.kwargs["high"])
         norm_li.append(DistType(const.RNG.normal, loc=loc, scale=scale, n=d.n))
+    if only_normal:
+        return norm_li
     return uniform_li + norm_li
 
 
@@ -85,11 +96,10 @@ def init_algo_sweep(target: np.ndarray, rand_args: party.PythonSignalRandArgs, s
             almoca.MCExploit,
             algarty.AlgoArgs(rand_args, target, max_z_ops, j_replace=1, sig_generator=sig_generator),
         ),
-        # TODO: give MCExploit j=10 a separate class to work with masks
-        # sweety.AlgoWithArgs(
-        #     almoca.MCExploit,
-        #     algarty.AlgoArgs(rand_args, target, max_z_ops, j_replace=10, sig_generator=sig_generator),
-        # ),
+        sweety.AlgoWithArgs(
+            almoca.MCExploitJ10,
+            algarty.AlgoArgs(rand_args, target, max_z_ops, j_replace=10, sig_generator=sig_generator),
+        ),
         sweety.AlgoWithArgs(
             almoca.MCExploitWeight,
             algarty.AlgoArgs(rand_args, target, max_z_ops, j_replace=1, sig_generator=sig_generator),
@@ -204,6 +214,7 @@ def init_algo_sweep(target: np.ndarray, rand_args: party.PythonSignalRandArgs, s
 
 algo_list: List[SearchAlgo] = [
     almoca.MCExploit,
+    almoca.MCExploitJ10,
     almoca.MCExploitDecoupled,
     almoca.MCExploitWeight,
     almoca.MCExploitFast,

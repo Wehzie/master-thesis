@@ -15,20 +15,19 @@ class PythonSignalRandArgs:
     produces a signal matrix as a result
     a signal matrix is a circuit of n oscillators
     """
-    n_osc: int # number of oscillators
+    description: str # description of the parameter configuration
 
-    # NOTE: specify either duration or samples while the other is none
-    # TODO: handle this more appropriately with a separate Type/Class
     duration: float # signal duration in seconds
     samples: int # number of samples in a signal
-
-    freq_dist: dist.Dist # frequency distribution
-    amplitude: float # shared by all oscillators in a sum
-    weight_dist: dist.WeightDist # amplitude=weight_dist*default_amplitude
-                     
-    phase_dist: dist.Dist # phase=phase_dist.draw()*pi
-    offset_dist: dist.Dist # offset=offset_dist.draw()*amplitude*weight
     sampling_rate: int # number of samples per second
+
+    n_osc: int # number of oscillators
+
+    amplitude: float # amplitude of an oscillator (without gain/weight applied)
+    freq_dist: dist.Dist # random variable for the frequency of an oscillator
+    weight_dist: dist.WeightDist # the weight is applied to the amplitude; random variable to draw form
+    phase_dist: dist.Dist # random variable for the phase shift of an oscillator
+    offset_dist: dist.Dist # random variable for offset of an oscillator
 
     def get_time(self) -> np.ndarray:
         """get a time array either from the provided duration or number of samples"""
@@ -62,6 +61,8 @@ class PythonSignalDetArgs:
 class SpiceSumRandArgs:
     # TODO: rename SpipySumRandArgs
     """define distributions from which electric components are initialized"""
+    description: str    # description of the parameter configuration
+    
     n_osc: int          # number of oscillators
     v_in: float         # input voltage
     

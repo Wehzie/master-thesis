@@ -9,7 +9,7 @@ import data_analysis
 import data_io
 import data_preprocessor
 import param_types as party
-import params_test_spipy as params
+import params_hybrid as params
 import netlist_generator
 import const
 

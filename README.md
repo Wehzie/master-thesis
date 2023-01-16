@@ -17,20 +17,18 @@ In order of priority:
 
 ### High priority
 
-- Group algorithms for plots without re-running the entire experiment.
-    - saving to folders
-    - MCExploitJ10 as separate class
+
+- Automate qualitative run against a list of targets (sine, beat, chirp, magpie, yes, okay)
 
 - Experiment production parameters
-
-- Python: increase sampling rate to avoid aliasing. Verify with individual oscillator plots.
 
 - SPICE: Fix bias issue.
     1.1 Make bias distribution narrower.
     1.2 Optimize bias separately (e.g. at start and end of runtime)
     1.3 Choose normal distribution for bias instead of uniform.
 
-- Automate qualitative run against a list of targets (sine, beat, chirp, magpie, yes, okay)
+- Python: increase sampling rate to avoid aliasing. Verify with individual oscillator plots.
+
 
 ## Medium priority
 
@@ -76,3 +74,29 @@ Installation instructions are found [here](https://graphviz.org/download/).
 
     # Debian/Ubuntu
     sudo apt install graphviz
+
+## Running
+
+To start the simulation execute
+
+    python src/main.py
+
+### Detaching a terminal
+
+Detaching a terminal is useful in order to close a terminal temporarily but being able to resume the terminal later to monitor progress of a simulation.
+Instructions are geared towards Debian and Ubuntu hosts.
+
+Install requirements
+
+    sudo apt install screen
+
+Detach a screen by pressing
+
+    ctrl-A # together
+    d # afterwards
+
+Reattach a screen
+
+    screen -r
+
+

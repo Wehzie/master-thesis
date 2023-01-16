@@ -1,5 +1,5 @@
 from netlist_generator import build_tree_netlist
-from params import bird_params
+from params_spice import bird_params
 
 from pathlib import Path
 import networkx as nx

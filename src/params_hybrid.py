@@ -1,9 +1,11 @@
+"""Parameters for the SpiPy (hybrid) signal generator."""
+
 import param_types as party
 import dist
 import const
 RNG = const.RNG
 
-
+# parameters for testing purposes
 spice_single_det_args = party.SpiceSingleDetArgs(
     n_osc=1,
     v_in=14,
@@ -27,6 +29,7 @@ weight_dist_mean = (weight_dist_high + weight_dist_low) / 2
 one_sided_offset = v_in * spice_rand_args_n_osc * weight_dist_mean * 1.14 # roughly the offset needed to get mean=0
 
 spice_rand_args_uniform = party.SpiceSumRandArgs(
+    description="VO2-RC circuit parameters inspired by Maffezzoni et al. 2015",
     n_osc=spice_rand_args_n_osc,
     v_in=v_in,
 

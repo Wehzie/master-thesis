@@ -11,11 +11,11 @@ import data_preprocessor
 import experimenteur
 import experiment_analysis as expan
 if const.TEST_PARAMS:
-    import params_test_py as params
+    import params_python_test as params_python
 else:
-    import params
+    import params_python
 import param_types as party
-import params_test_spipy
+import params_hybrid
 import param_util
 import sweep_types as sweety
 import gen_signal_spipy
@@ -38,27 +38,27 @@ def produce_all_results(algo_sweep: sweety.AlgoSweep, target: np.ndarray, base_r
     exp = experimenteur.Experimenteur()
 
     exp.set_sweep_name_and_dir("n_osc_vs_rmse")
-    results = exp.run_rand_args_sweep(algo_sweep, params.n_osc_sweep, base_rand_args)
+    results = exp.run_rand_args_sweep(algo_sweep, params_python.n_osc_sweep, base_rand_args)
     df = expan.conv_results_to_pd(results)
     expan.plot_n_vs_rmse(df, len(target), exp.sweep_name, exp.sweep_dir, show=show_all)
     expan.plot_masks(algo_sweep.algo_masks, expan.plot_n_vs_rmse, df, len(target), exp.sweep_name, exp.sweep_dir, show=show_all)
     data_io.hoard_experiment_results(exp.sweep_name, results, df, exp.sweep_dir)
 
     exp.set_sweep_name_and_dir("z_ops_vs_rmse")
-    results = exp.run_z_ops_sweep(algo_sweep, params.z_ops_sweep)
+    results = exp.run_z_ops_sweep(algo_sweep, params_python.z_ops_sweep)
     df = expan.conv_results_to_pd(results)
     expan.plot_z_vs_rmse(df, len(target), exp.sweep_name, exp.sweep_dir, show=show_all)
     expan.plot_masks(algo_sweep.algo_masks, expan.plot_z_vs_rmse, df, len(target), exp.sweep_name, exp.sweep_dir, show=show_all)
     data_io.hoard_experiment_results(exp.sweep_name, results, df, exp.sweep_dir)
 
     exp.set_sweep_name_and_dir("samples_vs_rmse")
-    results = exp.run_sampling_rate_sweep(params.sampling_rate_sweep, base_rand_args)
+    results = exp.run_sampling_rate_sweep(params_python.sampling_rate_sweep, base_rand_args)
     df = expan.conv_results_to_pd(results)
     expan.plot_samples_vs_rmse(df, exp.sweep_name, exp.sweep_dir, show=show_all)
     expan.plot_masks(algo_sweep.algo_masks, expan.plot_samples_vs_rmse, df, exp.sweep_name, exp.sweep_dir, show=show_all)
     data_io.hoard_experiment_results(exp.sweep_name, results, df, exp.sweep_dir)
 
-    freq_sweeps = [params.freq_sweep_from_zero, params.freq_sweep_around_vo2]
+    freq_sweeps = [params_python.freq_sweep_from_zero, params_python.freq_sweep_around_vo2]
     freq_sweep_names = ["freq_range_from_zero", "freq_range_around_vo2"]
     for freq_sweep, freq_sweep_name in zip(freq_sweeps, freq_sweep_names):
         exp.set_sweep_name_and_dir(freq_sweep_name)
@@ -69,28 +69,28 @@ def produce_all_results(algo_sweep: sweety.AlgoSweep, target: np.ndarray, base_r
         data_io.hoard_experiment_results(exp.sweep_name, results, df, exp.sweep_dir)
 
     exp.set_sweep_name_and_dir("weight_range_vs_rmse")
-    results = exp.run_rand_args_sweep(algo_sweep, params.weight_sweep, base_rand_args)
+    results = exp.run_rand_args_sweep(algo_sweep, params_python.weight_sweep, base_rand_args)
     df = expan.conv_results_to_pd(results)
     expan.plot_weight_range_vs_rmse(df, len(target), exp.sweep_dir, show=show_all)
     expan.plot_masks(algo_sweep.algo_masks, expan.plot_weight_range_vs_rmse, df, len(target),exp.sweep_dir, show=show_all)
     data_io.hoard_experiment_results(exp.sweep_name, results, df, exp.sweep_dir)
 
     exp.set_sweep_name_and_dir("phase_range_vs_rmse")
-    results = exp.run_rand_args_sweep(algo_sweep, params.phase_sweep, base_rand_args)
+    results = exp.run_rand_args_sweep(algo_sweep, params_python.phase_sweep, base_rand_args)
     df = expan.conv_results_to_pd(results)
     expan.plot_phase_range_vs_rmse(df, len(target), exp.sweep_dir, show=show_all)
     expan.plot_masks(algo_sweep.algo_masks, expan.plot_phase_range_vs_rmse, df, len(target), exp.sweep_dir, show=show_all)
     data_io.hoard_experiment_results(exp.sweep_name, results, df, exp.sweep_dir)
 
     exp.set_sweep_name_and_dir("offset_range_vs_rmse")
-    results = exp.run_rand_args_sweep(algo_sweep, params.offset_sweep, base_rand_args)
+    results = exp.run_rand_args_sweep(algo_sweep, params_python.offset_sweep, base_rand_args)
     df = expan.conv_results_to_pd(results)
     expan.plot_offset_range_vs_rmse(df, len(target), exp.sweep_dir, show=show_all)
     expan.plot_masks(algo_sweep.algo_masks, expan.plot_offset_range_vs_rmse, df, len(target), exp.sweep_dir, show=show_all)
     data_io.hoard_experiment_results(exp.sweep_name, results, df, exp.sweep_dir)
 
     exp.set_sweep_name_and_dir("amplitude_vs_rmse")
-    results = exp.run_rand_args_sweep(algo_sweep, params.amplitude_sweep, base_rand_args)
+    results = exp.run_rand_args_sweep(algo_sweep, params_python.amplitude_sweep, base_rand_args)
     df = expan.conv_results_to_pd(results)
     expan.plot_amplitude_vs_rmse(df, len(target), exp.sweep_name, exp.sweep_dir, show=show_all)
     expan.plot_masks(algo_sweep.algo_masks, expan.plot_amplitude_vs_rmse, df, len(target), exp.sweep_name, exp.sweep_dir, show=show_all)
@@ -108,7 +108,7 @@ def run_hyperparameter_optimization():
 def main():
     # SpiPy
     if False:
-        rand_args = params_test_spipy.spice_rand_args_uniform
+        rand_args = params_hybrid.spice_rand_args_uniform
         m_target = meta_target.MetaTargetTime(rand_args)
 
         # scale the number of samples in the target to the number of samples produced by spice
@@ -134,7 +134,7 @@ def main():
 
     # Python
     if True:
-        rand_args = params.py_rand_args_uniform
+        rand_args = params_python.py_rand_args_uniform
         m_target = meta_target.MetaTargetSample(rand_args)
         print(m_target)
         
@@ -147,7 +147,7 @@ def main():
 
         algo_sweep_test = param_util.init_algo_sweep(m_target.signal, rand_args, max_z_ops=5e2, m_averages=2)
 
-        #qualitative_algo_sweep(algo_sweep_test, m_target, visual=False)
+        # qualitative_algo_sweep(algo_sweep_test, m_target, visual=False)
         produce_all_results(algo_sweep_test, m_target.signal, rand_args)
 
 if __name__ == "__main__":

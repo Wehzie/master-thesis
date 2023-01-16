@@ -168,7 +168,21 @@ m6 = ExperimentMask(
     ],
 )
 
-algo_masks = [m1, m2, m3, m4, m5, m6]
+m7 = ExperimentMask(
+    "exploit1_vs_exploit10",
+    "MCExploit, j=1 vs. j=10",
+    "comparison of MCExploit with j=1 and j=10",
+    [
+        [
+            "MCExploit",
+        ],
+        [
+            "MCExploitJ10",
+        ],
+    ],
+)
+
+algo_masks = [m1, m2, m3, m4, m5, m6, m7]
 
 def main():
     print(m1.get_algo_names())

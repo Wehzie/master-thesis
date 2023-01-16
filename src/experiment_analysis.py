@@ -111,10 +111,13 @@ def filter_df_by_dist_name(df: pd.DataFrame, attr_name: str, dist_name: str) -> 
         attr_name: in freq, weight, phase, offset
         dist_name: for example uniform
     """
-    if dist_name == "uniform":
+    if dist_name == "uniform" and f"{attr_name}_dist_low" in df.columns:
+        # select the rows where the low bounds of an attribute are not empty; the high bounds won't be empty either
         return df[df[f"{attr_name}_dist_low"].notna()] # for example freq_dist_low
-    if dist_name == "normal":
+    if dist_name == "normal" and f"{attr_name}_dist_loc" in df.columns:
+        # select the rows where the loc of an attribute are not empty; the scale won't be empty either
         return df[df[f"{attr_name}_dist_loc"].notna()]
+    raise ValueError(f"unknown distribution name {dist_name}")
 
 
 # TODO: the better approach here is to pass the unmodified algorithm name in the df
@@ -195,10 +198,12 @@ def apply_mask(df: pd.DataFrame, mask: param_mask.ExperimentMask):
         return df.loc[df_algo_names.isin(mask_algo_names)]
     return df
 
+
 def plot_masks(masks: List[param_mask.ExperimentMask], plot_func: Callable, *args, **kwargs):
     """call a plot function with all masks"""
     for mask in masks:
         plot_func(*args, mask=mask, **kwargs)
+
 
 def plot_n_vs_rmse(df: pd.DataFrame, target_samples: int, sweep_name: str, save_dir: Path,
 mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
@@ -269,6 +274,17 @@ mask: param_mask.ExperimentMask) -> Tuple[plt.Figure]:
     return fig, legend_as_fig
 
 
+def find_dists_in_df(df: pd.DataFrame) -> List[str]:
+    """find the distributions that are present in the dataframe"""
+    dists = []
+    for attr_name in ["freq", "weight", "phase", "offset"]:
+        if f"{attr_name}_dist_low" in df.columns:
+            dists.append("uniform")
+        if f"{attr_name}_dist_loc" in df.columns:
+            dists.append("normal")
+    return list(set(dists))
+
+
 def get_freq_plot_label(dist_name: str, sweep_name: str, df: pd.DataFrame) -> str:
     """get the x label for the frequency plots"""
     x_label = "frequency diversity [Hz]"
@@ -287,7 +303,7 @@ def get_freq_plot_label(dist_name: str, sweep_name: str, df: pd.DataFrame) -> st
 def plot_freq_range_vs_rmse(df: pd.DataFrame, target_samples: int, sweep_name: str, save_dir: Path,
 mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
     """exp4+5: plot frequency range against rmse for multiple algorithms with rand_args and target fixed"""
-    for dist_name in const.LEGAL_DISTS:
+    for dist_name in find_dists_in_df(df):
         fig, legend_as_fig = plot_range_vs_rmse(df, target_samples, "freq", dist_name, mask)
         x_label = get_freq_plot_label(dist_name, sweep_name, df)
         fig.gca().set_xlabel(x_label) # width of frequency band
@@ -300,7 +316,7 @@ mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
 def plot_weight_range_vs_rmse(df: pd.DataFrame, target_samples: int, save_dir: Path,
 mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
     """exp6: plot weight range against rmse for multiple algorithms with rand_args and target fixed"""
-    for dist_name in const.LEGAL_DISTS:
+    for dist_name in find_dists_in_df(df):
         fig, legend_as_fig = plot_range_vs_rmse(df, target_samples, "weight", dist_name, mask)
         inv_amplitude = 1/df["amplitude"].iloc[0]
         fig.gca().set_xlabel(f"dynamic range (scaled by inverse-of-amplitude={inv_amplitude:.0f})") # width of weight band
@@ -313,7 +329,7 @@ mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
 def plot_phase_range_vs_rmse(df: pd.DataFrame, target_samples: int, save_dir: Path,
 mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
     """exp7: plot phase range against rmse for multiple algorithms with rand_args and target fixed"""
-    for dist_name in const.LEGAL_DISTS:
+    for dist_name in find_dists_in_df(df):
         fig, legend_as_fig = plot_range_vs_rmse(df, target_samples, "phase", dist_name, mask)
         fig.gca().set_xlabel("phase diversity") # width of phase band
         fig.gca().xaxis.set_major_formatter("{x:.2f}"+r"$\pi$")
@@ -324,7 +340,7 @@ mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
 def plot_offset_range_vs_rmse(df: pd.DataFrame, target_samples: int, save_dir: Path,
 mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
     """exp8: plot offset range against rmse for multiple algorithms with rand_args and target fixed"""
-    for dist_name in const.LEGAL_DISTS:
+    for dist_name in find_dists_in_df(df):
         fig, legend_as_fig = plot_range_vs_rmse(df, target_samples, "offset", dist_name, mask)
         fig.gca().set_xlabel("offset diversity") # width of offset distribution
         save_fig_n_legend(fig, legend_as_fig, f"offset_range_{dist_name}_vs_rmse", save_dir, mask, show)

@@ -93,6 +93,10 @@ class MCExploit(MonteCarlo):
         osc_to_replace = self.draw_random_indices(self.j_replace)
         return self.draw_partial_sample(base_sample, osc_to_replace)
 
+class MCExploitJ10(MCExploit):
+    """Use the MCExploit algorithm but replace 10 oscillators per sample"""
+    pass
+
 class MCExploitDecoupled(MCExploit):
     """decouple weight and oscillator shocks.
     pick oscillator, pick whether to change weight or oscillator, change, accept or reject, repeat."""
