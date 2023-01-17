@@ -22,7 +22,7 @@ import gen_signal_spipy
 
 import numpy as np
 
-def qualitative_algo_sweep(algo_sweep: sweety.AlgoSweep, m_target: meta_target.UnionMetaTarget, visual: bool = False) -> None:
+def qualitative_algo_sweep(algo_sweep: sweety.AlgoSweep, m_target: meta_target.MetaTarget, visual: bool = False) -> None:
     """algo sweep without averaging or collecting results.
     plots the best sample for each algorithm against the target."""
     for awa in algo_sweep.algo_with_args:
@@ -134,8 +134,17 @@ def main():
 
     # Python
     if True:
+        if False:
+            target = meta_target.MetaTargetSample(rand_args)
+        if True:
+            m_target = meta_target.SmoothUniformNoiseTarget(1, sampling_rate=1000)
+        data_analysis.plot_signal(m_target.signal, m_target.time, m_target.sampling_rate, show=True)
+        exit()
+
         rand_args = params_python.py_rand_args_uniform
-        m_target = meta_target.MetaTargetSample(rand_args)
+        rand_args.samples = m_target.samples
+
+        print(rand_args)
         print(m_target)
         
         if False: # synthetic target signal
@@ -147,8 +156,8 @@ def main():
 
         algo_sweep_test = param_util.init_algo_sweep(m_target.signal, rand_args, max_z_ops=5e2, m_averages=2)
 
-        # qualitative_algo_sweep(algo_sweep_test, m_target, visual=False)
-        produce_all_results(algo_sweep_test, m_target.signal, rand_args)
+        qualitative_algo_sweep(algo_sweep_test, m_target, visual=True)
+        #produce_all_results(algo_sweep_test, m_target.signal, rand_args)
 
 if __name__ == "__main__":
     main()

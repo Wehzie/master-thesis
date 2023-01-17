@@ -1,7 +1,3 @@
-
-import data_io
-import data_analysis
-
 from scipy import signal
 import numpy as np
 import numpy.typing as npt
@@ -146,18 +142,3 @@ def clean_spice_signal(signal: np.ndarray, samples: int) -> np.ndarray:
     x = remove_spice_startup(signal)
     x = remove_spice_offset(x)
     return pad_spice_signal(x, samples)
-
-def main():
-    sampling_rate, data = data_io.load_data()
-    data_analysis.plot_signal(data)
-    data_analysis.plot_fourier(data)
-
-    sd_data = resample_by_factor(data)
-    
-    data_analysis.plot_signal(sd_data)
-    data_analysis.plot_fourier(sd_data)
-
-    data_io.save_signal_to_wav(sd_data)
-
-if __name__ == "__main__":
-    main()

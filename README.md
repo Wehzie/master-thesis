@@ -11,6 +11,12 @@
 - Before running a full sweep run a test sweep with m-averages=1 with the final parameters
 - Before running a full sweep run a test sweep with the test parameters on the target hardware
 
+### Testing
+
+Unit tests are executed with
+
+    pytest src/tests
+
 ## In order of Priority: IDEAS and TODOS before final experiment can run
 
 In order of priority:
@@ -84,19 +90,39 @@ To start the simulation execute
 ### Detaching a terminal
 
 Detaching a terminal is useful in order to close a terminal temporarily but being able to resume the terminal later to monitor progress of a simulation.
+Some options to do this are `tmux` and `screen`, where `tmux` is more modern.
 Instructions are geared towards Debian and Ubuntu hosts.
 
 Install requirements
 
-    sudo apt install screen
+    sudo apt install tmux
 
-Detach a screen by pressing
+Start tmux session
 
-    ctrl-A # together
-    d # afterwards
+    tmux
 
-Reattach a screen
+Run desired commands, start simulation
 
-    screen -r
+    python src/main.py
+
+Detach tmux
+
+    # type Ctrl + b
+    # type d
+
+Now the terminal running tmux can be closed or an SSH connection to a host can be terminated
+
+To reattach a session
+
+    tmux ls # to list sessions
+    tmux attach-session -t <session-name>
+
+Multiple sessions can be run by detaching with
+
+    # type Ctrl + b
+    # type $
+    # enter session name
+
+    
 
 

@@ -21,6 +21,7 @@ import dist
 import data_preprocessor
 import data_io
 import const
+import param_types as party
 
 
 def comp_loc(low: float, high: float) -> float:

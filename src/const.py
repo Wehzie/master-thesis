@@ -21,3 +21,4 @@ MAX_TARGET_DURATION: Final[float] = 10  # maximum duration of a target signal in
 
 SPICE_PATIENCE: Final[int] = 10 # number of consecutive SPICE numerical failures to tolerate before stopping
 SPICE_TIMEOUT: Final[int] = 15 # number of seconds to wait for SPICE to finish simulating a circuit before killing the process
+OVERSAMPLING_FACTOR: Final[int] = 10 # a good sampling rate to sample a signal with max frequency f is 2*f*OVERSAMPLING_FACTOR, where 2*f is the Nyquist rate

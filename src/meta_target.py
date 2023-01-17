@@ -1,14 +1,29 @@
 import param_types as party
 import data_io
 import data_preprocessor
+import const
 
 from typing import Final, Union
 from pathlib import Path
+from abc import ABC
 
 import numpy as np
+from scipy import signal
 
-class MetaTargetSample:
-    """load signal including meta data, sample based processing"""
+#### #### #### #### REAL WORLD TARGETS #### #### #### ####
+
+class MetaTarget(ABC):
+    """abstract base class for all meta targets"""
+
+    def __init__(self, signal: np.ndarray, time: np.ndarray, sampling_rate: int, dtype: np.dtype, duration: float) -> None:
+        self.signal = signal
+        self.time = time
+        self.sampling_rate = sampling_rate
+        self.dtype = dtype
+        self.duration = duration
+
+class MetaTargetSample(MetaTarget):
+    """load signal from file, save meta data; use sample based processing"""
 
     def __init__(self, rand_args: party.PythonSignalRandArgs) -> None:
         # loading and manipulating the target signal
@@ -35,8 +50,8 @@ class MetaTargetSample:
     def __repr__(self) -> str:
         return f"MetaTargetSample(samples={len(self.signal)}, duration={self.duration}, sampling_rate={self.sampling_rate}, dtype={self.dtype})"
 
-class MetaTargetTime:
-    """load signal including meta data, time based processing"""
+class MetaTargetTime(MetaTarget):
+    """load signal from file, save meta data; use time based processing"""
 
     def __init__(self, rand_args: party.SpiceSumRandArgs) -> None:
         # loading and manipulating the target signal
@@ -80,4 +95,181 @@ class MetaTargetTime:
     def __repr__(self) -> str:
         return f"MetaTarget(signal={self.signal}, sampling_rate={self.sampling_rate}, dtype={self.dtype})"
 
-UnionMetaTarget = Union[MetaTargetSample, MetaTargetTime]
+
+
+#### #### #### #### SYNTHETIC TARGETS #### #### #### ####
+
+class SyntheticTarget(MetaTarget):
+    
+    def __init__(self, duration: float,
+    sampling_rate: Union[int, None] = None,
+    samples: Union[int, None] = None,
+    max_freq: Union[float, None] = None) -> None:
+        """abstract class for synthetic targets
+
+        args:
+            duration: the duration of the signal in seconds
+            sampling_rate: the sampling rate of the signal
+            samples: the number of samples in the signal
+            max_freq: the maximum frequency in the signal
+        """
+        self.duration = duration
+        self.derive_samples_or_sampling_rate(duration, samples, sampling_rate, max_freq)
+        self.time = np.linspace(0, duration, self.samples, endpoint=False)
+
+    def compute_oversampling_rate(self, max_freq: float) -> int:
+        """compute the oversampling rate for the given sampling rate
+        
+        args:
+            max_freq: the maximum frequency in the signal
+        """
+        nyquist_rate = max_freq * 2
+        return int(nyquist_rate * const.OVERSAMPLING_FACTOR)
+
+    def derive_samples_or_sampling_rate(self, duration: float, samples: int, sampling_rate: int, max_freq: float) -> None:
+        """given a duration infer the number of samples samples or sampling rate"""
+        if sampling_rate is not None and max_freq is not None:
+            assert sampling_rate >= self.compute_oversampling_rate(max_freq), "sampling rate is too low for the given max frequency"
+            self.sampling_rate = sampling_rate
+            self.samples = int(self.sampling_rate * duration)
+            return
+        
+        assert len(set([samples, sampling_rate, max_freq])) == 2, "only one of samples, sampling rate or max_freq should be specified"
+        if max_freq is not None:
+            self.sampling_rate = self.compute_oversampling_rate(max_freq)
+            self.samples = int(self.sampling_rate * duration)
+        elif samples is not None:
+            self.samples = samples
+            self.sampling_rate = self.samples * 1/duration
+        elif sampling_rate is not None: # sampling rate is not None
+            self.sampling_rate = sampling_rate
+            self.samples = int(self.sampling_rate * duration)
+        else:
+            raise ValueError("only one of samples, sampling rate or max_freq should be specified")
+
+    def moving_average(self, arr: np.ndarray, window_length: int) -> np.ndarray:
+        """compute the l-point average over the signal using a convolution"""
+        unpadded = np.convolve(arr, np.ones(window_length), "valid") / window_length
+        return data_preprocessor.pad_zero(unpadded, len(arr))
+
+
+class SineTarget(SyntheticTarget):
+
+    def __init__(self, duration: float, sampling_rate: Union[int, None] = None, samples: Union[int, None] = None, freq: float = 1, amplitude: float = 1, phase: float = 0, offset: float = 0) -> None:
+        super().__init__(duration, sampling_rate, samples, freq)
+        self.signal = np.sin(2 * np.pi * freq * self.time + phase*np.pi) * amplitude + offset
+
+class TriangleTarget(SyntheticTarget):
+
+    def __init__(self, duration: float, sampling_rate: Union[int, None] = None, samples: Union[int, None] = None, freq: float = 1, amplitude: float = 1, phase: float = 0, offset: float = 0) -> None:
+        super().__init__(duration, sampling_rate, samples, freq)
+        self.signal = signal.sawtooth(2 * np.pi * freq * self.time + phase*np.pi, width=0.5) * amplitude + offset
+
+class SquareTarget(SyntheticTarget):
+    
+    def __init__(self, duration: float, sampling_rate: Union[int, None] = None, samples: Union[int, None] = None, freq: float = 1, amplitude: float = 1, phase: float = 0, offset: float = 0) -> None:
+        super().__init__(duration, sampling_rate, samples, freq)
+        self.signal = np.sign(np.sin(2 * np.pi * freq * self.time + phase*np.pi)) * amplitude + offset
+
+class SawtoothTarget(SyntheticTarget):
+    
+    def __init__(self, duration: float, sampling_rate: Union[int, None] = None, samples: Union[int, None] = None, freq: float = 1, amplitude: float = 1, phase: float = 0, offset: float = 0) -> None:
+        super().__init__(duration, sampling_rate, samples, freq)
+        self.signal = signal.sawtooth(2 * np.pi * freq * self.time + phase*np.pi) * amplitude + offset
+
+class InverseSawtoothTarget(SyntheticTarget):
+
+    def __init__(self, duration: float, sampling_rate: Union[int, None] = None, samples: Union[int, None] = None, freq: float = 1, amplitude: float = 1, phase: float = 0, offset: float = 0) -> None:
+        super().__init__(duration, sampling_rate, samples, freq)
+        self.signal = -signal.sawtooth(2 * np.pi * freq * self.time + phase*np.pi) * amplitude + offset
+
+class ChirpTarget(SyntheticTarget):
+
+    def __init__(self, duration: float, sampling_rate: Union[int, None] = None, samples: Union[int, None] = None, start_freq: float = 0.1, stop_freq: Union[float, None] = None, amplitude: float = 1, offset: float = 0) -> None:
+        """
+        initialize a chirp signal.
+
+        args:
+            duration: the duration of the signal in seconds
+            sampling_rate: the sampling rate of the signal,
+                           when None the sampling rate is derived from the maximum frequency in the signal
+            samples: the number of samples in the signal,
+                     when None the number of samples is derived from the sampling rate and duration
+            start_freq: the start frequency of the chirp
+            stop_freq: the stop frequency of the chirp,
+                       when None the stop frequency is derived from the sampling rate   
+        """
+        super().__init__(duration, sampling_rate, samples, stop_freq)
+        if stop_freq is None:
+            stop_freq = self.sampling_rate/20
+        self.signal = signal.chirp(self.time, start_freq, self.duration, stop_freq) * amplitude + offset
+
+class BeatTarget(SyntheticTarget):
+
+    def __init__(self, duration: float, sampling_rate: Union[int, None] = None, samples: Union[int, None] = None,
+    base_freq: float = 1, base_freq_factor: float = 1/10,
+    amplitude: float = 1, phase: float = 0, offset: float = 0) -> None:
+        """
+        generate a beat note signal that is the product of two sinusoids with different frequencies
+        
+        args:
+            base_freq: the first of two frequency components of the beat note
+            base_freq_factor: the frequency of the second frequency components is the product of the base_frequency and the base_freq_factor
+        """
+        super().__init__(duration, sampling_rate, samples, base_freq)
+        derived_freq = base_freq * base_freq_factor
+        self.signal = np.sin(2 * np.pi * base_freq * self.time + phase*np.pi) * np.sin(2 * np.pi * derived_freq * self.time + phase*np.pi) * amplitude + offset
+
+class DampChirpTarget(SyntheticTarget):
+
+    def __init__(self, duration: float, sampling_rate: Union[int, None] = None, samples: Union[int, None] = None, start_freq: float = 0.1, stop_freq: Union[float, None] = None, amplitude: float = 1, offset: float = 0) -> None:
+        """
+        initialize a chirp signal.
+
+        args:
+            duration: the duration of the signal in seconds
+            sampling_rate: the sampling rate of the signal,
+                           when None the sampling rate is derived from the maximum frequency in the signal
+            samples: the number of samples in the signal,
+                     when None the number of samples is derived from the sampling rate and duration
+            start_freq: the start frequency of the chirp
+            stop_freq: the stop frequency of the chirp,
+                       when None the stop frequency is derived from the sampling rate   
+        """
+        super().__init__(duration, sampling_rate, samples, stop_freq)
+        if stop_freq is None:
+            stop_freq = self.sampling_rate/20
+        self.signal = signal.chirp(self.time, start_freq, self.duration, stop_freq) * amplitude + offset
+        self.signal = self.signal * np.exp(-self.time)
+
+class SmoothGaussianNoiseTarget(SyntheticTarget):
+
+    def __init__(self, duration: float, sampling_rate: Union[int, None] = None, samples: Union[int, None] = None,
+    amplitude: float = 1, offset: float = 0, avg_window: int = 10) -> None:
+        super().__init__(duration, sampling_rate, samples)
+        self.signal = const.RNG.normal(0, 1, self.samples) * amplitude + offset
+        self.signal = self.moving_average(self.signal, avg_window)
+
+class SmoothUniformNoiseTarget(SyntheticTarget):
+
+    def __init__(self, duration: float, sampling_rate: Union[int, None] = None, samples: Union[int, None] = None,
+    amplitude: float = 1, offset: float = 0, avg_window: int = 10) -> None:
+        super().__init__(duration, sampling_rate, samples)
+        self.signal = const.RNG.uniform(-1, 1, self.samples) * amplitude + offset
+        self.signal = self.moving_average(self.signal, avg_window)
+
+class GaussianNoiseTarget(SyntheticTarget):
+
+    def __init__(self, duration: float, sampling_rate: Union[int, None] = None, samples: Union[int, None] = None,
+    amplitude: float = 1, offset: float = 0) -> None:
+        super().__init__(duration, sampling_rate, samples)
+        self.signal = const.RNG.normal(0, 1, self.samples) * amplitude + offset
+
+class UniformNoiseTarget(SyntheticTarget):
+
+    def __init__(self, duration: float, sampling_rate: Union[int, None] = None, samples: Union[int, None] = None,
+    amplitude: float = 1, offset: float = 0) -> None:
+        super().__init__(duration, sampling_rate, samples)
+        self.signal = const.RNG.uniform(-1, 1, self.samples) * amplitude + offset
+
+

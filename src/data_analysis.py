@@ -1,6 +1,7 @@
 from typing import Callable, List, Tuple, Union
 import data_io
 import data_preprocessor
+import meta_target
 
 from pathlib import Path
 from functools import wraps
@@ -9,6 +10,41 @@ import time
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+
+def infer_subplot_rows_cols(n_signals: int) -> Tuple[int, int]:
+    """infer the number of rows and columns for a grid of subplots"""
+    n_rows = None
+    
+    i = 0
+    while i**2 <= n_signals:
+        n_rows = i
+        i += 1
+    remainder = n_signals - (i-1)**2
+    n_cols = n_rows
+    n_rows = n_rows + int(np.ceil(remainder / n_cols))
+    return n_rows, n_cols
+
+def plot_multiple_targets_common_axis(targets: List[meta_target.MetaTarget], show: bool = False, save_path: Path = None) -> None:
+    """plot multiple targets by aligning to the number of samples in the target with the fewest samples"""
+    min_samples = min([target.samples for target in targets])
+    time = np.linspace(0, 1, min_samples, endpoint=False)
+    target_matrix = np.array([target.signal[:min_samples] for target in targets])
+    plot_individual_oscillators(target_matrix, time, show=show, save_path=save_path)
+    if save_path:
+        plt.savefig(save_path, dpi=300)
+    if show:
+        plt.show()
+
+def plot_multiple_targets(targets: List[meta_target.MetaTarget], show: bool = False, save_path: Path = None) -> None:
+    """plot multiple targets in a grid of subplots; plots are aligned on one time axis"""
+    nrows, ncols = infer_subplot_rows_cols(len(targets))
+    _, axes = plt.subplots(nrows, ncols, layout="constrained")
+    for i, ax in enumerate(axes.flat):
+        ax.plot(targets[i].time, targets[i].signal)
+    if save_path:
+        plt.savefig(save_path, dpi=300)
+    if show:
+        plt.show()
 
 def plot_individual_oscillators(signal_matrix: np.ndarray, time: np.ndarray = None, oscillators_per_subplot: Union[None, int] = 25, show: bool = False, save_path: Path = None) -> None:
     """show n individual oscillator signals in a grid of subplots
@@ -20,19 +56,6 @@ def plot_individual_oscillators(signal_matrix: np.ndarray, time: np.ndarray = No
         show: show the plot
         save_path: save the plot to a file
     """
-    def infer_subplot_rows_cols(n_signals: int) -> Tuple[int, int]:
-        """infer the number of rows and columns for a grid of subplots"""
-        n_rows = None
-        
-        i = 0
-        while i**2 <= n_signals:
-            n_rows = i
-            i += 1
-        remainder = n_signals - (i-1)**2
-        n_cols = n_rows
-        n_rows = n_rows + int(np.ceil(remainder / n_cols))
-        return n_rows, n_cols
-    
     def subset_matrix(signal_matrix: np.ndarray, oscillators_per_subplot: int) -> List[np.ndarray]:
         """split a matrix into subsets of n rows, returns a view"""
         subsets = []
@@ -172,7 +195,7 @@ def plot_pred_target(pred: np.ndarray, target: np.ndarray, time: Union[np.ndarra
         plt.savefig(save_path, dpi=300)
 
 
-def plot_signal(y: np.ndarray, x_time: np.ndarray = None, ylabel: str = None, title: str = "", show: bool = False, save_path: Path = None) -> None:
+def plot_signal(y: np.ndarray, x_time: np.ndarray = None, sampling_rate: int = None, ylabel: str = None, title: str = "", show: bool = False, save_path: Path = None) -> None:
     """plot a 2 dimensional time series signal"""
     _, ax1 = plt.subplots()
 
@@ -197,12 +220,15 @@ def plot_signal(y: np.ndarray, x_time: np.ndarray = None, ylabel: str = None, ti
     else:
         ax1.set_ylabel(ylabel)
 
-    # add number of samples to title
-    if len(title) == 0:
-        title = f"{len(y)} samples"
-    else:
-        title += f"; {len(y)} samples"
-    plt.title(title)
+    # add sampling rate to title
+    out_title = ""
+    if len(title) > 0:
+        out_title = title + ", "
+    if sampling_rate is not None:
+        out_title += r"$f_s$=" + f"{sampling_rate} [Hz]"
+    if sampling_rate is None:
+        out_title += f", {len(y)} samples"
+    plt.title(out_title)
     
     ax_samples.set_xlabel("time [a.u.]")
     ax_samples.plot(y)
@@ -229,10 +255,10 @@ def plot_fourier(data: np.ndarray, title: str = None, show: bool = False, save_p
 
     _, ax = plt.subplots()
     plt.plot(freq, abs_spec)
-    ax.set_xscale('log')
-    ax.set_yscale('log')
+    ax.set_xscale("log")
+    ax.set_yscale("log")
     ax.set_xlabel("log-frequency [Hz]")
-    ax.set_ylabel('log-amplitude')
+    ax.set_ylabel("log-amplitude")
     
     if title:
         plt.title(title)

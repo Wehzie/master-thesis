@@ -140,7 +140,7 @@ class Sample():
         rmse = data_analysis.compute_rmse(weighted_sum, target)
         return Sample(signal_matrix, weights, weighted_sum, offset, rmse, sample.signal_args)
 
-def evaluate_prediction(best_sample: Sample, m_target: meta_target.UnionMetaTarget,
+def evaluate_prediction(best_sample: Sample, m_target: meta_target.MetaTarget,
     z_ops: int, alg_name: str, plot_time: bool = True, plot_freq: bool = False, decompose_sample: bool = True) -> None:
     """evaluate a generated signal (sample) against the target by qualitative (plots) and quantitative (RMSE) means"""
     # normalize target to range 0 1
