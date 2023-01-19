@@ -16,6 +16,7 @@ import sweep_types as sweety
 import gen_signal as gen_signal
 import gen_signal_python as gensi_python
 import param_mask
+import meta_target
 
 import dist
 import data_preprocessor
@@ -74,7 +75,9 @@ def init_target2rand_args(rand_args: party.PythonSignalRandArgs, scale_factor: f
     return rand_args, (sampling_rate, target, raw_dtype)
 
 
-def init_algo_sweep(target: np.ndarray, rand_args: party.PythonSignalRandArgs, sig_generator: gen_signal.SignalGenerator = gensi_python.PythonSigGen(), max_z_ops: int = 3e3, m_averages: int = 1, test_mode: bool = False) -> sweety.AlgoSweep:
+def init_algo_sweep(meta_target: meta_target.MetaTarget, rand_args: party.PythonSignalRandArgs,
+sig_generator: gen_signal.SignalGenerator = gensi_python.PythonSigGen(),
+max_z_ops: int = 3e3, m_averages: int = 2, test_mode: bool = False) -> sweety.AlgoSweep:
     """initialize a set of algorithms with varying arguments for a fixed target and a fixed set of rand_args from which to draw oscillators
     
     args:
@@ -83,119 +86,119 @@ def init_algo_sweep(target: np.ndarray, rand_args: party.PythonSignalRandArgs, s
         z: the maximum number of z-operations to perform
         m_averages: the number of times to average the results of each algorithm"""
     one_shot_algos = [
-        sweety.AlgoWithArgs(
-            almoca.MCOneShot,
-            algarty.AlgoArgs(rand_args, target, max_z_ops, sig_generator=sig_generator),
-        ),
+        # sweety.AlgoWithArgs(
+        #     almoca.MCOneShot,
+        #     algarty.AlgoArgs(rand_args, meta_target, max_z_ops, sig_generator=sig_generator),
+        # ),
         sweety.AlgoWithArgs(
             almoca.MCOneShotWeight,
-            algarty.AlgoArgs(rand_args, target, max_z_ops, sig_generator=sig_generator),
+            algarty.AlgoArgs(rand_args, meta_target, max_z_ops, sig_generator=sig_generator),
         ),
     ]
     exploit_algos = [
         sweety.AlgoWithArgs(
             almoca.MCExploit,
-            algarty.AlgoArgs(rand_args, target, max_z_ops, j_replace=1, sig_generator=sig_generator),
+            algarty.AlgoArgs(rand_args, meta_target, max_z_ops, j_replace=1, sig_generator=sig_generator),
         ),
         sweety.AlgoWithArgs(
             almoca.MCExploitJ10,
-            algarty.AlgoArgs(rand_args, target, max_z_ops, j_replace=10, sig_generator=sig_generator),
+            algarty.AlgoArgs(rand_args, meta_target, max_z_ops, j_replace=10, sig_generator=sig_generator),
         ),
         sweety.AlgoWithArgs(
             almoca.MCExploitWeight,
-            algarty.AlgoArgs(rand_args, target, max_z_ops, j_replace=1, sig_generator=sig_generator),
+            algarty.AlgoArgs(rand_args, meta_target, max_z_ops, j_replace=1, sig_generator=sig_generator),
         ),
         sweety.AlgoWithArgs(
             almoca.MCExploitNeighborWeight,
-            algarty.AlgoArgs(rand_args, target, max_z_ops, j_replace=1, sig_generator=sig_generator),
+            algarty.AlgoArgs(rand_args, meta_target, max_z_ops, j_replace=1, sig_generator=sig_generator),
         ),
         sweety.AlgoWithArgs(
             almoca.MCExploitDecoupled,
-            algarty.AlgoArgs(rand_args, target, max_z_ops, j_replace=1, sig_generator=sig_generator),
+            algarty.AlgoArgs(rand_args, meta_target, max_z_ops, j_replace=1, sig_generator=sig_generator),
         ),
         sweety.AlgoWithArgs(
             almoca.MCExploitFast,
-            algarty.AlgoArgs(rand_args, target, max_z_ops, j_replace=1, sig_generator=sig_generator),
+            algarty.AlgoArgs(rand_args, meta_target, max_z_ops, j_replace=1, sig_generator=sig_generator),
         ),
     ]
     grow_shrink_algos = [
         sweety.AlgoWithArgs(
             almoca.MCGrowShrink,
-            algarty.AlgoArgs(rand_args, target, max_z_ops, j_replace=1, l_damp_prob=0.5, h_damp_fac=0.5, sig_generator=sig_generator),
+            algarty.AlgoArgs(rand_args, meta_target, max_z_ops, j_replace=1, l_damp_prob=0.5, h_damp_fac=0.5, sig_generator=sig_generator),
         ),
         sweety.AlgoWithArgs(
             almoca.MCDampen,
-            algarty.AlgoArgs(rand_args, target, max_z_ops, j_replace=1, h_damp_fac=0.5, sig_generator=sig_generator),
+            algarty.AlgoArgs(rand_args, meta_target, max_z_ops, j_replace=1, h_damp_fac=0.5, sig_generator=sig_generator),
         ),
         sweety.AlgoWithArgs(
             almoca.MCPurge,
-            algarty.AlgoArgs(rand_args, target, max_z_ops, j_replace=1, h_damp_fac=0, sig_generator=sig_generator),
+            algarty.AlgoArgs(rand_args, meta_target, max_z_ops, j_replace=1, h_damp_fac=0, sig_generator=sig_generator),
         ),
     ]
     oscillator_anneal_algos = [
         sweety.AlgoWithArgs(
             almoca.MCOscillatorAnneal,
-            algarty.AlgoArgs(rand_args, target, max_z_ops, sig_generator=sig_generator),
+            algarty.AlgoArgs(rand_args, meta_target, max_z_ops, sig_generator=sig_generator),
         ),
         sweety.AlgoWithArgs(
             almoca.MCOscillatorAnnealWeight,
-            algarty.AlgoArgs(rand_args, target, max_z_ops, sig_generator=sig_generator),
+            algarty.AlgoArgs(rand_args, meta_target, max_z_ops, sig_generator=sig_generator),
         ),
         sweety.AlgoWithArgs(
             almoca.MCOscillatorAnnealLog,
-            algarty.AlgoArgs(rand_args, target, max_z_ops, sig_generator=sig_generator),
+            algarty.AlgoArgs(rand_args, meta_target, max_z_ops, sig_generator=sig_generator),
         ),
         sweety.AlgoWithArgs(
             almoca.MCOscillatorAnnealLogWeight,
-            algarty.AlgoArgs(rand_args, target, max_z_ops, sig_generator=sig_generator),
+            algarty.AlgoArgs(rand_args, meta_target, max_z_ops, sig_generator=sig_generator),
         ),
     ]
     las_vegas_algos = [
         sweety.AlgoWithArgs(
             alave.LasVegas,
-            algarty.AlgoArgs(rand_args, target, max_z_ops, sig_generator=sig_generator),
+            algarty.AlgoArgs(rand_args, meta_target, max_z_ops, sig_generator=sig_generator),
         ),
         sweety.AlgoWithArgs(
             alave.LasVegasWeight,
-            algarty.AlgoArgs(rand_args, target, max_z_ops, sig_generator=sig_generator),
+            algarty.AlgoArgs(rand_args, meta_target, max_z_ops, sig_generator=sig_generator),
         ),
     ]
     population_algos = [
         sweety.AlgoWithArgs(
             alevo.DifferentialEvolution,
-            algarty.AlgoArgs(rand_args, target, max_z_ops, sig_generator=sig_generator),
+            algarty.AlgoArgs(rand_args, meta_target, max_z_ops, sig_generator=sig_generator),
         ),
     ]
     mcmc_algos = [
         sweety.AlgoWithArgs(
             almcmc.MCExploitErgodic,
-            algarty.AlgoArgs(rand_args, target, max_z_ops, j_replace=1, sig_generator=sig_generator),
+            algarty.AlgoArgs(rand_args, meta_target, max_z_ops, j_replace=1, sig_generator=sig_generator),
         ),
         sweety.AlgoWithArgs(
             almcmc.MCExploitAnneal,
-            algarty.AlgoArgs(rand_args, target, max_z_ops, j_replace=1, sig_generator=sig_generator),
+            algarty.AlgoArgs(rand_args, meta_target, max_z_ops, j_replace=1, sig_generator=sig_generator),
         ),
         sweety.AlgoWithArgs(
             almcmc.MCExploitAnnealWeight,
-            algarty.AlgoArgs(rand_args, target, max_z_ops, j_replace=1, sig_generator=sig_generator),
+            algarty.AlgoArgs(rand_args, meta_target, max_z_ops, j_replace=1, sig_generator=sig_generator),
         ),
         sweety.AlgoWithArgs(
             almcmc.BasinHopping,
-            algarty.AlgoArgs(rand_args, target, max_z_ops, sig_generator=sig_generator),
+            algarty.AlgoArgs(rand_args, meta_target, max_z_ops, sig_generator=sig_generator),
         ),
         sweety.AlgoWithArgs(
             almcmc.ScipyAnneal,
-            algarty.AlgoArgs(rand_args, target, max_z_ops, sig_generator=sig_generator),
+            algarty.AlgoArgs(rand_args, meta_target, max_z_ops, sig_generator=sig_generator),
         ),
         sweety.AlgoWithArgs(
             almcmc.ScipyDualAnneal,
-            algarty.AlgoArgs(rand_args, target, max_z_ops, sig_generator=sig_generator),
+            algarty.AlgoArgs(rand_args, meta_target, max_z_ops, sig_generator=sig_generator),
         ),
     ]
     gradient_algos = [
         sweety.AlgoWithArgs(
             algra.LinearRegression,
-            algarty.AlgoArgs(rand_args, target, sig_generator=sig_generator),
+            algarty.AlgoArgs(rand_args, meta_target, sig_generator=sig_generator),
         ),
     ]
 
@@ -207,7 +210,7 @@ def init_algo_sweep(target: np.ndarray, rand_args: party.PythonSignalRandArgs, s
     single_algo_with_args = [
         sweety.AlgoWithArgs(
             almoca.MCExploit,
-            algarty.AlgoArgs(rand_args, target, max_z_ops, j_replace=1, sig_generator=sig_generator),
+            algarty.AlgoArgs(rand_args, meta_target, max_z_ops, j_replace=1, sig_generator=sig_generator),
         ),
     ]
     

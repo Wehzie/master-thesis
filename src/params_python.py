@@ -52,6 +52,7 @@ py_rand_args_normal = party.PythonSignalRandArgs(
     freq_dist = dist.Dist(RNG.normal, loc=5e5, scale=4e5),
     amplitude = 0.5,
     weight_dist = dist.WeightDist(RNG.normal, loc=5, scale=5, n=py_rand_args_n_osc),
+    phase_dist = dist.Dist(RNG.normal, loc=1, scale=1),
     offset_dist = dist.Dist(RNG.normal, loc=0, scale=100/3),
     sampling_rate = 11025
 )

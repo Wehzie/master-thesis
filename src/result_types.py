@@ -5,8 +5,8 @@ import algo_args_types as algarty
 import sample
 
 @dataclass
-class ResultSweep:
-    """running an experiment with AlgoSweep args produces a list of ResultAlgoSweep"""
+class ResultSweep: # TODO: rename ResultOfSweep
+    """running an experiment with AlgoSweep args produces a list of ResultSweep"""
     algo_name: str
     algo_args: algarty.AlgoArgs       # to track what's going on at any point in time
     mean_rmse: float

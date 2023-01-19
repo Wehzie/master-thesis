@@ -32,7 +32,8 @@ class SpipySignalGenerator(gen_signal.SignalGenerator):
     def draw_single_oscillator(det_args: party.SpiceSingleDetArgs, work_dir: Path = const.WRITE_DIR) -> np.ndarray:
         """generate a time series from a single spice oscillator"""
         # generate path to save signal and circuit
-        experiment_path = data_io.find_dir_name(work_dir)
+        experiment_path = work_dir / "spice_single_oscillator"
+        experiment_path.mkdir(parents=True, exist_ok=True)
         tmp_path = experiment_path / "netlist.cir"
         # build netlist with a single oscillator
         netlist_generator.build_single_netlist(tmp_path, det_args)

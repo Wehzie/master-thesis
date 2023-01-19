@@ -65,6 +65,8 @@ def rename_algos_by_args(name_df: pd.DataFrame, algo_args_df: pd.DataFrame) -> p
     name_df["algo_name"] = temp_df["algo_name_y"].fillna(temp_df["algo_name_x"])
     return name_df
 
+
+# TODO: write function to recursively unpack objects inside a dataframe and each field as column
 def conv_results_to_pd(results: List[resty.ResultSweep]) -> pd.DataFrame:
     """convert ResultSweep to a pandas dataframe for further processing"""
     results = compute_dist_ranges(results)
@@ -75,9 +77,10 @@ def conv_results_to_pd(results: List[resty.ResultSweep]) -> pd.DataFrame:
 
     # unpack the nested args such that each entry has its own column
     res_df = pd.DataFrame(results).drop("algo_args", axis=1)
-    algo_args_df = pd.DataFrame([r.algo_args for r in results]).drop(["rand_args", "target"], axis=1)
+    algo_args_df = pd.DataFrame([r.algo_args for r in results]).drop(["rand_args", "meta_target"], axis=1)
     res_df = rename_algos_by_args(res_df, algo_args_df)
     rand_args_df = pd.DataFrame(rand_args).drop(rand_args_dist_names, axis=1)
+    target_df = pd.DataFrame([r.algo_args.meta_target.name for r in results], columns=["target_name"])
 
     # dist ranges
     freq_dist_range = pd.DataFrame([ra.freq_dist.range for ra in rand_args], columns=["freq_range"])
@@ -91,7 +94,7 @@ def conv_results_to_pd(results: List[resty.ResultSweep]) -> pd.DataFrame:
     phase_dist_df = pd.DataFrame([add_str2keys("phase_dist", ra.phase_dist.kwargs) for ra in rand_args])
     offset_dist_df = pd.DataFrame([add_str2keys("offset_dist", ra.offset_dist.kwargs) for ra in rand_args])
     
-    return pd.concat([res_df, algo_args_df, rand_args_df,
+    return pd.concat([res_df, target_df, algo_args_df, rand_args_df,
         freq_dist_range, weight_dist_range, phase_dist_range, offset_dist_range,
         freq_dist_df, weight_dist_df, phase_dist_df, offset_dist_df], axis=1)
 

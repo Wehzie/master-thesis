@@ -12,15 +12,23 @@ import numpy as np
 class SearchAlgo(ABC):
 
     def __init__(self, algo_args: algarty.AlgoArgs):
-        if algo_args is None: return # empty instance to get the class name 
+        if algo_args is None: return # empty instance to get the class name
         self.rand_args = algo_args.rand_args
-        self.target = algo_args.target
+
+        # unpack meta target's signal for backwards compatibility
+        self.meta_target = algo_args.meta_target
+        self.target = algo_args.meta_target.signal
+        
+        # parameters controlling runtime of all algorithms
         self.max_z_ops = algo_args.max_z_ops
+        self.k_samples = algo_args.k_samples if algo_args.k_samples is not None else self.infer_k_from_z()
+
+        # parameters applying to a subset of algorithms
         self.j_replace = algo_args.j_replace
         self.l_damp_prob = algo_args.l_damp_prob
         self.h_damp_fac = algo_args.h_damp_fac
-        self.k_samples = algo_args.k_samples if algo_args.k_samples is not None else self.infer_k_from_z()
 
+        # parameters control how search runs, but don't influence results
         self.mp = algo_args.mp
         self.z_ops_callbacks = algo_args.z_ops_callbacks
         self.store_det_args = algo_args.store_det_args
@@ -37,16 +45,30 @@ class SearchAlgo(ABC):
         self.z_ops: int = 0                                         # current number of operations
     
     def __str__(self) -> str:
-        rand_args = f"rand_args: {self.rand_args}\n"
-        sig_gen_func = f"sig_gen_func: {self.sig_gen_func.__name__}\n"
-        all_samples = ""
-        for s in self.all_samples:
-            all_samples += str(s) + "\n"
-        best_samples = ""
-        for s, z in self.best_samples:
-            best_samples += str(s) + f" z_ops: {z}" + "\n"
-        z_ops = f"z_ops: {z_ops}"
-        return rand_args + sig_gen_func + "all_samples: " + all_samples + "best_samples: " + best_samples + z_ops
+        sig_gen_func = f"sig_generator=({self.sig_generator.__class__.__name__})\n"
+        algo_args = f"algo_args=({self.get_algo_args()})\n"
+        return sig_gen_func + algo_args
+
+    def get_algo_args(self) -> algarty.AlgoArgs:
+        """get the current set of AlgoArgs form the search module"""
+        return algarty.AlgoArgs(
+            self.rand_args,
+            self.meta_target,
+            
+            self.max_z_ops,
+            self.k_samples,
+            self.j_replace,
+            self.l_damp_prob,
+            self.h_damp_fac,
+
+            self.mp,
+            self.z_ops_callbacks,
+            self.store_det_args, 
+            self.history,
+            self.args_path,
+
+            self.sig_generator,
+        )
 
     @staticmethod
     def gen_empty_sample() -> sample.Sample:
@@ -214,24 +236,6 @@ class SearchAlgo(ABC):
                     self.rand_args.weight_dist.dist = rng.uniform
                 elif dist.__name__ == rng.normal.__name__:
                     self.rand_args.weight_dist.dist = rng.normal
-
-    def get_algo_args(self) -> algarty.AlgoArgs:
-        """get the current set of AlgoArgs form the search module"""
-        return algarty.AlgoArgs(
-            self.rand_args,
-            self.target,
-            self.max_z_ops,
-            self.k_samples,
-            self.j_replace,
-            self.l_damp_prob,
-            self.h_damp_fac,
-            self.mp,
-            self.z_ops_callbacks,
-            self.store_det_args,
-            self.history,
-            self.args_path,
-            self.sig_generator,
-        )
 
     @abstractmethod
     def init_best_sample(self) -> sample.Sample:

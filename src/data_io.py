@@ -17,9 +17,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-DATA_PATH = Path("resources/magpie. 35k, mono, 8-bit, 11025 Hz, 3.3 seconds.wav")
 
-def load_data(data_path: Path = DATA_PATH, verbose: bool = True) -> tuple:
+
+def load_data(data_path: Path, verbose: bool = True) -> tuple:
     """
     load a wav file with scipy
     
@@ -48,13 +48,13 @@ def load_data(data_path: Path = DATA_PATH, verbose: bool = True) -> tuple:
 
     return sampling_rate, data, data.dtype
     
-def load_data_numpy(data_path: Path = DATA_PATH) -> np.ndarray:
+def load_data_numpy(data_path: Path) -> np.ndarray:
     """load a wav file with stdlib's wave module and numpy
     
     return sampling_rate, audio_normalised, dtype"""
     
     # Read file to get buffer                                                                                               
-    ifile = wave.open(str(DATA_PATH)) # BUG with pathlib
+    ifile = wave.open(str(data_path)) # BUG with pathlib
     samples = ifile.getnframes()
     audio = ifile.readframes(samples)
     sampling_rate = ifile.getframerate()
@@ -74,7 +74,10 @@ def save_signal_to_wav(data: np.ndarray, samplerate: int, dtype: np.dtype, path:
     data_copy = copy.deepcopy(data)
     # normalize such that max value in signal has max amplitude
     # the resulting file will sound louder
-    norm_factor = np.iinfo(dtype).max // max(data)
+    if dtype in [np.float32, np.float64]:
+        norm_factor = np.finfo(dtype).max // max(data)
+    else:
+        norm_factor = np.iinfo(dtype).max // max(data)
     data_copy *= norm_factor
     write(path, samplerate, data_copy.astype(dtype))
 

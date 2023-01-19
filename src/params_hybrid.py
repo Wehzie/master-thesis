@@ -39,7 +39,7 @@ spice_rand_args_uniform = party.SpiceSumRandArgs(
     c_dist=dist.Dist(300e-12),
 
     time_step=2e-9,
-    time_stop=1e-5,
+    time_stop=1e-3,
     time_start=0,
 
     dependent_component="v(osc1)",

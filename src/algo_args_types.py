@@ -8,6 +8,7 @@ import gen_signal
 import gen_signal_python as gensi_python
 import const
 import param_types as party
+import meta_target
 
 @dataclass
 class AlgoArgs:
@@ -19,7 +20,7 @@ class AlgoArgs:
     """
 
     rand_args: party.PythonSignalRandArgs   # arguments to init a signal matrix
-    target: np.ndarray                      # the target to optimize for
+    meta_target: meta_target.MetaTarget     # the target signal to optimize for (and its meta data)
     max_z_ops: Union[None, int]     = None  # maximum number of operations until learning is aborted
     k_samples: int                  = None  # number of times to re-run base algorithm
     j_replace: Union[None, int]    = None   # number of oscillators to replace in each iteration for MCExploit

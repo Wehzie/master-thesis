@@ -5,6 +5,10 @@ import dist
 import algo
 import algo_args_types as algarty
 import param_mask
+import meta_target
+import param_types as party
+import gen_signal_python
+import gen_signal_spipy
 
 @dataclass
 class AlgoWithArgs:
@@ -101,3 +105,12 @@ class ZOpsSweep(ExpoTimeSweep): # also expo time, in algo_args, not rand_args
 @dataclass
 class NumSamplesSweep(ExpoTimeSweep):
     samples: List[float]   # number of samples in the target signal
+
+@dataclass
+class TargetSweep(ExpoTimeSweep):
+    description: str
+    targets: List[meta_target.MetaTarget] # target signal
+    rand_args: Union[party.PythonSignalRandArgs, party.SpiceSumRandArgs]
+    signal_generator: Union[gen_signal_python.PythonSigGen, gen_signal_spipy.SpipySignalGenerator]
+    max_z_ops: int
+    m_averages: int            # number of averages for each experimental configuration
