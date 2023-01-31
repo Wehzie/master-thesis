@@ -98,16 +98,16 @@ hybrid_target_sweep_test = sweety.TargetSweep(
 sample_targets = [
     meta_target.SineTarget(0.1, freq=1, samples=30),
     meta_target.TriangleTarget(0.1, freq=1, samples=30),
-    meta_target.SawtoothTarget(0.1, freq=1, samples=30),
-    meta_target.InverseSawtoothTarget(0.1, freq=1, samples=30),
-    meta_target.SquareTarget(0.1, freq=1, samples=30),
-    meta_target.BeatTarget(0.1, base_freq=1, samples=30),
-    meta_target.ChirpTarget(0.1, start_freq=1, stop_freq=10, samples=30),
-    meta_target.DampChirpTarget(0.1, start_freq=1, stop_freq=10, samples=30),
-    meta_target.SmoothGaussianNoiseTarget(0.1, samples=30),
-    meta_target.SmoothUniformNoiseTarget(0.1, samples=30),
-    meta_target.GaussianNoiseTarget(0.1, samples=30),
-    meta_target.UniformNoiseTarget(0.1, samples=30),
+    # meta_target.SawtoothTarget(0.1, freq=1, samples=30),
+    # meta_target.InverseSawtoothTarget(0.1, freq=1, samples=30),
+    # meta_target.SquareTarget(0.1, freq=1, samples=30),
+    # meta_target.BeatTarget(0.1, base_freq=1, samples=30),
+    # meta_target.ChirpTarget(0.1, start_freq=1, stop_freq=10, samples=30),
+    # meta_target.DampChirpTarget(0.1, start_freq=1, stop_freq=10, samples=30),
+    # meta_target.SmoothGaussianNoiseTarget(0.1, samples=30),
+    # meta_target.SmoothUniformNoiseTarget(0.1, samples=30),
+    # meta_target.GaussianNoiseTarget(0.1, samples=30),
+    # meta_target.UniformNoiseTarget(0.1, samples=30),
 ]
 
 python_target_sweep_sample = sweety.TargetSweep(

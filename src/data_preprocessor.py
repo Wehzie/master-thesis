@@ -48,6 +48,27 @@ def scale_up(short: np.ndarray, len_long: int) -> np.ndarray:
     return padded
 
 
+def interpolate_sinc(signal: np.ndarray, time: np.ndarray, time_new: np.ndarray) -> np.ndarray:
+    """interpolate a signal using sinc interpolation
+    
+    args:
+        signal: the signal to be interpolated
+        time: the time points of the signal
+        time_new: the time points of the interpolated signal
+
+    references:
+        - https://gist.github.com/endolith/1297227
+    """
+    if len(signal) != len(time):
+        raise ValueError("time and signal must have the same length")
+    
+    T = time[1] - time[0] # period/signal spacing
+    
+    sincM = np.tile(time_new, (len(time), 1)) - np.tile(time[:, np.newaxis], (1, len(time_new)))
+    signal_new = np.dot(signal, np.sinc(sincM/T))
+    return signal_new
+
+
 def pad_zero(short: np.ndarray, len_long: int) -> np.ndarray:
     """evenly zero-pad a short signal up to the desired length"""
     # evenly pad with zeros

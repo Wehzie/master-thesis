@@ -13,6 +13,7 @@ import const
 import param_util
 import data_io
 import const
+import params_target
 
 import numpy as np
 
@@ -106,7 +107,7 @@ class Experimenteur:
         for s in sweep_args.samples:
             temp_args = copy.deepcopy(base_args)
             temp_args.samples = s # inject samples into rand_args
-            m_target = meta_target.MetaTargetSample(temp_args, "magpie")
+            m_target = meta_target.MetaTargetSample(temp_args, "magpie", params_target.DevSet.MAGPIE.value)
             algo_sweep = param_util.init_algo_sweep(m_target, temp_args)
             results += self.run_algo_sweep(algo_sweep)
         return results

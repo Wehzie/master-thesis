@@ -2,8 +2,6 @@ from dataclasses import dataclass
 from typing import List, Union
 from pathlib import Path
 
-import numpy as np
-
 import gen_signal
 import gen_signal_python as gensi_python
 import const

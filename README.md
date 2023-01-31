@@ -23,10 +23,7 @@ In order of priority:
 
 ### High priority
 
-
 - Automate qualitative run against a list of targets (sine, beat, chirp, magpie, yes, okay)
-
-- Experiment production parameters
 
 - SPICE: Fix bias issue.
     1.1 Make bias distribution narrower.
@@ -35,6 +32,7 @@ In order of priority:
 
 - Python: increase sampling rate to avoid aliasing. Verify with individual oscillator plots.
 
+- show sampling rate and duration, not samples in the sweep plots
 
 ## Medium priority
 
@@ -47,6 +45,8 @@ In order of priority:
 - Plot Improvement: save mean, mode, stddev to frequency diversity plot title.
 
 ## Low priority
+
+- SPICE: write extrapolation function for SPICE generated signals
 
 - SPICE: Add phase via delayed voltage delivery.
 

@@ -86,10 +86,10 @@ max_z_ops: int = 3e3, m_averages: int = 2, test_mode: bool = False) -> sweety.Al
         z: the maximum number of z-operations to perform
         m_averages: the number of times to average the results of each algorithm"""
     one_shot_algos = [
-        # sweety.AlgoWithArgs(
-        #     almoca.MCOneShot,
-        #     algarty.AlgoArgs(rand_args, meta_target, max_z_ops, sig_generator=sig_generator),
-        # ),
+        sweety.AlgoWithArgs(
+            almoca.MCOneShot,
+            algarty.AlgoArgs(rand_args, meta_target, max_z_ops, sig_generator=sig_generator),
+        ),
         sweety.AlgoWithArgs(
             almoca.MCOneShotWeight,
             algarty.AlgoArgs(rand_args, meta_target, max_z_ops, sig_generator=sig_generator),
@@ -214,7 +214,7 @@ max_z_ops: int = 3e3, m_averages: int = 2, test_mode: bool = False) -> sweety.Al
         ),
     ]
     
-    return sweety.AlgoSweep(some_algos_with_args, m_averages, param_mask.algo_masks)
+    return sweety.AlgoSweep(all_algos_with_args, m_averages, param_mask.algo_masks)
 
 algo_list: List[SearchAlgo] = [
     almoca.MCExploit,

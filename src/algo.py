@@ -21,7 +21,6 @@ class SearchAlgo(ABC):
         
         # parameters controlling runtime of all algorithms
         self.max_z_ops = algo_args.max_z_ops
-        self.k_samples = algo_args.k_samples if algo_args.k_samples is not None else self.infer_k_from_z()
 
         # parameters applying to a subset of algorithms
         self.j_replace = algo_args.j_replace
@@ -36,6 +35,9 @@ class SearchAlgo(ABC):
         self.args_path = algo_args.args_path
 
         self.sig_generator = algo_args.sig_generator
+
+        # optionally inferred parameter
+        self.k_samples = algo_args.k_samples if algo_args.k_samples is not None else self.infer_k_from_z()
 
         self.algo_args = self.get_algo_args()                       # for storage with algorithm results
                                                                     # this approach allows injecting from elsewhere

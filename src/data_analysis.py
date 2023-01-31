@@ -226,8 +226,8 @@ def plot_signal(y: np.ndarray, x_time: np.ndarray = None, sampling_rate: int = N
         out_title = title + ", "
     if sampling_rate is not None:
         out_title += r"$f_s$=" + f"{sampling_rate} [Hz]"
-    if sampling_rate is None:
-        out_title += f", {len(y)} samples"
+    else:
+        out_title += f"{len(y)} samples"
     plt.title(out_title)
     
     ax_samples.set_xlabel("time [a.u.]")

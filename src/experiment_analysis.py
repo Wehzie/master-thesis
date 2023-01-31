@@ -3,8 +3,9 @@ import const
 import param_types as party
 import data_io
 import param_mask
+import params_target
 
-from typing import Callable, List, Union, Tuple
+from typing import Callable, List, Set, Union, Tuple
 from pathlib import Path
 import itertools
 
@@ -13,6 +14,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from cycler import cycler
+import matplotlib.colors as mcolors
+
+TABLEAU_COLORS: List[str] = [color for color in list(mcolors.TABLEAU_COLORS.values())] # HEX colors
 
 # rainbow colors
 cmap = mpl.colormaps['Spectral']
@@ -31,6 +35,7 @@ default_cycler = (
 )
 plt.rc('axes', prop_cycle=default_cycler)
 plt.rc('legend', fontsize=8) # using a size in points
+
 
 # TODO: style multiple algo lines with a cycler to increase number of colors
 # remove whitespace where possible form plots (right hand side)
@@ -130,6 +135,17 @@ def clean_algo_name_from_args(algo_name: str) -> str:
     return algo_name.split(",", 1)[0]
 
 
+def get_color_map(algo_names: Set[str], with_pattern: bool = False) -> dict:
+    """get matplotlib compatible color map for each algorithm in the list"""
+    color_map = {}
+    if with_pattern:
+        visual_identifiers = itertools.product(TABLEAU_COLORS, [" ", "O", "x", "+"])
+    else:
+        visual_identifiers = itertools.product(TABLEAU_COLORS, [" "])
+    for algo, (color, pattern) in zip(algo_names, visual_identifiers):
+        color_map[algo] = (color, pattern)
+    return color_map
+
 def pick_color_linestyle(mask: param_mask.ExperimentMask, algo_name: str) -> Tuple[Union[None, str]]:
     """map an algorithm to a color according to the mask"""
     if mask is None:
@@ -170,8 +186,10 @@ def save_mask_plot(fig: plt.Figure, legend_as_fig: plt.Figure, name: str, save_d
     fig.savefig(save_dir / (name + ".png"), dpi=300)
 
 def save_unmasked_plot(fig: plt.Figure, legend_as_fig: plt.Figure, name: str, save_dir: Path) -> None:
-    fig.savefig(save_dir / (name + ".png"), dpi=300)
-    if legend_as_fig is not None: # const.HOARD_DATA == True
+    if legend_as_fig is None:
+        fig.savefig(save_dir / (name + ".png"), dpi=300)
+        data_io.pickle_object(fig, save_dir / (name + "figure_.pickle"))
+    else: # const.HOARD_DATA == True
         legend_as_fig.savefig(save_dir / (name + "_legend.png"), dpi=300)
         fig.gca().legend().set_visible(True) # save figure with legend
         fig.savefig(save_dir / (name + "_with_legend.png"), dpi=300)
@@ -201,6 +219,15 @@ def apply_mask(df: pd.DataFrame, mask: param_mask.ExperimentMask):
         return df.loc[df_algo_names.isin(mask_algo_names)]
     return df
 
+def subset_df_by_n_algos(df: pd.DataFrame, n_algos: int) -> List[pd.DataFrame]:
+    """return a dataframe with only n_algos per group"""
+    unique_algo_names = df["algo_name"].unique()
+    # divide into groups of size n
+    algo_groups = [unique_algo_names[x:x+n_algos] for x in range(0, len(unique_algo_names), n_algos)]
+    dfs_by_algo = []
+    for algo_group in algo_groups:
+        dfs_by_algo.append(df.loc[df["algo_name"].isin(algo_group)])
+    return dfs_by_algo
 
 def plot_masks(masks: List[param_mask.ExperimentMask], plot_func: Callable, *args, **kwargs):
     """call a plot function with all masks"""
@@ -249,10 +276,149 @@ mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
     save_fig_n_legend(fig, legend_as_fig, sweep_name, save_dir, mask, show)
 
 
+def plot_targets_w_all_algos(df: pd.DataFrame, title: str) -> plt.Figure:
+    """exp4: plot where each target forms a group of bars, each bar is an algorithm"""
+    # compute the label locations
+    algo_names = set(df["algo_name"])
+    unique_target_names = set(df["target_name"])
+    n_targets = len(unique_target_names)
+    y_target = np.arange(n_targets) # bar start locations for each target
+    space_between_groups = n_targets / 2 # in relation to the size of the bars
+    width = (n_targets-1)/(n_targets*space_between_groups) # width of each bar
+
+    def get_positions(n_algos: int, width: float):
+        positions = []
+        for y_t in y_target:
+            position = y_t-width
+            for _ in range(n_algos):
+                positions.append(position)
+                position += width
+        return positions
+
+    positions = get_positions(len(algo_names), width)
+    
+    color_map = get_color_map(algo_names)
+    
+    fig, ax = plt.subplots()
+    error_kw = dict(elinewidth=1, capsize=1, markeredgewidth=1)
+
+    first_target = True
+    target_names_in_order = []
+    for (index, row), position in zip(df.iterrows(), positions):
+        if row.target_name not in target_names_in_order:
+            target_names_in_order.append(row.target_name)
+        if index == len(algo_names): # avoid duplicate labels
+            first_target = False
+        ax.barh(position, row.mean_rmse, width, xerr=row.std_rmse, error_kw=error_kw, label=row.algo_name if first_target else "", color=color_map[row.algo_name][0], hatch=color_map[row.algo_name][1])
+
+    ax.set_yticks(y_target-0.5*width, target_names_in_order)
+    plt.xlabel("RMSE")
+    ax.legend()
+    plt.title(title)
+    plt.tight_layout()
+    return fig
+
+def plot_algos_w_all_target(df: pd.DataFrame, title: str) -> plt.Figure:
+    """exp4: plot of subplots where each subplot shows one target and each bar is an algorithm"""
+    unique_algo_names = set(df["algo_name"])
+    n_algos = len(unique_algo_names)
+    y_algo_pos = np.arange(n_algos)
+
+    unique_target_names = set(df["target_name"])
+    dfs_by_target = [df[df["target_name"] == target_name] for target_name in unique_target_names]
+    
+    fig, axs = plt.subplots(3, 3, sharex=True, sharey=True) # constrained_layout=True
+    error_kw = dict(elinewidth=1, capsize=1, markeredgewidth=1)
+    color_map = get_color_map(set(df["algo_name"]))
+
+    for ax, df in zip(axs.flat, dfs_by_target):
+        title_str = df["target_name"].iloc[[0]].values[0]
+        ax.set_title(f'target={title_str}')
+        for (index, row), position in zip(df.iterrows(), y_algo_pos):
+            ax.barh(position, row.mean_rmse, 1, xerr=row.std_rmse, error_kw=error_kw, label=row.algo_name, color=color_map[row.algo_name][0], hatch=color_map[row.algo_name][1])
+
+    ax.set_yticks(y_algo_pos, set(df["algo_name"]))
+    plt.xlabel("RMSE")
+    ax.legend()
+    plt.title(title)
+    return fig
+
+
+def plot_targets_vs_rmse(df: pd.DataFrame, sweep_name: str, save_dir: Path,
+mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
+    """exp4: show the rmse of algorithms with different target samples in a bar plot"""
+    title = f"m={int(df['m_averages'].iloc[[0]])}, n={int(df['n_osc'].iloc[[0]])}, max z-ops={int(df['max_z_ops'].iloc[[0]])}"
+    df = df.filter(items=["algo_name", "target_name", "mean_rmse", "std_rmse"])
+    df = apply_mask(df, mask)
+
+    dfs = subset_df_by_n_algos(df, 8)
+    for i, df in enumerate(dfs):
+        fig = plot_algos_w_all_target(df, title)
+        save_fig_n_legend(fig, None, sweep_name + f"_focus_algos_plot{i}", save_dir, mask, show)
+    dfs = subset_df_by_n_algos(df, 4)
+    for i, df in enumerate(dfs):
+        fig = plot_targets_w_all_algos(df, title)
+        save_fig_n_legend(fig, None, sweep_name + f"_focus_targets_plot{i}", save_dir, mask, show)
+
+
+def tab_targets_vs_rmse(df: pd.DataFrame, sweep_name: str, save_dir: Path) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    """exp4: save a csv file with the mean and std RMSE for each target (across algorithm) and each algorithm (across targets)"""
+    target_means = df.groupby(["target_name"])["mean_rmse"].mean().reset_index()
+    target_stds = df.groupby(["target_name"])["std_rmse"].mean().reset_index()
+    algo_means = df.groupby(["algo_name"])["mean_rmse"].mean().reset_index()
+    algo_stds = df.groupby(["algo_name"])["std_rmse"].mean().reset_index()
+    df_target = pd.DataFrame({"target_name": target_means["target_name"], "mean_rmse": target_means["mean_rmse"], "std_rmse": target_stds["std_rmse"]})
+    df_algo = pd.DataFrame({"algo_name": algo_means["algo_name"], "mean_rmse": algo_means["mean_rmse"], "std_rmse": algo_stds["std_rmse"]})
+    df_target.to_csv(save_dir / f"{sweep_name}_target_means.csv", index=False)
+    df_algo.to_csv(save_dir / f"{sweep_name}_algo_means.csv", index=False)
+    return df_target, df_algo
+
+
+def plot_average_target_vs_rmse(target_df: pd.DataFrame, num_algos: int, sweep_name: str, save_dir: Path, title: str,
+mask: param_mask.ExperimentMask = None, show: bool = False):
+    """exp4: show rmse for targets averaged over algorithms"""
+    title += f", num algos={num_algos}"
+    target_df = target_df.sort_values(by="mean_rmse", ascending=False)
+    cmap = mpl.colormaps["Spectral"]
+    colors = target_df["mean_rmse"].apply(lambda x: cmap(x / target_df["mean_rmse"].max())).tolist()
+    ax = target_df.plot.barh(x="target_name", y="mean_rmse", xerr="std_rmse", title=title, color=colors, legend=False)
+    ax.set_xlabel("RMSE")
+    ax.set_ylabel("target")
+    plt.yticks(rotation=30, ha="right")
+    plt.tight_layout()
+    save_fig_n_legend(ax.get_figure(), None, sweep_name + f"_averaged_targets", save_dir, mask, show)
+
+def plot_average_algo_vs_rmse(target_df: pd.DataFrame, num_targets: int, sweep_name: str, save_dir: Path, title: str,
+mask: param_mask.ExperimentMask = None, show: bool = False):
+    """exp4: show rmse for algorithms averaged over different targets"""
+    title += f", num targets={num_targets}"
+    target_df = target_df.sort_values(by="mean_rmse", ascending=False)
+    cmap = mpl.colormaps["Spectral"]
+    colors = target_df["mean_rmse"].apply(lambda x: cmap(x / target_df["mean_rmse"].max())).tolist()
+    ax = target_df.plot.barh(x="algo_name", y="mean_rmse", xerr="std_rmse", title=title, color=colors, legend=True)
+    ax.set_xlabel("RMSE")
+    ax.set_ylabel("algorithm")
+    plt.tight_layout()
+    save_fig_n_legend(ax.get_figure(), None, sweep_name + f"_averaged_algorithms", save_dir, mask, show)
+
+def analyze_targets_vs_rmse(df: pd.DataFrame, sweep_name: str, save_dir: Path,
+mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
+    """exp4: show the rmse of algorithms with different targets in a bar plot and tab the results"""
+    target_df, algo_df = tab_targets_vs_rmse(df, sweep_name, save_dir)
+    num_algos = len(algo_df)
+    num_targets = len(target_df)
+    title = f"m={int(df['m_averages'].iloc[[0]])}, n={int(df['n_osc'].iloc[[0]])}, max z-ops={int(df['max_z_ops'].iloc[[0]])}"
+    
+    plot_average_target_vs_rmse(target_df, num_algos, sweep_name, save_dir, title, mask, show)
+    plot_average_algo_vs_rmse(algo_df, num_targets, sweep_name, save_dir, title, mask, show)
+    # TODO: fix this some other time, the plots are quite messy anyways
+    # plot_targets_vs_rmse(df, sweep_name, save_dir, mask, show)
+
+
 def plot_range_vs_rmse(df: pd.DataFrame, target_samples: int, attr_name: str, dist_name: str,
 mask: param_mask.ExperimentMask) -> Tuple[plt.Figure]:
     """
-    exp4-8: plot range of distribution against rmse for multiple algorithms with rand_args fixed
+    exp5-9: plot range of distribution against rmse for multiple algorithms with rand_args fixed
     
     args:
         attr_name: for example freq
@@ -305,7 +471,7 @@ def get_freq_plot_label(dist_name: str, sweep_name: str, df: pd.DataFrame) -> st
 
 def plot_freq_range_vs_rmse(df: pd.DataFrame, target_samples: int, sweep_name: str, save_dir: Path,
 mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
-    """exp4+5: plot frequency range against rmse for multiple algorithms with rand_args and target fixed"""
+    """exp5+6: plot frequency range against rmse for multiple algorithms with rand_args and target fixed"""
     for dist_name in find_dists_in_df(df):
         fig, legend_as_fig = plot_range_vs_rmse(df, target_samples, "freq", dist_name, mask)
         x_label = get_freq_plot_label(dist_name, sweep_name, df)
@@ -318,7 +484,7 @@ mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
 
 def plot_weight_range_vs_rmse(df: pd.DataFrame, target_samples: int, save_dir: Path,
 mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
-    """exp6: plot weight range against rmse for multiple algorithms with rand_args and target fixed"""
+    """exp7: plot weight range against rmse for multiple algorithms with rand_args and target fixed"""
     for dist_name in find_dists_in_df(df):
         fig, legend_as_fig = plot_range_vs_rmse(df, target_samples, "weight", dist_name, mask)
         inv_amplitude = 1/df["amplitude"].iloc[0]
@@ -331,7 +497,7 @@ mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
 
 def plot_phase_range_vs_rmse(df: pd.DataFrame, target_samples: int, save_dir: Path,
 mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
-    """exp7: plot phase range against rmse for multiple algorithms with rand_args and target fixed"""
+    """exp8: plot phase range against rmse for multiple algorithms with rand_args and target fixed"""
     for dist_name in find_dists_in_df(df):
         fig, legend_as_fig = plot_range_vs_rmse(df, target_samples, "phase", dist_name, mask)
         fig.gca().set_xlabel("phase diversity") # width of phase band
@@ -342,7 +508,7 @@ mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
 
 def plot_offset_range_vs_rmse(df: pd.DataFrame, target_samples: int, save_dir: Path,
 mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
-    """exp8: plot offset range against rmse for multiple algorithms with rand_args and target fixed"""
+    """exp9: plot offset range against rmse for multiple algorithms with rand_args and target fixed"""
     for dist_name in find_dists_in_df(df):
         fig, legend_as_fig = plot_range_vs_rmse(df, target_samples, "offset", dist_name, mask)
         fig.gca().set_xlabel("offset diversity") # width of offset distribution
@@ -352,7 +518,7 @@ mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
 
 def plot_amplitude_vs_rmse(df: pd.DataFrame, target_samples: int, sweep_name: str, save_dir: Path,
 mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
-    "exp9: plot amplitude against rmse for multiple algorithms with rand_args and target fixed"
+    "exp10: plot amplitude against rmse for multiple algorithms with rand_args and target fixed"
     title = get_plot_title(df, target_samples) # before filtering df
     weight_range = df["weight_range"].iloc[0]
     title += f", weight_range={weight_range:.1f}"
