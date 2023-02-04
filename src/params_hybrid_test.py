@@ -1,5 +1,4 @@
 """Parameters for the SpiPy (hybrid) signal generator."""
-# TODO: reduce code duplication with params_hybrid_test.py
 
 import param_types as party
 import dist
@@ -55,12 +54,11 @@ spice_rand_args_uniform = party.SpiceSumRandArgs(
 )
 
 n_osc_sweep = sweety.NOscSweep(
-    n_osc=[50, 100, 200, 500, 1000],
+    n_osc=[20, 35, 50],
 )
-
 
 z_ops_sweep = sweety.ZOpsSweep(
-    max_z_ops=[0, 5e2, 1e3, 5e3, 1e4, 5e4],
+    max_z_ops=[0, 1e3, 5e3, 1e4],
 )
 
-sampling_rate_sweep = sweety.NumSamplesSweep([50, 100, 300, 500])
+sampling_rate_sweep = sweety.NumSamplesSweep([30, 60, 90])

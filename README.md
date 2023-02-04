@@ -23,6 +23,9 @@ In order of priority:
 
 ### High priority
 
+- SPICE: extrapolate/cache signals for speedup
+    - take maximally long time to capture a full period, slower frequencies will be contained
+
 - Automate qualitative run against a list of targets (sine, beat, chirp, magpie, yes, okay)
 
 - SPICE: Fix bias issue.
@@ -46,7 +49,7 @@ In order of priority:
 
 ## Low priority
 
-- SPICE: write extrapolation function for SPICE generated signals
+- Plotting custom legend for mask with multiple members in a group. Such that a group shares a color and one entry in the legend (individual algorithm names shouldn't be visible).
 
 - SPICE: Add phase via delayed voltage delivery.
 

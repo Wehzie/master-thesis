@@ -9,7 +9,6 @@ import data_analysis
 import data_io
 import data_preprocessor
 import param_types as party
-import params_hybrid as params
 import netlist_generator
 import const
 
@@ -134,6 +133,7 @@ def extrapolate_oscillator(signal: np.ndarray, time: np.ndarray, new_duration: f
     return interpolated, new_time
 
 def main():
+    import params_hybrid as params
     sig_gen = SpipySignalGenerator()
     
     if True:

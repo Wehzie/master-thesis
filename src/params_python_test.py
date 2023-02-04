@@ -12,7 +12,10 @@ import sweep_types as sweety
 import const
 import param_util
 import dist
+
 rng = const.RNG
+MAX_Z_OPS = 150
+M_AVERAGES = 2
 
 #### #### #### #### BASE PARAMETERS FOR SIGNAL GENERATION #### #### #### ####
 
@@ -102,7 +105,7 @@ n_osc_sweep = sweety.NOscSweep(
 )
 
 z_ops_sweep = sweety.ZOpsSweep(
-    max_z_ops=[0, 1e3, 5e3, 1e4],
+    max_z_ops=[0, 5e2, 1e3, 3e3],
 )
 
 sampling_rate_sweep = sweety.NumSamplesSweep([30, 60, 90])

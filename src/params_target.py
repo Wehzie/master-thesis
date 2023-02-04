@@ -5,8 +5,11 @@ from enum import Enum
 
 import meta_target
 import sweep_types as sweety
-import params_python
-import params_python_test
+import const
+if const.TEST_PARAMS:
+    import params_python_test as params_python
+else:
+    import params_python
 import params_hybrid
 import gen_signal_python
 import gen_signal_spipy
@@ -78,7 +81,7 @@ test_targets = single_frequency_arg_targets_test + test_beat_target + other_targ
 python_target_sweep_test = sweety.TargetSweep(
     "a reduced set of targets for testing the python signal generator against variety of targets",
     test_targets,
-    params_python_test.py_rand_args_uniform,
+    params_python.py_rand_args_uniform,
     gen_signal_python.PythonSigGen(),
     max_z_ops=300,
     m_averages=2
@@ -98,23 +101,23 @@ hybrid_target_sweep_test = sweety.TargetSweep(
 sample_targets = [
     meta_target.SineTarget(0.1, freq=1, samples=30),
     meta_target.TriangleTarget(0.1, freq=1, samples=30),
-    # meta_target.SawtoothTarget(0.1, freq=1, samples=30),
-    # meta_target.InverseSawtoothTarget(0.1, freq=1, samples=30),
-    # meta_target.SquareTarget(0.1, freq=1, samples=30),
-    # meta_target.BeatTarget(0.1, base_freq=1, samples=30),
-    # meta_target.ChirpTarget(0.1, start_freq=1, stop_freq=10, samples=30),
-    # meta_target.DampChirpTarget(0.1, start_freq=1, stop_freq=10, samples=30),
-    # meta_target.SmoothGaussianNoiseTarget(0.1, samples=30),
-    # meta_target.SmoothUniformNoiseTarget(0.1, samples=30),
-    # meta_target.GaussianNoiseTarget(0.1, samples=30),
-    # meta_target.UniformNoiseTarget(0.1, samples=30),
+    meta_target.SawtoothTarget(0.1, freq=1, samples=30),
+    meta_target.InverseSawtoothTarget(0.1, freq=1, samples=30),
+    meta_target.SquareTarget(0.1, freq=1, samples=30),
+    meta_target.BeatTarget(0.1, base_freq=1, samples=30),
+    meta_target.ChirpTarget(0.1, start_freq=1, stop_freq=10, samples=30),
+    meta_target.DampChirpTarget(0.1, start_freq=1, stop_freq=10, samples=30),
+    meta_target.SmoothGaussianNoiseTarget(0.1, samples=30),
+    meta_target.SmoothUniformNoiseTarget(0.1, samples=30),
+    meta_target.GaussianNoiseTarget(0.1, samples=30),
+    meta_target.UniformNoiseTarget(0.1, samples=30),
 ]
 
 python_target_sweep_sample = sweety.TargetSweep(
     "sample based targets before making the python signal generator adapt its sampling rate to the target",
     sample_targets,
-    params_python_test.py_rand_args_uniform,
+    params_python.py_rand_args_uniform,
     gen_signal_python.PythonSigGen(),
-    max_z_ops=300,
-    m_averages=2
+    max_z_ops=params_python.MAX_Z_OPS,
+    m_averages=params_python.M_AVERAGES,
 )

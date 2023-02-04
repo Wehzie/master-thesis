@@ -60,10 +60,10 @@ class MetaTargetSample(MetaTarget):
 class MetaTargetTime(MetaTarget):
     """load signal from file, save meta data; use time based processing"""
 
-    def __init__(self, rand_args: party.SpiceSumRandArgs, file: Path, name: str) -> None:
+    def __init__(self, rand_args: party.SpiceSumRandArgs, name: str, path: Path) -> None:
         self.name = name
         # loading and manipulating the target signal
-        raw_sampling_rate, raw_target, raw_dtype = data_io.load_data(file)
+        raw_sampling_rate, raw_target, raw_dtype = data_io.load_data(path)
 
         # shorten the target to the desired duration
         new_duration = rand_args.time_stop - rand_args.time_start # seconds

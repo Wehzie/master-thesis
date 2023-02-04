@@ -13,6 +13,8 @@ import dist
 import param_util
 
 RNG = const.RNG
+MAX_Z_OPS = 50000
+M_AVERAGES = 5
 
 #### #### #### #### BASE PARAMETERS FOR SIGNAL GENERATION #### #### #### ####
 

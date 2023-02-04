@@ -115,10 +115,11 @@ class Experimenteur:
     def run_z_ops_sweep(self, algo_sweep: sweety.AlgoSweep, z_ops_sweep: sweety.ZOpsSweep) -> resty.ResultSweep:
         """run all algorithms with different numbers of z-operations, corresponding to more extensive search"""
         print("sweeping with", z_ops_sweep.__class__.__name__)
+        local_algo_sweep = copy.deepcopy(algo_sweep)
         results = list()
         for z_ops in z_ops_sweep.max_z_ops:
             # inject max_z_ops into each algorithm's algo_args
-            for awa in algo_sweep.algo_with_args:
+            for awa in local_algo_sweep.algo_with_args:
                 awa: sweety.AlgoWithArgs
                 awa.algo_args.max_z_ops = z_ops
             results += self.run_algo_sweep(algo_sweep)

@@ -112,12 +112,21 @@ m3 = ExperimentMask(
 )
 
 m4 = ExperimentMask(
-    "best_algos",
-    "best algorithms",
+    "best_by_family",
+    "best algorithms by family",
     "comparison of best full and weight-only optimizing algorithms",
     [   # comparison of best in each family
         [
             "MCExploit", # best monte carlo in oscillator replacement
+        ],
+        [
+            "MCOneShot", # best brute force search
+        ],
+        [
+            "LasVegas", # best Las Vegas algorithm
+        ],
+        [
+            "DifferentialEvolution", # best population based algorithm
         ],
         [
             "BasinHopping", # best monte carlo in weight optimization
@@ -129,12 +138,12 @@ m4 = ExperimentMask(
 )
 
 m5 = ExperimentMask(
-    "best_by_family",
+    "best_by_family_weight",
     "best weight-only optimizing algorithms by algorithm family",
     "comparison of weight-only optimizing algorithms by algorithm family",
     [
         [
-            "MCExploitNeighborWeight", # best Gibbs sampler
+            "MCExploitWeight", # best Gibbs sampler
         ],
         [
             "MCOneShotWeight", # brute force search
@@ -165,6 +174,9 @@ m6 = ExperimentMask(
         [
             "MCExploitAnneal",
         ],
+        [
+            "LinearRegression",
+        ]
     ],
 )
 
@@ -179,6 +191,9 @@ m7 = ExperimentMask(
         [
             "MCExploitJ10",
         ],
+        [
+            "LinearRegression",
+        ]
     ],
 )
 

@@ -195,6 +195,7 @@ def save_unmasked_plot(fig: plt.Figure, legend_as_fig: plt.Figure, name: str, sa
         fig.savefig(save_dir / (name + "_with_legend.png"), dpi=300)
         data_io.pickle_object(fig, save_dir / (name + "_figure.pickle"))
         fig.gca().legend().set_visible(False) # hide legend on main plot for viewing
+        fig.savefig(save_dir / (name + "_sans_legend.png"), dpi=300)
 
 def save_fig_n_legend(fig: plt.Figure, legend_as_fig: plt.Figure, name: str, save_dir: Path = const.WRITE_DIR,
 mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
