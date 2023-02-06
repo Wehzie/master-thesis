@@ -48,8 +48,10 @@ spice_rand_args_uniform = party.SpiceSumRandArgs(
     # Python controlled parameters
     phase_dist = dist.Dist(RNG.uniform, low=0, high=2),
     weight_dist = dist.WeightDist(RNG.uniform, low=weight_dist_low, high=weight_dist_high, n=spice_rand_args_n_osc),
-    # offset_dist = dist.Dist(-one_sided_offset), 
-    offset_dist = dist.Dist(RNG.uniform, low=-one_sided_offset, high=one_sided_offset),
+    offset_dist = dist.Dist(RNG.uniform, low=0, high=0),
+
+    # runtime and memory optimizations
+    extrapolate=True,
     down_sample_factor=1/100,
 )
 

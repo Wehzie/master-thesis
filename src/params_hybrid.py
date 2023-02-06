@@ -11,7 +11,7 @@ RNG = const.RNG
 spice_single_det_args = party.SpiceSingleDetArgs(
     n_osc=1,
     v_in=14,
-    r=47e3,
+    r=140e3,
     r_last=1,
     r_control=1,
     c=300e-12,
@@ -19,8 +19,9 @@ spice_single_det_args = party.SpiceSingleDetArgs(
     time_stop=1e-3,
     time_start=0,
     dependent_component="v(osc1)",
-    phase=0,
-    down_sample_factor=1/100,
+    phase=0.5,
+    extrapolate=True,
+    down_sample_factor=1/10,
 )
 
 spice_rand_args_n_osc = 10
@@ -49,8 +50,10 @@ spice_rand_args_uniform = party.SpiceSumRandArgs(
     # Python controlled parameters
     phase_dist = dist.Dist(RNG.uniform, low=0, high=2),
     weight_dist = dist.WeightDist(RNG.uniform, low=weight_dist_low, high=weight_dist_high, n=spice_rand_args_n_osc),
-    # offset_dist = dist.Dist(-one_sided_offset), 
-    offset_dist = dist.Dist(RNG.uniform, low=-one_sided_offset, high=one_sided_offset),
+    offset_dist = dist.Dist(RNG.uniform, low=0, high=0),
+
+    # runtime and memory optimizations
+    extrapolate=True,
     down_sample_factor=1/100,
 )
 

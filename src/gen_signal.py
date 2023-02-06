@@ -27,7 +27,10 @@ class SignalGenerator(ABC):
     @staticmethod
     def draw_offset(rand_args: party.UnionRandArgs) -> float:
         """draw a single offset from the offset distribution"""
-        return rand_args.offset_dist.draw()
+        offset = rand_args.offset_dist.draw()
+        if offset is None:
+            offset = 0
+        return offset
 
     @staticmethod
     @abstractmethod

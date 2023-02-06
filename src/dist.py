@@ -2,10 +2,11 @@ import numpy as np
 import const
 from typing import List, Tuple, Union, Callable
 
-# "|", for example int|float requires python 3.10 or greater
+
+# TODO: replace with something more readable
 class Dist:
     """define distributions for random drawing"""
-    def __init__(self, dist: Union[int, float, Callable], n: int = None, *args, **kwargs):
+    def __init__(self, dist: Union[int, float, Callable, None], n: int = None, *args, **kwargs):
         if isinstance(dist, Callable):
             rng = np.random.default_rng() # no seed needed since not used to draw
             # rng1.uniform != rng2.uniform, therefore must use name
@@ -15,13 +16,18 @@ class Dist:
             self.n = n
             self.args = args
             self.kwargs = kwargs
-        elif isinstance(dist, int|float):
+        elif isinstance(dist, Union[int, float]):
             self.dist = self.callable_const
             self.n = n
             self.args = (float(dist),)
             self.kwargs = kwargs  # {"const": float(dist)}
                                     # either args or kwargs could be used here
-                                    
+        elif dist is None:
+            self.dist = self.callable_const
+            self.n = n
+            self.args = (None,)
+            self.kwargs = kwargs
+
     def __repr__(self) -> str:
         if isinstance(self.dist, Callable):
             dist = self.dist.__name__       # e.g. uniform
@@ -90,3 +96,7 @@ class WeightDist(Dist):
             self.n = n
             self.args = (float(dist),)
             self.kwargs = kwargs
+
+if __name__ == "__main__":
+    dist = Dist(None)
+    print(dist.draw())

@@ -196,7 +196,7 @@ def plot_pred_target(pred: np.ndarray, target: np.ndarray, time: Union[np.ndarra
 
 
 def plot_signal(y: np.ndarray, x_time: np.ndarray = None, sampling_rate: int = None, ylabel: str = None, title: str = "", show: bool = False, save_path: Path = None) -> None:
-    """plot a 2 dimensional time series signal"""
+    """plot a 1d time series"""
     _, ax1 = plt.subplots()
 
     if x_time is not None:

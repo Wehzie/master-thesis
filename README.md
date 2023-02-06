@@ -75,6 +75,8 @@ In order of priority:
     - param_test_spipy -> param_hybrid_test
     - param -> param_py, param_hybrid
 
+- Make phase a separate vector of an ensample similar to weights and allow separate phase tuning without replacing the underlying time series
+
 ## Requirements
 
 Pydot is used with NetworkX for drawing graphs.

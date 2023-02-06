@@ -214,7 +214,7 @@ max_z_ops: int = 3e3, m_averages: int = 2, test_mode: bool = False) -> sweety.Al
         ),
     ]
     
-    return sweety.AlgoSweep(all_algos_with_args, m_averages, param_mask.algo_masks)
+    return sweety.AlgoSweep(single_algo_with_args, m_averages, param_mask.algo_masks)
 
 algo_list: List[SearchAlgo] = [
     almoca.MCExploit,

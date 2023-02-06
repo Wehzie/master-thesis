@@ -113,7 +113,7 @@ def run_hyperparameter_optimization():
 @data_analysis.print_time
 def main():
     # Python
-    if True:
+    if False:
         m_target = meta_target.MetaTargetSample(params_python.py_rand_args_uniform, "magpie", params_target.DevSet.MAGPIE.value)
         rand_args = params_python.py_rand_args_uniform
         rand_args.samples = m_target.samples
@@ -123,9 +123,9 @@ def main():
         produce_all_results(algo_sweep_test, m_target.samples, rand_args)
 
     # SpiPy
-    if False:
+    if True:
         rand_args = params_hybrid.spice_rand_args_uniform
-        m_target = meta_target.MetaTargetTime(rand_args, params_target.DevSet.MAGPIE.value, "magpie")
+        m_target = meta_target.MetaTargetTime(rand_args, "magpie", params_target.DevSet.MAGPIE.value)
         print(m_target.samples)
 
         # scale the number of samples in the target to the number of samples produced by spice
@@ -136,6 +136,7 @@ def main():
         algo_sweep = param_util.init_algo_sweep(m_target, rand_args, sig_generator=signal_generator, max_z_ops=5e3, m_averages=1)
 
         qualitative_algo_sweep(algo_sweep, m_target, visual=True)
+        # produce_all_results(algo_sweep, m_target.samples, rand_args)
 
 if __name__ == "__main__":
     main()

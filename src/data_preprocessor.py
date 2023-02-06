@@ -1,7 +1,9 @@
+from typing import Union
 from scipy import signal
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
+from scipy.signal import find_peaks
 
 def resample(data: np.ndarray, samples: int) -> np.ndarray:
     """modify the size of a signal to the desired number of samples"""
@@ -163,3 +165,37 @@ def clean_spice_signal(signal: np.ndarray, samples: int) -> np.ndarray:
     x = remove_spice_startup(signal)
     x = remove_spice_offset(x)
     return pad_spice_signal(x, samples)
+
+def extrapolate_oscillation(signal: np.ndarray, sampling_rate: int, new_duration: float,
+phase_shift: Union[float, None] = None) -> np.ndarray:
+    """extrapolate an oscillation signal to a given number of samples
+    
+    args:
+        signal: the signal to extrapolate, must be periodic
+        sampling_rate: the sampling rate of the signal
+        new_duration: the new duration of the signal in seconds
+        phase_shift: the phase shift in periods, e.g. multiples of 2 yield the original signal
+        
+    returns:
+        the extrapolated signal
+    """
+    peaks = find_peaks(signal)[0]
+    if len(peaks) < 2:
+        return None
+    else:
+        first_peak_pos, second_peak_pos = find_peaks(signal)[0][0:2]
+    snippet = signal[first_peak_pos:second_peak_pos]
+    snippet_length = second_peak_pos - first_peak_pos
+    snippet_duration = snippet_length / sampling_rate
+    # consider finding the minimum to roll the signal to the correct phase
+    if phase_shift is not None and phase_shift != 0:
+        snippet = np.roll(snippet, int(phase_shift*snippet_length/2))
+
+    # center offset around zero
+    snippet = snippet - np.mean(snippet)
+
+    full_periods = np.floor(new_duration // snippet_duration).astype(int)
+    partial_period = new_duration % snippet_duration
+    partial_period_samples = int(partial_period * sampling_rate)
+    partial_period_snippet = snippet[0:partial_period_samples]
+    return np.concatenate([snippet]*full_periods + [partial_period_snippet])
