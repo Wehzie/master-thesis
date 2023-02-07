@@ -16,7 +16,7 @@ class Dist:
             self.n = n
             self.args = args
             self.kwargs = kwargs
-        elif isinstance(dist, Union[int, float]):
+        elif isinstance(dist, int) or isinstance(dist, float):
             self.dist = self.callable_const
             self.n = n
             self.args = (float(dist),)

@@ -19,7 +19,7 @@ import matplotlib.colors as mcolors
 TABLEAU_COLORS: List[str] = [color for color in list(mcolors.TABLEAU_COLORS.values())] # HEX colors
 
 # rainbow colors
-cmap = mpl.colormaps['Spectral']
+cmap = mpl.cm.get_cmap('Spectral')
 rb_colors = [cmap(i) for i in np.linspace(0, 0.9, 10)]
 # tableau colors
 colors = plt.cm.tab10.colors
@@ -380,7 +380,7 @@ mask: param_mask.ExperimentMask = None, show: bool = False):
     """exp4: show rmse for targets averaged over algorithms"""
     title += f", num algos={num_algos}"
     target_df = target_df.sort_values(by="mean_rmse", ascending=False)
-    cmap = mpl.colormaps["Spectral"]
+    cmap = mpl.cm.get_cmap('Spectral')
     colors = target_df["mean_rmse"].apply(lambda x: cmap(x / target_df["mean_rmse"].max())).tolist()
     ax = target_df.plot.barh(x="target_name", y="mean_rmse", xerr="std_rmse", title=title, color=colors, legend=False)
     ax.set_xlabel("RMSE")
@@ -394,7 +394,7 @@ mask: param_mask.ExperimentMask = None, show: bool = False):
     """exp4: show rmse for algorithms averaged over different targets"""
     title += f", num targets={num_targets}"
     target_df = target_df.sort_values(by="mean_rmse", ascending=False)
-    cmap = mpl.colormaps["Spectral"]
+    cmap = mpl.cm.get_cmap('Spectral')
     colors = target_df["mean_rmse"].apply(lambda x: cmap(x / target_df["mean_rmse"].max())).tolist()
     ax = target_df.plot.barh(x="algo_name", y="mean_rmse", xerr="std_rmse", title=title, color=colors, legend=True)
     ax.set_xlabel("RMSE")

@@ -203,7 +203,7 @@ max_z_ops: int = 3e3, m_averages: int = 2, test_mode: bool = False) -> sweety.Al
     ]
 
     all_algos_with_args: Final = one_shot_algos + exploit_algos + grow_shrink_algos + oscillator_anneal_algos + las_vegas_algos + population_algos + mcmc_algos + gradient_algos
-    if test_mode:
+    if test_mode: # integration test
         return sweety.AlgoSweep(all_algos_with_args, m_averages)
 
     some_algos_with_args = one_shot_algos# + exploit_algos + grow_shrink_algos + oscillator_anneal_algos + las_vegas_algos + population_algos + mcmc_algos + gradient_algos
@@ -214,7 +214,10 @@ max_z_ops: int = 3e3, m_averages: int = 2, test_mode: bool = False) -> sweety.Al
         ),
     ]
     
-    return sweety.AlgoSweep(single_algo_with_args, m_averages, param_mask.algo_masks)
+    if const.TEST_PARAMS:
+        return sweety.AlgoSweep(one_shot_algos, m_averages, param_mask.algo_masks)
+    
+    return sweety.AlgoSweep(all_algos_with_args, m_averages, param_mask.algo_masks)
 
 algo_list: List[SearchAlgo] = [
     almoca.MCExploit,

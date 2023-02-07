@@ -12,6 +12,8 @@ import sweep_types as sweety
 import const
 import param_util
 import dist
+import meta_target
+import gen_signal_python
 
 rng = const.RNG
 MAX_Z_OPS = 150
@@ -20,12 +22,14 @@ M_AVERAGES = 2
 #### #### #### #### BASE PARAMETERS FOR SIGNAL GENERATION #### #### #### ####
 
 py_rand_args_n_osc = 10
+SAMPLES = 30
+DURATION = 0.1 # s
 
 py_rand_args_uniform = party.PythonSignalRandArgs(
     description = "test base-parameters for drawing oscillators from a uniform distribution",
     n_osc = py_rand_args_n_osc,
     duration = None,
-    samples = 30,
+    samples = SAMPLES,
     freq_dist = dist.Dist(rng.uniform, low=1e5, high=1e6),
     amplitude = 0.5,                                              # resembling 0.5 V amplitude of V02
     weight_dist = dist.WeightDist(rng.uniform, low=0, high=10, n=py_rand_args_n_osc),   # scale down when <1 and scale up when >1
@@ -38,7 +42,7 @@ py_rand_args_normal = party.PythonSignalRandArgs(
     description = "test base-parameters for drawing from a normal distribution",
     n_osc = py_rand_args_n_osc,
     duration = None,
-    samples = 30,
+    samples = SAMPLES,
     freq_dist = dist.Dist(rng.normal, loc=5e5, scale=4e5),
     amplitude = 0.5,                                    # resembling 0.5 V amplitude of V02
     weight_dist = dist.WeightDist(rng.normal, loc=0.5, scale=0.5, n=py_rand_args_n_osc),   # resistor doesn't amplify so not > 1
@@ -109,3 +113,29 @@ z_ops_sweep = sweety.ZOpsSweep(
 )
 
 sampling_rate_sweep = sweety.NumSamplesSweep([30, 60, 90])
+
+
+
+sample_targets = [
+    meta_target.SineTarget(DURATION, freq=1, samples=SAMPLES),
+    meta_target.TriangleTarget(DURATION, freq=1, samples=SAMPLES),
+    meta_target.SawtoothTarget(DURATION, freq=1, samples=SAMPLES),
+    meta_target.InverseSawtoothTarget(DURATION, freq=1, samples=SAMPLES),
+    meta_target.SquareTarget(DURATION, freq=1, samples=SAMPLES),
+    meta_target.BeatTarget(DURATION, base_freq=1, samples=SAMPLES),
+    meta_target.ChirpTarget(DURATION, start_freq=1, stop_freq=10, samples=SAMPLES),
+    meta_target.DampChirpTarget(DURATION, start_freq=1, stop_freq=10, samples=SAMPLES),
+    meta_target.SmoothGaussianNoiseTarget(DURATION, samples=SAMPLES),
+    meta_target.SmoothUniformNoiseTarget(DURATION, samples=SAMPLES),
+    meta_target.GaussianNoiseTarget(DURATION, samples=SAMPLES),
+    meta_target.UniformNoiseTarget(DURATION, samples=SAMPLES),
+]
+
+python_target_sweep_sample = sweety.TargetSweep(
+    "sample based targets before making the python signal generator adapt its sampling rate to the target",
+    sample_targets,
+    py_rand_args_uniform,
+    gen_signal_python.PythonSigGen(),
+    max_z_ops=MAX_Z_OPS,
+    m_averages=M_AVERAGES,
+)

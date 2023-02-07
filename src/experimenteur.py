@@ -47,18 +47,20 @@ class Experimenteur:
         if self.mp:
             with Pool(self.cpu_count) as p:
                 mapfunc = partial(search_alg.search, mp=self.mp) # pass mp in kwargs to search
-                (best_samples, z_ops) = p.map(mapfunc, range(algo_sweep.m_averages))
+                raw_result = p.map(mapfunc, range(algo_sweep.m_averages))
+                best_samples, z_ops = zip(*raw_result)
         else:
-            (best_samples, z_ops) = map(search_alg.search, range(algo_sweep.m_averages))
-        return (best_samples, z_ops)
+            raw_result = map(search_alg.search, range(algo_sweep.m_averages))
+            best_samples, z_ops = zip(*raw_result)
+        return best_samples, z_ops
 
-    def average_result(self, samples_z_ops: Iterable, search_alg: algo.SearchAlgo, algo_sweep: sweety.AlgoSweep) -> resty.ResultSweep:
+    def average_result(self, samples: Iterable, m_z_ops: Iterable, search_alg: algo.SearchAlgo, algo_sweep: sweety.AlgoSweep) -> resty.ResultSweep:
         """produce mean, stddev for rmse and z-ops over a list of samples (fit signal ensembles)"""
-        m_rmse_z_ops = [(s.rmse, z_ops) for s, z_ops in samples_z_ops] # List[Tuples[rmse, z_ops]]
-        unzipped1 = zip(*m_rmse_z_ops) # unzip to List[rmse], List[z_ops]
-        unzipped2 = copy.deepcopy(unzipped1)
-        mean_rmse, mean_z_ops = map(np.mean, unzipped1) # map has effects and two functions per map are too ugly
-        std_rmse, std_z_ops = map(np.std, unzipped2)
+        m_rmse = [s.rmse for s in samples]
+        m_rmse = np.array(m_rmse)
+        m_z_ops = np.array(m_z_ops)
+        mean_rmse, mean_z_ops = np.mean(m_rmse), np.mean(m_z_ops) # map has effects and two functions per map are too ugly
+        std_rmse, std_z_ops = np.std(m_rmse), np.std(m_z_ops)
         return resty.ResultSweep(search_alg.__class__.__name__, search_alg.get_algo_args(), mean_rmse, std_rmse, mean_z_ops, std_z_ops, algo_sweep.m_averages)
 
     def run_algo_sweep(self, algo_sweep: sweety.AlgoSweep) -> List[resty.ResultSweep]:
@@ -67,8 +69,8 @@ class Experimenteur:
         for awa in algo_sweep.algo_with_args:
             awa: sweety.AlgoWithArgs
             search_alg = awa.Algo(awa.algo_args)
-            (best_samples, z_ops) = self.invoke_search(search_alg, algo_sweep)
-            result = self.average_result((best_samples, z_ops), search_alg, algo_sweep)
+            best_samples, z_ops = self.invoke_search(search_alg, algo_sweep)
+            result = self.average_result(best_samples, z_ops, search_alg, algo_sweep)
             results.append(result)
         return results
     
@@ -94,8 +96,8 @@ class Experimenteur:
                     f_algo_args: Final = copy.deepcopy(awa.algo_args)
                     
                     search_alg: algo.SearchAlgo = awa.Algo(f_algo_args)
-                    samples_z_ops = self.invoke_search(search_alg, algo_sweep)
-                    result = self.average_result(samples_z_ops, search_alg, algo_sweep)
+                    samples, z_ops = self.invoke_search(search_alg, algo_sweep)
+                    result = self.average_result(samples, z_ops, search_alg, algo_sweep)
                     results.append(result)
         # TODO: flush and pickle results
         return results

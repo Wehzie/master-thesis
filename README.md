@@ -112,8 +112,8 @@ Run desired commands, start simulation
 
 Detach tmux
 
-    # type Ctrl + b
-    # type d
+    # press Ctrl + b
+    # press d
 
 Now the terminal running tmux can be closed or an SSH connection to a host can be terminated
 
@@ -124,10 +124,25 @@ To reattach a session
 
 Multiple sessions can be run by detaching with
 
-    # type Ctrl + b
-    # type $
+    # press Ctrl + b
+    # press $
     # enter session name
 
-    
+### Deployment on Slurm (Peregrine HPC)
 
+First prepare a job according to <https://wiki.hpc.rug.nl/peregrine/job_management/start>.
+Complete job files are in the `scripts` directory.
+
+Start a job; make sure the script is executed from the same directory as done during testing.
+
+    cd path/to/project
+    sbatch peregrine_job.sh
+
+List active jobs.
+
+    squeue -u $USER
+    
+Get information about a running job.
+
+    jobinfo JobID
 

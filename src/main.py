@@ -32,16 +32,11 @@ def produce_all_results(algo_sweep: sweety.AlgoSweep, target_samples: int, base_
     show_all = False
     exp = experimenteur.Experimenteur()
 
-    # exp.set_sweep_name_and_dir("targets_vs_rmse")
-    # results = exp.run_target_sweep(params_target.python_target_sweep_sample)
-    # df = expan.conv_results_to_pd(results)
-    # expan.analyze_targets_vs_rmse(df, exp.sweep_name, exp.sweep_dir, show=show_all)
-    # data_io.hoard_experiment_results(exp.sweep_name, results, df, exp.sweep_dir)
-
-
-    print("#############################")
-    print(algo_sweep)
-    #input("press enter to continue")
+    exp.set_sweep_name_and_dir("targets_vs_rmse")
+    results = exp.run_target_sweep(params_python.python_target_sweep_sample)
+    df = expan.conv_results_to_pd(results)
+    expan.analyze_targets_vs_rmse(df, exp.sweep_name, exp.sweep_dir, show=show_all)
+    data_io.hoard_experiment_results(exp.sweep_name, results, df, exp.sweep_dir)
 
     exp.set_sweep_name_and_dir("n_osc_vs_rmse")
     results = exp.run_rand_args_sweep(algo_sweep, params_python.n_osc_sweep, base_rand_args)
@@ -113,17 +108,16 @@ def run_hyperparameter_optimization():
 @data_analysis.print_time
 def main():
     # Python
-    if False:
-        m_target = meta_target.MetaTargetSample(params_python.py_rand_args_uniform, "magpie", params_target.DevSet.MAGPIE.value)
-        rand_args = params_python.py_rand_args_uniform
-        rand_args.samples = m_target.samples
-        algo_sweep_test = param_util.init_algo_sweep(m_target, rand_args, max_z_ops=params_python.MAX_Z_OPS, m_averages=params_python.M_AVERAGES)
+    if True:
+        generator_args = params_python.py_rand_args_uniform
+        m_target = meta_target.MetaTargetSample(generator_args, "magpie", params_target.DevSet.MAGPIE.value)
+        algo_sweep_test = param_util.init_algo_sweep(m_target, generator_args, max_z_ops=params_python.MAX_Z_OPS, m_averages=params_python.M_AVERAGES)
 
         # qualitative_algo_sweep(algo_sweep_test, m_target, visual=True)
-        produce_all_results(algo_sweep_test, m_target.samples, rand_args)
+        produce_all_results(algo_sweep_test, m_target.samples, generator_args)
 
     # SpiPy
-    if True:
+    if False:
         rand_args = params_hybrid.spice_rand_args_uniform
         m_target = meta_target.MetaTargetTime(rand_args, "magpie", params_target.DevSet.MAGPIE.value)
         print(m_target.samples)
