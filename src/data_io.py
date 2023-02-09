@@ -1,3 +1,7 @@
+"""
+This module is designated to handling data input and output from and to the filesystem.
+"""
+
 import functools
 import glob
 import json
@@ -134,7 +138,8 @@ def pickle_object(obj: object, data_path: Path) -> None:
         pickle.dump(obj, f)
     
 def hoard_experiment_results(experiment_description: str, results: List, df: pd.DataFrame, directory: Path = const.WRITE_DIR) -> None:
-    """save experiment results to file"""
+    """save experiment results to file and close all figures if still open"""
+    plt.close("all")
     if not const.HOARD_DATA: return
     pickle_object(results, directory / (experiment_description + "_results.pickle"))
     df.to_csv(directory / (experiment_description + "_dataframe.csv"), index=False)

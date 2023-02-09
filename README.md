@@ -23,8 +23,8 @@ In order of priority:
 
 ### High priority
 
-- SPICE: extrapolate/cache signals for speedup
-    - take maximally long time to capture a full period, slower frequencies will be contained
+- SPICE: cache signals for speedup
+    - Faster than interpolation alone?
 
 - Automate qualitative run against a list of targets (sine, beat, chirp, magpie, yes, okay)
 
@@ -37,9 +37,13 @@ In order of priority:
 
 - show sampling rate and duration, not samples in the sweep plots
 
-## Medium priority
+- z-ops plot broken
 
-- Reproducibility issue: Maffezzoni et al. report different oscillator frequencies than I have.
+### Medium priority
+
+- Normal distribution plots not saved, fix or drop normal distribution plots.
+
+- Plot improvement: Reuse algorithm bar chart with z-ops sweep.
 
 - Plot Improvement: For oscillators vs. rmse. Show up to 1k oscillators, but draw a dotted line into the plot at around 300 oscillators to indicate what's technologically feasible.
 
@@ -47,7 +51,9 @@ In order of priority:
 
 - Plot Improvement: save mean, mode, stddev to frequency diversity plot title.
 
-## Low priority
+### Low priority
+
+- Reproducibility issue: Maffezzoni et al. report different oscillator frequencies than I have.
 
 - Plotting custom legend for mask with multiple members in a group. Such that a group shares a color and one entry in the legend (individual algorithm names shouldn't be visible).
 
@@ -146,3 +152,37 @@ Get information about a running job.
 
     jobinfo JobID
 
+#### Notes on Runtime
+
+Results except target sweep
+    - m_averages=7
+    - z_ops=1e4
+    - n_osc = 100
+    - samples = 300
+    - wall time: 6 h 30 m
+    - max memory: 1.2 GB
+
+Results Sweep with
+    - generator=Python
+    - z_ops = 5e4
+    - n_osc = 100
+    - samples = 300
+    - wall time. 6 h 18 m
+    - max memory: 133.29 MB
+
+## Testing
+
+Static type checking.
+
+    mypy src/
+
+Static code analysis.
+
+    # easy-going
+    pyflakes src/
+    # pedantic
+    pylint --errors-only src/
+
+Formatting.
+
+    black src/

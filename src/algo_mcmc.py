@@ -1,9 +1,13 @@
+"""This module implements Markov Chain Monte Carlo optimization algorithms.
+
+All algorithms have a non-zero probability of accepting worse candidate solutions.
+"""
 import algo_monte_carlo
 import sample
 import const
 import data_analysis
 import algo
-import algo_args_types as algarty
+import algo_args_type as algarty
 
 import numpy as np
 from scipy.optimize import basinhopping, dual_annealing

@@ -1,9 +1,13 @@
+"""
+This module implements functions for plotting and analyzing the results of experiments.
+The focus is on comparing multiple algorithms.
+"""
+
 import result_types as resty
 import const
-import param_types as party
+import gen_signal_args_types as party
 import data_io
-import param_mask
-import params_target
+import shared_params_target
 
 from typing import Callable, List, Set, Union, Tuple
 from pathlib import Path
@@ -15,6 +19,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 from cycler import cycler
 import matplotlib.colors as mcolors
+import mask_type as param_mask
 
 TABLEAU_COLORS: List[str] = [color for color in list(mcolors.TABLEAU_COLORS.values())] # HEX colors
 
@@ -108,7 +113,7 @@ def get_plot_title(df: pd.DataFrame, target_samples: int, z_ops: bool = True) ->
     m_averages = int(df["m_averages"].iloc[[0]])
     n_osc = df["n_osc"].values[0]
     max_z_ops = int(df["max_z_ops"].values[0])
-    str_max_z_ops = f", max z-ops={max_z_ops}" if z_ops else ""
+    str_max_z_ops = f", z={max_z_ops}" if z_ops else ""
     return f"m={m_averages}, n={n_osc}, samples={target_samples}{str_max_z_ops}" 
 
 def filter_df_by_dist_name(df: pd.DataFrame, attr_name: str, dist_name: str) -> pd.DataFrame:
@@ -188,7 +193,7 @@ def save_mask_plot(fig: plt.Figure, legend_as_fig: plt.Figure, name: str, save_d
 def save_unmasked_plot(fig: plt.Figure, legend_as_fig: plt.Figure, name: str, save_dir: Path) -> None:
     if legend_as_fig is None:
         fig.savefig(save_dir / (name + ".png"), dpi=300)
-        data_io.pickle_object(fig, save_dir / (name + "figure_.pickle"))
+        data_io.pickle_object(fig, save_dir / (name + "_figure.pickle"))
     else: # const.HOARD_DATA == True
         legend_as_fig.savefig(save_dir / (name + "_legend.png"), dpi=300)
         fig.gca().legend().set_visible(True) # save figure with legend
@@ -267,7 +272,7 @@ mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
     m_averages = int(df["m_averages"].iloc[[0]])
     n_osc = df["n_osc"].values[0]
     max_z_ops = int(df["max_z_ops"].values[0])
-    title = f"m={m_averages}, n={n_osc}, max z-ops={max_z_ops}"
+    title = f"m={m_averages}, n={n_osc}, z={max_z_ops}"
 
     df = df.filter(items=["algo_name", "samples", "mean_rmse", "std_rmse"])
     df = apply_mask(df, mask)
@@ -348,7 +353,7 @@ def plot_algos_w_all_target(df: pd.DataFrame, title: str) -> plt.Figure:
 def plot_targets_vs_rmse(df: pd.DataFrame, sweep_name: str, save_dir: Path,
 mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
     """exp4: show the rmse of algorithms with different target samples in a bar plot"""
-    title = f"m={int(df['m_averages'].iloc[[0]])}, n={int(df['n_osc'].iloc[[0]])}, max z-ops={int(df['max_z_ops'].iloc[[0]])}"
+    title = f"m={int(df['m_averages'].iloc[[0]])}, n={int(df['n_osc'].iloc[[0]])}, z={int(df['max_z_ops'].iloc[[0]])}"
     df = df.filter(items=["algo_name", "target_name", "mean_rmse", "std_rmse"])
     df = apply_mask(df, mask)
 
@@ -392,9 +397,9 @@ mask: param_mask.ExperimentMask = None, show: bool = False):
 def plot_average_algo_vs_rmse(target_df: pd.DataFrame, num_targets: int, sweep_name: str, save_dir: Path, title: str,
 mask: param_mask.ExperimentMask = None, show: bool = False):
     """exp4: show rmse for algorithms averaged over different targets"""
-    title += f", num targets={num_targets}"
+    title += f", #t={num_targets}"
     target_df = target_df.sort_values(by="mean_rmse", ascending=False)
-    cmap = mpl.cm.get_cmap('Spectral')
+    cmap = mpl.cm.get_cmap("Spectral")
     colors = target_df["mean_rmse"].apply(lambda x: cmap(x / target_df["mean_rmse"].max())).tolist()
     ax = target_df.plot.barh(x="algo_name", y="mean_rmse", xerr="std_rmse", title=title, color=colors, legend=True)
     ax.set_xlabel("RMSE")
@@ -408,7 +413,7 @@ mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
     target_df, algo_df = tab_targets_vs_rmse(df, sweep_name, save_dir)
     num_algos = len(algo_df)
     num_targets = len(target_df)
-    title = f"m={int(df['m_averages'].iloc[[0]])}, n={int(df['n_osc'].iloc[[0]])}, max z-ops={int(df['max_z_ops'].iloc[[0]])}"
+    title = f"m={int(df['m_averages'].iloc[[0]])}, n={int(df['n_osc'].iloc[[0]])}, z={int(df['max_z_ops'].iloc[[0]])}"
     
     plot_average_target_vs_rmse(target_df, num_algos, sweep_name, save_dir, title, mask, show)
     plot_average_algo_vs_rmse(algo_df, num_targets, sweep_name, save_dir, title, mask, show)

@@ -1,4 +1,10 @@
-import param_types as party
+"""
+This module implements the abstract MetaTarget class and subclasses.
+The MetaTarget class bundles a signal with its time axis and other metadata.
+The subclasses implement different ways to load a signal from file or generate a signal.
+"""
+
+import gen_signal_args_types as party
 import data_io
 import data_preprocessor
 import const

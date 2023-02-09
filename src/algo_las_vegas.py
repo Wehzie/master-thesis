@@ -1,5 +1,6 @@
 """
-las vegas algorithms have non-deterministic runtime and draw from randomness to find the best solution to optimization.
+This module implements Las Vegas algorithms for optimization.
+Las vegas algorithms have non-deterministic runtime and draw from randomness to find the best solution to optimization.
 """
 
 import copy

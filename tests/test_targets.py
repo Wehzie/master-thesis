@@ -4,7 +4,7 @@ sys.path.append(os.path.dirname(os.path.realpath(__file__)) + "/../src")
 
 import meta_target
 import data_analysis
-import params_target
+import shared_params_target
 
 def test_synthetic_targets(show: bool = False):
     targets = [
@@ -27,7 +27,7 @@ def test_synthetic_targets(show: bool = False):
         data_analysis.plot_multiple_targets_common_axis(targets, show=True)
 
 def test_synthetic_targets_from_parameters(show: bool = False):
-    targets = params_target.targets
+    targets = shared_params_target.targets
     if show:
         data_analysis.plot_multiple_targets(targets, show=True)
         data_analysis.plot_multiple_targets_common_axis(targets, show=True)

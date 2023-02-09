@@ -1,11 +1,11 @@
+"""this module defines the structure of arguments required by algorithms modules."""
 from dataclasses import dataclass
 from typing import List, Union
 from pathlib import Path
 
 import gen_signal
-import gen_signal_python as gensi_python
 import const
-import param_types as party
+import gen_signal_args_types as party
 import meta_target
 
 @dataclass
@@ -16,8 +16,8 @@ class AlgoArgs:
     a single sample is an optimized signal matrix and array of weights
     z_ops measures z initialized, drawn, discarded - oscillators or weights
     """
-
-    rand_args: party.PythonSignalRandArgs   # arguments to init a signal matrix
+    sig_generator: gen_signal.SignalGenerator # method of generating signals
+    rand_args: party.UnionRandArgs          # arguments to init a signal matrix
     meta_target: meta_target.MetaTarget     # the target signal to optimize for (and its meta data)
     max_z_ops: Union[None, int]     = None  # maximum number of operations until learning is aborted
     k_samples: int                  = None  # number of times to re-run base algorithm
@@ -29,5 +29,4 @@ class AlgoArgs:
     store_det_args: bool            = False # whether to store det_args for each k
     history: bool                   = False # whether to store each sample
     args_path: Union[None, Path]    = None  # whether to flush samples in RAM to file at given path
-    # TODO: since sig_generator is important it should be an earlier argument
-    sig_generator: gen_signal.SignalGenerator = gensi_python.PythonSigGen() # method of generating signals
+

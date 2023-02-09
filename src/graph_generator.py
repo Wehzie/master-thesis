@@ -1,3 +1,8 @@
+"""
+This module creates trees and graphs.
+The structures are mapped to SPICE netlists to simulate circuits.
+"""
+
 from netlist_generator import build_tree_netlist
 from params_spice import bird_params
 

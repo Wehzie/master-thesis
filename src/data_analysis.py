@@ -1,3 +1,8 @@
+"""
+This module defines metrics and plots for the analysis of signals.
+The focus is on plotting one or two signals at a time. 
+"""
+
 from typing import Callable, List, Tuple, Union
 import data_io
 import data_preprocessor

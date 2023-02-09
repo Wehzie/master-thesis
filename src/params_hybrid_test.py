@@ -1,16 +1,26 @@
-"""Parameters for the SpiPy (hybrid) signal generator."""
+"""
+This module defines production parameters for the SpiPy (Spice+Python, Hybrid) signal generator.
+"""
 
-import param_types as party
+import gen_signal_args_types as party
 import dist
 import const
 import sweep_types as sweety
+import shared_params_target
+import gen_signal_spipy
+
 RNG = const.RNG
+MAX_Z_OPS = 10000
+M_AVERAGES = 5
+N_OSCILLATORS = 100
+
+#### #### #### #### #### #### SIGNAL GENERATOR ARGUMENTS #### #### #### #### #### ####
 
 # parameters for testing purposes
 spice_single_det_args = party.SpiceSingleDetArgs(
     n_osc=1,
     v_in=14,
-    r=47e3,
+    r=140e3,
     r_last=1,
     r_control=1,
     c=300e-12,
@@ -18,21 +28,17 @@ spice_single_det_args = party.SpiceSingleDetArgs(
     time_stop=1e-3,
     time_start=0,
     dependent_component="v(osc1)",
-    phase=0,
-    down_sample_factor=1/100,
+    phase=0.5,
+    extrapolate=True,
+    down_sample_factor=1/10,
 )
 
-spice_rand_args_n_osc = 10
-v_in = 14
-weight_dist_low = 0
-weight_dist_high = 10
-weight_dist_mean = (weight_dist_high + weight_dist_low) / 2
-one_sided_offset = v_in * spice_rand_args_n_osc * weight_dist_mean * 1.14 # roughly the offset needed to get mean=0
+
 
 spice_rand_args_uniform = party.SpiceSumRandArgs(
     description="VO2-RC circuit parameters inspired by Maffezzoni et al. 2015",
-    n_osc=spice_rand_args_n_osc,
-    v_in=v_in,
+    n_osc=N_OSCILLATORS,
+    v_in=14,
 
     r_last=1,
     r_control=1,
@@ -47,7 +53,7 @@ spice_rand_args_uniform = party.SpiceSumRandArgs(
 
     # Python controlled parameters
     phase_dist = dist.Dist(RNG.uniform, low=0, high=2),
-    weight_dist = dist.WeightDist(RNG.uniform, low=weight_dist_low, high=weight_dist_high, n=spice_rand_args_n_osc),
+    weight_dist = dist.WeightDist(RNG.uniform, low=0, high=10, n=N_OSCILLATORS),
     offset_dist = dist.Dist(RNG.uniform, low=0, high=0),
 
     # runtime and memory optimizations
@@ -55,12 +61,55 @@ spice_rand_args_uniform = party.SpiceSumRandArgs(
     down_sample_factor=1/100,
 )
 
+#### #### #### #### #### #### EXPERIMENT PARAMETERS #### #### #### #### #### ####
+
+target_sweep = sweety.TargetSweep(
+    "evaluate the ability of the hybrid signal generator to fit a variety of targets",
+    shared_params_target.test_targets,
+    spice_rand_args_uniform,
+    gen_signal_spipy.SpipySignalGenerator(),
+    max_z_ops=MAX_Z_OPS,
+    m_averages=M_AVERAGES,
+)
+
 n_osc_sweep = sweety.NOscSweep(
     n_osc=[20, 35, 50],
 )
 
 z_ops_sweep = sweety.ZOpsSweep(
-    max_z_ops=[0, 1e3, 5e3, 1e4],
+    max_z_ops=[0, 5e2, 1e3, 3e3],
 )
 
-sampling_rate_sweep = sweety.NumSamplesSweep([30, 60, 90])
+duration_sweep = sweety.DurationSweep([0.001, 0.005, 0.01])
+
+resistor_sweep = sweety.ResistorSweep(
+    r_dist = [
+        dist.Dist(RNG.uniform, low=40e3, high=54e3),
+        dist.Dist(RNG.uniform, low=19e3, high=75e3),
+        dist.Dist(RNG.uniform, low=19e3, high=125e3),
+    ]
+)
+
+weight_sweep = sweety.WeightSweep(
+    weight_dist = [
+        dist.WeightDist(RNG.uniform, low=0, high=1e1, n=N_OSCILLATORS),
+        dist.WeightDist(RNG.uniform, low=0, high=1e2, n=N_OSCILLATORS),
+        dist.WeightDist(RNG.uniform, low=0, high=1e3, n=N_OSCILLATORS),
+    ]
+)
+
+phase_sweep = sweety.PhaseSweep(
+    phase_dist = [
+        dist.Dist(RNG.uniform, low=0, high=1/2),
+        dist.Dist(RNG.uniform, low=0, high=1),
+        dist.Dist(RNG.uniform, low=0, high=2),
+    ]
+)
+
+offset_sweep = sweety.OffsetSweep(
+    offset_dist= [
+        dist.Dist(RNG.uniform, low=0, high=0), # works better with experiment analysis than Dist(0)
+        dist.Dist(RNG.uniform, low=-1, high=1),
+        dist.Dist(RNG.uniform, low=-5, high=5),
+    ]
+)

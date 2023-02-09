@@ -1,3 +1,6 @@
+"""This module applies preprocessing to signals.
+In particular it implements resampling, peak detection and padding functions."""
+
 from typing import Union
 from scipy import signal
 import numpy as np

@@ -1,12 +1,11 @@
-"""module implements gradient based optimization algorithms
+"""This module implements gradient based optimization algorithms.
 
-in a neuromorphic context gradient based algorithms are difficult because obtaining gradient information is difficult.
-this is in particular due to the attribution problem.
-This is to ask by what amount does oscillator_i contribute to the error?
+In a neuromorphic context gradient based algorithms are difficult because obtaining gradient information is difficult.
+This is in particular due to the attribution problem.
+This is to ask by what amount does oscillator i contribute to the observed loss function?
 """
 
-from typing import Tuple, List, Callable, Dict, Any, Union
-from tqdm import tqdm
+from typing import Tuple
 
 import sample
 import algo

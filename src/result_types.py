@@ -1,8 +1,10 @@
-from dataclasses import dataclass
-from typing import List
+"""
+This module implements a dataclass that describes the structure of the results following an experiment.
+"""
 
-import algo_args_types as algarty
-import sample
+from dataclasses import dataclass
+
+import algo_args_type as algarty
 
 @dataclass
 class ResultSweep: # TODO: rename ResultOfSweep
@@ -14,9 +16,3 @@ class ResultSweep: # TODO: rename ResultOfSweep
     mean_z_ops: float
     std_z_ops: float
     m_averages: int                 # number of averages taken
-
-@dataclass
-class ResultAlgoCallback:
-    """result of a running algorithm created from a callback while running"""
-    best_sample: sample.Sample
-    z_ops: int

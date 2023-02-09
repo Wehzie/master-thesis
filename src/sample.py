@@ -1,15 +1,22 @@
+"""
+This module implements the sample class.
+A sample is an ensemble of n-oscillators.
+The sum of n-oscillators approximates a target signal.
+A sample is tuned by an algorithm to minimize the rmse between the sum and the target.
+"""
+
 from __future__ import annotations
 
 from pathlib import Path
 import csv
 import pickle
 import numpy as np
-from typing import List, Final, Union
+from typing import List, Union
 
 from sklearn.linear_model import LinearRegression
 import matplotlib.pyplot as plt
 
-import param_types as party
+import gen_signal_args_types as party
 import data_analysis
 import data_preprocessor
 import meta_target

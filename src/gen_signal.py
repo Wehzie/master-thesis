@@ -1,11 +1,15 @@
+"""
+This module implements an abstract base class for signal generators.
+"""
+
 import numpy as np
 
 import copy
 from abc import ABC, abstractmethod
-from typing import Final, Union, Tuple, List, Callable
+from typing import Union, Tuple, List
 
 import data_analysis
-import param_types as party
+import gen_signal_args_types as party
 import sample
 import dist
 import const

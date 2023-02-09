@@ -1,8 +1,8 @@
 """
-module implements evolutionary algorithms that rely on a population of solution candidates
+This module implements evolutionary optimization algorithms that rely on a population of solution candidates.
 
-in a neuromorphic context evolutionary algorithms are more feasible than gradient based methods,
-but they are harder to implement than monte carlo methods, as the memory system must be more complex.
+In a neuromorphic context evolutionary algorithms are more feasible than gradient based methods,
+but they are harder to implement than monte carlo methods, as candidate solutions need to be tracked.
 """
 
 from scipy.optimize import differential_evolution
@@ -61,24 +61,3 @@ class DifferentialEvolution(algo.SearchAlgo):
         best_sample.update(self.target)
         self.z_ops += num_generations * oscillators_per_generation
         return best_sample, self.z_ops
-
-# hebbian learning
-    # boltzman learning, boltzman machine
-    # hopfield 
-    # kohonen SOM - not on sklearn or scipy
-    # particle swarmp opt
-    # stdp
-
-# bayesian
-    # not feasible at all - random variables and distributions are not intuitive to implement in materio
-    # contra arg is that brain is argued to be bayesian
-    # advantage is also that gradients aren't needed
-    
-    # of course a normal distribution can be esitmated by mean and variance
-    # and uniform dist can be represented by lower and upper bound
-    # however drawing from such a distribution in-materio that is truly random
-    # and then changing the dist on-fly on such a device would be a necessary requirement
-    # Schomaker: work is being done on this at cognigron, ask for citation
-
-# not discussed
-    # decision tree and random forest, reinforcement

@@ -5,9 +5,9 @@ import sys
 sys.path.append(os.path.dirname(os.path.realpath(__file__)) + "/../src")
 
 import param_mask
-import param_util
+import parameter_builder
 
-algo_names = [Algo(None).__class__.__name__ for Algo in param_util.algo_list] # algo names as strings
+algo_names = [Algo(None).__class__.__name__ for Algo in parameter_builder.algo_list] # algo names as strings
 
 def test_lists_match():
     for mask in param_mask.algo_masks:

@@ -1,19 +1,31 @@
+"""
+This module implements the Experimenteur class.
+The Experimenteur class runs experiments.
+"""
+
 import copy
 from dataclasses import fields
 from typing import Final, Iterable, List, Union
 from multiprocessing import Pool, cpu_count
 from functools import partial
 
-import param_types as party
+import data_analysis
+import experiment_analysis as expan
+import gen_signal_args_types as party
 import sweep_types as sweety
 import result_types as resty
 import algo
 import meta_target
 import const
-import param_util
+import parameter_builder
 import data_io
 import const
-import params_target
+import shared_params_target
+import sample
+import gen_signal_python
+import gen_signal_spipy
+import sweep_builder
+import algo_args_bundle
 
 import numpy as np
 
@@ -31,7 +43,19 @@ class Experimenteur:
         self.work_dir = data_io.find_dir_name(const.WRITE_DIR, "quantitative_experiment") # directory in which to write all results
         self.sweep_dir = None # directory in which to write results of a sweep for an independent variable
         self.sweep_name = None # name of the sweep for an independent variable
-        
+        self.show_plots = show_plots
+    
+    @staticmethod
+    def run_qualitative_algo_sweep(algo_sweep: sweety.AlgoSweep, m_target: meta_target.MetaTarget, visual: bool = False) -> None:
+        """
+        Perform an experiment to compare multiple algorithms but don't collect results over multiple runs or average.
+        Plots the best sample for each algorithm against the target.
+        """
+        for awa in algo_sweep.algo_with_args:
+            awa: algo_args_bundle.AlgoWithArgs
+            search_alg = awa.Algo(awa.algo_args)
+            best_sample, z_ops = search_alg.search()
+            if visual: sample.evaluate_prediction(best_sample, m_target, z_ops, search_alg.__class__.__name__)
 
     def set_sweep_name_and_dir(self, sweep_name: str) -> None:
         """set the name and directory of the sweep for the next experiment"""
@@ -67,8 +91,8 @@ class Experimenteur:
         """run an experiment comparing multiple algorithms on their rmse and operations"""
         results = list()
         for awa in algo_sweep.algo_with_args:
-            awa: sweety.AlgoWithArgs
-            search_alg = awa.Algo(awa.algo_args)
+            awa: algo_args_bundle.AlgoWithArgs
+            search_alg = awa.Algo(awa.algo_args) # BUG: algo args are wrong here
             best_samples, z_ops = self.invoke_search(search_alg, algo_sweep)
             result = self.average_result(best_samples, z_ops, search_alg, algo_sweep)
             results.append(result)
@@ -77,7 +101,7 @@ class Experimenteur:
     def run_rand_args_sweep(self,
     algo_sweep: sweety.AlgoSweep,
     sweep_args: Union[sweety.ConstTimeSweep, sweety.ExpoTimeSweep],
-    base_args: party.PythonSignalRandArgs) -> resty.ResultSweep:
+    base_args: party.UnionRandArgs) -> resty.ResultSweep:
         """
         args:
             algo_sweep: a list of algorithms and algorithm arguments, the algorithm arguments will be modified
@@ -86,7 +110,7 @@ class Experimenteur:
         results = []
         for val_schedule in fields(sweep_args): # for example frequency distribution
             for awa in algo_sweep.algo_with_args: # for example monte carlo search
-                awa: sweety.AlgoWithArgs
+                awa: algo_args_bundle.AlgoWithArgs
                 for val in getattr(sweep_args, val_schedule.name):    # for example normal vs uniform frequency distribution
                     temp_args = copy.deepcopy(base_args)              # init/reset temporary rand_args
                     setattr(temp_args, val_schedule.name, val)        # for example, for field frequency in base_args set value 10 Hz
@@ -101,29 +125,39 @@ class Experimenteur:
                     results.append(result)
         # TODO: flush and pickle results
         return results
+
+    # def alternative_run_rand_args_sweep():
+    #     for val in algo_sweep.dv_values:
+    #         for awa in algo_sweep.algo_with_args:
+    #             temp_args = copy.deepcopy(algo_args.rand_args)
+    #             setattr(temp_args, algo_sweep.dv_name, val)
+    #             if algo_sweep.dv_name == "n_osc":
+    #                 temp_args.weight_dist.n = val
+                
+    #             awa.algo_args.rand_args = temp_args
+    #             f_algo_args: Final = copy.deepcopy(awa.algo_args)
+    #             search_alg: algo.SearchAlgo = awa.Algo(f_algo_args)
     
-    def run_sampling_rate_sweep(self, sweep_args: sweety.NumSamplesSweep, base_args: party.PythonSignalRandArgs) -> resty.ResultSweep:
-        """run all algorithms at different sampling rates of a target"""
-        print("sweeping with", sweep_args.__class__.__name__)
+    def run_samples_sweep(self, sweep_bundle: sweety.SweepBundle, base_args: party.UnionRandArgs) -> resty.ResultSweep:
+        """run all algorithms with targets of varying lengths (number of samples)"""
+        print("sweeping with", sweep_bundle.num_samples_sweep.__class__.__name__)
         results = list()
-        for s in sweep_args.samples:
+        for s in sweep_bundle.num_samples_sweep.samples:
             temp_args = copy.deepcopy(base_args)
             temp_args.samples = s # inject samples into rand_args
-            m_target = meta_target.MetaTargetSample(temp_args, "magpie", params_target.DevSet.MAGPIE.value)
-            algo_sweep = param_util.init_algo_sweep(m_target, temp_args)
+            m_target = meta_target.MetaTargetSample(temp_args, "magpie", shared_params_target.DevSet.MAGPIE.value)
+            algo_sweep = sweep_builder.build_algo_sweep(sweep_bundle.signal_generator, temp_args, m_target, sweep_bundle.max_z_ops, sweep_bundle.m_averages)
             results += self.run_algo_sweep(algo_sweep)
         return results
 
-    def run_z_ops_sweep(self, algo_sweep: sweety.AlgoSweep, z_ops_sweep: sweety.ZOpsSweep) -> resty.ResultSweep:
+    def run_z_ops_sweep(self, sweep_bundle: sweety.UnionSweepBundle, base_args: party.UnionRandArgs) -> resty.ResultSweep:
         """run all algorithms with different numbers of z-operations, corresponding to more extensive search"""
-        print("sweeping with", z_ops_sweep.__class__.__name__)
-        local_algo_sweep = copy.deepcopy(algo_sweep)
+        print("sweeping with", sweep_bundle.z_ops_sweep.__class__.__name__)
+        local_args = copy.deepcopy(base_args)
+        meta_target = sweep_bundle.algo_sweep.algo_with_args[0].algo_args.meta_target
         results = list()
-        for z_ops in z_ops_sweep.max_z_ops:
-            # inject max_z_ops into each algorithm's algo_args
-            for awa in local_algo_sweep.algo_with_args:
-                awa: sweety.AlgoWithArgs
-                awa.algo_args.max_z_ops = z_ops
+        for z_ops in sweep_bundle.z_ops_sweep.max_z_ops:
+            algo_sweep = sweep_builder.build_algo_sweep(sweep_bundle.signal_generator, local_args, meta_target, z_ops, sweep_bundle.m_averages)
             results += self.run_algo_sweep(algo_sweep)
         return results
 
@@ -133,6 +167,133 @@ class Experimenteur:
         print("sweeping with", target_sweep.__class__.__name__)
         results = list()
         for target in target_sweep.targets:
-            algo_sweep = param_util.init_algo_sweep(target, target_sweep.rand_args, target_sweep.signal_generator, target_sweep.max_z_ops, target_sweep.m_averages)
+            algo_sweep = sweep_builder.build_algo_sweep(target_sweep.signal_generator, target_sweep.rand_args, target, target_sweep.max_z_ops, target_sweep.m_averages)
             results += self.run_algo_sweep(algo_sweep)
         return results
+
+    def run_all_experiments(self, sweep_bundle: sweety.UnionSweepBundle, target_samples: int, base_rand_args: party.UnionRandArgs) -> None:
+        """run all experiments and plot results"""
+
+        def invoke_target_sweep():
+            self.set_sweep_name_and_dir("targets_vs_rmse")
+            results = self.run_target_sweep(sweep_bundle.target_sweep)
+            df = expan.conv_results_to_pd(results)
+            expan.analyze_targets_vs_rmse(df, self.sweep_name, self.sweep_dir, show=self.show_plots)
+            data_io.hoard_experiment_results(self.sweep_name, results, df, self.sweep_dir)
+
+        def invoke_n_osc_sweep():
+            self.set_sweep_name_and_dir("n_osc_vs_rmse")
+            results = self.run_rand_args_sweep(sweep_bundle.algo_sweep, sweep_bundle.n_osc_sweep, base_rand_args)
+            df = expan.conv_results_to_pd(results)
+            expan.plot_n_vs_rmse(df, target_samples, self.sweep_name, self.sweep_dir, show=self.show_plots)
+            expan.plot_masks(sweep_bundle.algo_sweep.algo_masks, expan.plot_n_vs_rmse, df, target_samples, self.sweep_name, self.sweep_dir, show=self.show_plots)
+            data_io.hoard_experiment_results(self.sweep_name, results, df, self.sweep_dir)
+
+        def invoke_z_ops_sweep():
+            self.set_sweep_name_and_dir("z_ops_vs_rmse")
+            results = self.run_z_ops_sweep(sweep_bundle, base_rand_args)
+            df = expan.conv_results_to_pd(results)
+            expan.plot_z_vs_rmse(df, target_samples, self.sweep_name, self.sweep_dir, show=self.show_plots)
+            expan.plot_masks(sweep_bundle.algo_sweep.algo_masks, expan.plot_z_vs_rmse, df, target_samples, self.sweep_name, self.sweep_dir, show=self.show_plots)
+            data_io.hoard_experiment_results(self.sweep_name, results, df, self.sweep_dir)
+
+        def invoke_samples_sweep():
+            self.set_sweep_name_and_dir("samples_vs_rmse")
+            results = self.run_samples_sweep(sweep_bundle, base_rand_args)
+            df = expan.conv_results_to_pd(results)
+            expan.plot_samples_vs_rmse(df, self.sweep_name, self.sweep_dir, show=self.show_plots)
+            expan.plot_masks(sweep_bundle.algo_sweep.algo_masks, expan.plot_samples_vs_rmse, df, self.sweep_name, self.sweep_dir, show=self.show_plots)
+            data_io.hoard_experiment_results(self.sweep_name, results, df, self.sweep_dir)
+
+        def invoke_freqs_sweep():
+            freq_sweeps = [sweep_bundle.freq_sweep_from_zero, sweep_bundle.freq_sweep_around_vo2]
+            freq_sweep_names = ["freq_range_from_zero", "freq_range_around_vo2"]
+            for freq_sweep, freq_sweep_name in zip(freq_sweeps, freq_sweep_names):
+                self.set_sweep_name_and_dir(freq_sweep_name)
+                results = self.run_rand_args_sweep(sweep_bundle.algo_sweep, freq_sweep, base_rand_args)
+                df = expan.conv_results_to_pd(results)
+                expan.plot_freq_range_vs_rmse(df, target_samples, freq_sweep_name, self.sweep_dir, show=self.show_plots)
+                expan.plot_masks(sweep_bundle.algo_sweep.algo_masks, expan.plot_freq_range_vs_rmse, df, target_samples, freq_sweep_name, self.sweep_dir, show=self.show_plots)
+                data_io.hoard_experiment_results(self.sweep_name, results, df, self.sweep_dir)
+
+        def invoke_weight_sweep():
+            self.set_sweep_name_and_dir("weight_range_vs_rmse")
+            results = self.run_rand_args_sweep(sweep_bundle.algo_sweep, sweep_bundle.weight_sweep, base_rand_args)
+            df = expan.conv_results_to_pd(results)
+            expan.plot_weight_range_vs_rmse(df, target_samples, self.sweep_dir, show=self.show_plots)
+            expan.plot_masks(sweep_bundle.algo_sweep.algo_masks, expan.plot_weight_range_vs_rmse, df, target_samples,self.sweep_dir, show=self.show_plots)
+            data_io.hoard_experiment_results(self.sweep_name, results, df, self.sweep_dir)
+
+        def invoke_phase_sweep():
+            self.set_sweep_name_and_dir("phase_range_vs_rmse")
+            results = self.run_rand_args_sweep(sweep_bundle.algo_sweep, sweep_bundle.phase_sweep, base_rand_args)
+            df = expan.conv_results_to_pd(results)
+            expan.plot_phase_range_vs_rmse(df, target_samples, self.sweep_dir, show=self.show_plots)
+            expan.plot_masks(sweep_bundle.algo_sweep.algo_masks, expan.plot_phase_range_vs_rmse, df, target_samples, self.sweep_dir, show=self.show_plots)
+            data_io.hoard_experiment_results(self.sweep_name, results, df, self.sweep_dir)
+
+        def invoke_offset_sweep():
+            self.set_sweep_name_and_dir("offset_range_vs_rmse")
+            results = self.run_rand_args_sweep(sweep_bundle.algo_sweep, sweep_bundle.offset_sweep, base_rand_args)
+            df = expan.conv_results_to_pd(results)
+            expan.plot_offset_range_vs_rmse(df, target_samples, self.sweep_dir, show=self.show_plots)
+            expan.plot_masks(sweep_bundle.algo_sweep.algo_masks, expan.plot_offset_range_vs_rmse, df, target_samples, self.sweep_dir, show=self.show_plots)
+            data_io.hoard_experiment_results(self.sweep_name, results, df, self.sweep_dir)
+
+        def invoke_amplitude_sweep():
+            self.set_sweep_name_and_dir("amplitude_vs_rmse")
+            results = self.run_rand_args_sweep(sweep_bundle.algo_sweep, sweep_bundle.amplitude_sweep, base_rand_args)
+            df = expan.conv_results_to_pd(results)
+            expan.plot_amplitude_vs_rmse(df, target_samples, self.sweep_name, self.sweep_dir, show=self.show_plots)
+            expan.plot_masks(sweep_bundle.algo_sweep.algo_masks, expan.plot_amplitude_vs_rmse, df, target_samples, self.sweep_name, self.sweep_dir, show=self.show_plots)
+            data_io.hoard_experiment_results(self.sweep_name, results, df, self.sweep_dir)
+
+        def invoke_resistor_sweep():
+            NotImplemented
+        
+        def invoke_duration_sweep():
+            NotImplemented
+
+        @data_analysis.print_time
+        def invoke_python_generator_sweeps():
+            invoke_target_sweep()
+            invoke_n_osc_sweep()
+            invoke_z_ops_sweep()
+            invoke_samples_sweep()
+            invoke_freqs_sweep()
+            invoke_weight_sweep()
+            invoke_phase_sweep()
+            invoke_offset_sweep()
+            invoke_amplitude_sweep()
+            # TODO
+            # invoke_duration_sweep()
+        
+        @data_analysis.print_time
+        def invoke_hybrid_generator_sweeps():
+            invoke_target_sweep()
+            invoke_n_osc_sweep()
+            invoke_z_ops_sweep()
+            # TODO
+            # invoke_duration_sweep()
+            # invoke_resistor_sweep()
+            invoke_weight_sweep()
+            invoke_phase_sweep()
+            invoke_offset_sweep()
+            invoke_amplitude_sweep()
+        
+        if isinstance(sweep_bundle.signal_generator, gen_signal_python.PythonSigGen):
+            print("Start experiment with Python signal generator")
+            invoke_python_generator_sweeps()
+        elif isinstance(sweep_bundle.signal_generator, gen_signal_spipy.SpipySignalGenerator):
+            print("Start experiment with hybrid signal generator")
+            invoke_hybrid_generator_sweeps()
+        else:
+            raise ValueError("Unknown signal generator type")
+
+
+    def run_hyperparameter_optimization():
+        """run experiments to determine the best experimental parameters"""
+        # take best algorithm
+        # then also increase the z_ops to see if the weight-range-to-rmse curve flattens
+        # same for rmse vs n_osc
+        # also for frequency band

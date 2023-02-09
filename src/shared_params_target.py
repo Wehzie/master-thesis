@@ -1,18 +1,12 @@
-"""parameters for generating synthetic target signals and for loading real world signals from file"""
+"""
+This module initializes Synthetic target signals with here-defined parameters.
+Furthermore, it provides paths for loading real world signals from file.
+"""
 
 from pathlib import Path
 from enum import Enum
 
 import meta_target
-import sweep_types as sweety
-import const
-if const.TEST_PARAMS:
-    import params_python_test as params_python
-else:
-    import params_python
-import params_hybrid
-import gen_signal_python
-import gen_signal_spipy
 
 #### #### #### #### AUDIO FILE PATHS #### #### #### #### 
 
@@ -26,7 +20,7 @@ class TestSet(Enum): # held out until the end of development
     BELLBIRD = Path("resources/white_bellbird.wav")
     OKAY = Path("resources/okay-7.wav")
 
-#### #### #### #### PRODUCTION PARAMETERS #### #### #### #### 
+#### #### #### #### PRODUCTION SYNTHETIC TARGETS #### #### #### #### 
 
 single_frequency_arg_targets = []
 for Target in [meta_target.SineTarget, meta_target.TriangleTarget, meta_target.SawtoothTarget, meta_target.InverseSawtoothTarget, meta_target.SquareTarget]:
@@ -51,24 +45,7 @@ other_targets = [
 
 production_targets = single_frequency_arg_targets + beat_targets + other_targets
 
-python_target_sweep = sweety.TargetSweep(
-    "evaluate the ability of the python signal generator to fit a variety of targets",
-    production_targets,
-    params_python.py_rand_args_uniform,
-    gen_signal_python.PythonSigGen(),
-    max_z_ops=1e4,
-    m_averages=10
-)
-hybrid_target_sweep = sweety.TargetSweep(
-    "evaluate the ability of the hybrid signal generator to fit a variety of targets",
-    production_targets,
-    params_hybrid.spice_rand_args_uniform,
-    gen_signal_spipy.SpipySignalGenerator(),
-    max_z_ops=1e4,
-    m_averages=10
-)
-
-#### #### #### #### TEST PARAMETERS #### #### #### #### 
+#### #### #### #### TEST SYNTHETIC TARGETS #### #### #### #### 
 
 single_frequency_arg_targets_test = []
 for Target in [meta_target.SineTarget, meta_target.TriangleTarget, meta_target.SawtoothTarget, meta_target.InverseSawtoothTarget, meta_target.SquareTarget]:
@@ -77,21 +54,3 @@ for Target in [meta_target.SineTarget, meta_target.TriangleTarget, meta_target.S
 test_beat_target = [meta_target.BeatTarget(1, base_freq=100)]
 
 test_targets = single_frequency_arg_targets_test + test_beat_target + other_targets
-
-python_target_sweep_test = sweety.TargetSweep(
-    "a reduced set of targets for testing the python signal generator against variety of targets",
-    test_targets,
-    params_python.py_rand_args_uniform,
-    gen_signal_python.PythonSigGen(),
-    max_z_ops=300,
-    m_averages=2
-)
-
-hybrid_target_sweep_test = sweety.TargetSweep(
-    "a reduced set of targets for testing the hybrid signal generator against variety of targets",
-    test_targets,
-    params_hybrid.spice_rand_args_uniform,
-    gen_signal_spipy.SpipySignalGenerator(),
-    max_z_ops=300,
-    m_averages=2
-)

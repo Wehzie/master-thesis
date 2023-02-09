@@ -1,3 +1,5 @@
+"""This module defines valid arguments for signal generator modules."""
+
 from dataclasses import dataclass
 from typing import List, Union
 
@@ -6,7 +8,6 @@ import numpy as np
 import dist
 
 #### #### #### #### PYTHON SIGNALS #### #### #### ####
-
 
 @dataclass
 class PythonSignalRandArgs:

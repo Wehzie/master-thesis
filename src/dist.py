@@ -1,6 +1,11 @@
+"""
+This module implements the distribution class.
+A distribution is a random variable that can be sampled.
+"""
+
 import numpy as np
 import const
-from typing import List, Tuple, Union, Callable
+from typing import Tuple, Union, Callable
 
 
 # TODO: replace with something more readable

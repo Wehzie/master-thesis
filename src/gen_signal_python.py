@@ -1,3 +1,6 @@
+"""This module implements the Python signal generator class.
+Signals are generated fully within the Python environment."""
+
 from typing import List, Tuple, Union
 import data_analysis
 
@@ -5,12 +8,13 @@ import numpy as np
 import scipy.signal
 import matplotlib.pyplot as plt
 
-import param_types as party
+import gen_signal_args_types as party
 import const
 import dist
 import gen_signal
 
 class PythonSigGen(gen_signal.SignalGenerator):
+    """Python signal generator class."""
 
     @staticmethod
     def draw_params_random(args: party.PythonSignalRandArgs) -> party.PythonSignalDetArgs:

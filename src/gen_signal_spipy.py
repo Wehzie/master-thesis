@@ -1,15 +1,22 @@
+"""
+This module implements the Hybrid or SpiPy (SPICE+Python) signal generator class.
+The oscillation of a single oscillator circuit is generated within SPICE.
+The resulting signal is loaded into Python.
+The processes is repeated to obtain an ensemble of signals.
+Meta-programming is used to modify the SPICE netlist to generate different signals.
+"""
+
 import copy
-from typing import Callable, List, Tuple, Union
+from typing import List, Tuple
 from pathlib import Path
 
 import numpy as np
-import scipy.interpolate
 
 import gen_signal
 import data_analysis
 import data_io
 import data_preprocessor
-import param_types as party
+import gen_signal_args_types as party
 import netlist_generator
 import const
 

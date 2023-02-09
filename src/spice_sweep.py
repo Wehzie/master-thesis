@@ -1,9 +1,14 @@
+"""
+This module implements an experiment that evaluates oscillation frequency of a single RC oscillator as a function of R.
+Multiple netlists are constructed with different values of R.
+"""
+
+
 import gen_signal_spipy
 
 import numpy as np
 import data_analysis
-import param_types as party
-import data_analysis
+import gen_signal_args_types as party
 import matplotlib.pyplot as plt
 import const
 

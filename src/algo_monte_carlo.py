@@ -1,8 +1,10 @@
 """
-monte carlo algorithms have deterministic runtime and draw from randomness to find the best solution.
+This module implements Monte Carlo algorithms for optimization.
+Monte Carlo algorithms have deterministic runtime and draw from randomness to find the best solution.
 
-monte carlo algorithms are easiest to implement in hardware;
-no gradient is propagated nor must complex memory be maintained.
+Monte Carlo algorithms form a class that is relatively easy to implement in hardware.
+No gradient is propagated nor must complex memory be maintained.
+For this reason, Monte Carlo algorithms are a good starting point for neuromorphic hardware.
 """
 
 import copy
@@ -12,7 +14,7 @@ import algo
 import sample
 import const
 
-import algo_args_types as algarty
+import algo_args_type as algarty
 import gen_signal
 
 import numpy as np

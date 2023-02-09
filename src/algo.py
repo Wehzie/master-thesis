@@ -1,11 +1,13 @@
+"""This module defines the abstract base class for all search algorithms."""
+
 from abc import ABC, abstractmethod
 import pickle
-from typing import Callable, List, Tuple, Union
+from typing import Callable, List, Tuple
 
 import sample
 import data_analysis
 import const
-import algo_args_types as algarty
+import algo_args_type as algarty
 
 import numpy as np
 
@@ -13,6 +15,7 @@ class SearchAlgo(ABC):
 
     def __init__(self, algo_args: algarty.AlgoArgs):
         if algo_args is None: return # empty instance to get the class name
+        self.sig_generator = algo_args.sig_generator
         self.rand_args = algo_args.rand_args
 
         # unpack meta target's signal for backwards compatibility
@@ -21,6 +24,7 @@ class SearchAlgo(ABC):
         
         # parameters controlling runtime of all algorithms
         self.max_z_ops = algo_args.max_z_ops
+        # k_samples is optional, and is inferred from z_ops if not provided
 
         # parameters applying to a subset of algorithms
         self.j_replace = algo_args.j_replace
@@ -34,7 +38,7 @@ class SearchAlgo(ABC):
         self.history = algo_args.history
         self.args_path = algo_args.args_path
 
-        self.sig_generator = algo_args.sig_generator
+
 
         # optionally inferred parameter
         self.k_samples = algo_args.k_samples if algo_args.k_samples is not None else self.infer_k_from_z()
@@ -54,7 +58,9 @@ class SearchAlgo(ABC):
     def get_algo_args(self) -> algarty.AlgoArgs:
         """get the current set of AlgoArgs form the search module"""
         return algarty.AlgoArgs(
+            self.sig_generator,
             self.rand_args,
+
             self.meta_target,
             
             self.max_z_ops,
@@ -68,8 +74,6 @@ class SearchAlgo(ABC):
             self.store_det_args, 
             self.history,
             self.args_path,
-
-            self.sig_generator,
         )
 
     @staticmethod
@@ -263,23 +267,3 @@ class SearchAlgo(ABC):
     def search(self, *args, **kwargs): # *args needed to use with map(), not sure why
         """search for the best sample"""
         raise NotImplementedError
-
-
-"""
-algorithms[
-    random_one_shot,
-    random_one_shot_weights(weight_init=zeros, ones, uniform, dist),
-    las_vegas_aggregate,
-    las_vegas_weight(weight_init=zeros, ones, uniform, dist),
-    # version: pass over a single matrix/weights multiple times
-    iterative,
-    iterative_weight(weight_init=zeros, ones, uniform, dist),
-    annealing (lower num-osc replaced),
-    annealing weight(weight_init=zeros, ones, uniform, dist),
-    las_vegas_purge:
-        draw n oscillators
-        loop over each oscillator and remove it if removing lowers the rmse
-        remaining n-oscillators is non-deterministic
-    genetic,
-    genetic weight(weight_init=zeros, ones, uniform, dist)],
-"""

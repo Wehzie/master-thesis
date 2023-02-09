@@ -1,74 +1,92 @@
+"""
+This module defines valid dependent variables for an experiment (sweep).
+"""
+
 from abc import ABC
 from dataclasses import dataclass
-from typing import List, Union
+from typing import Final, List, Union
 import dist
-import algo
-import algo_args_types as algarty
-import param_mask
+import algo_args_bundle
+import mask_type
 import meta_target
-import param_types as party
-import gen_signal_python
-import gen_signal_spipy
-
-@dataclass
-class AlgoWithArgs:
-    Algo: algo.SearchAlgo # list of algorithms
-    algo_args: algarty.AlgoArgs # list of arguments for each algorithm, in order with algos
+import gen_signal_args_types as party
+import gen_signal
 
 @dataclass
 class AlgoSweep:
     """
-    repeat experiments over multiple algorithms.
-    
-    produces a mean rmse, standard deviation and number of operations (z_ops) for a given configuration.
+    Repeat experiments over multiple algorithms.
+
+    args:
+        algo_with_args: list of algorithms with their arguments
+        m_averages: number of averages for each experimental configuration
+        algo_masks: masks to subset the algorithms for analysis; doesn't affect the experiment
     """
-    algo_with_args: List[AlgoWithArgs]
-    m_averages: int            # number of averages for each experimental configuration
+    algo_with_args: List[algo_args_bundle.AlgoWithArgs]
+    m_averages: int
+    algo_masks: Union[List[mask_type.ExperimentMask], None] = None
 
-    # list of groups of algorithms, that are interesting to compare
-    # for example
-    # gradient based vs random search based algorithms
-    # each 
-    #   the purpose is
-    #   1) plotting the results of each group in a different color
-    #   2) averaging the results of each group
-    #   3) plotting the results of each group separately
-    algo_masks: Union[None,
-                 List[param_mask.ExperimentMask]] = None
-
+# TODO: maybe use this instead of AlgoSweep
+@dataclass
+class AlgoSweepBundle:
+    name: str
+    description: str
+    dep_var: None
+    target: meta_target.MetaTarget
+    sig_generator: None
+    generator_args: None
+    algo_with_args: None
+    max_z_ops: int
+    m_averages: int
+    algo_masks: None
 
 @dataclass
 class ConstTimeSweep(ABC):
-    """sweeps of PythonRandSignalArgs where time complexity between experiments is constant"""
+    """Experiments where the time complexity between experiments is constant.
+    For example, increasing the frequency doesn't increase the time complexity of the experiment.
+    """
     pass
 
-# adding meta info to the sweep class is a good idea
-# but requires changing the experimenteur class which iterates over fields of the sweep class
 @dataclass
 class FreqSweep(ConstTimeSweep):
+    """A list of frequency distributions from which to sample the frequency of the oscillators."""
     freq_dist: List[dist.Dist]
 
 @dataclass
+class ResistorSweep(ConstTimeSweep):
+    """
+    A list of resistor distributions from which to sample the resistance of the RC-circuit.
+    Resistance controls the frequency of the oscillators.
+    """
+    r_dist: List[dist.Dist]
+
+@dataclass
 class AmplitudeSweep(ConstTimeSweep):
+    """A list of amplitude distributions from which to sample the amplitude of the oscillator signals."""
     amplitude: List[float]
 
 @dataclass
 class WeightSweep(ConstTimeSweep):
+    """A list of weight distributions from which to sample the weighting or gain of the oscillator signals."""
     weight_dist: List[dist.WeightDist]
 
 @dataclass
 class PhaseSweep(ConstTimeSweep):
+    """A list of phase distributions from which to sample the phase of the oscillator signals."""
     phase_dist: List[dist.Dist]
 
 @dataclass
 class OffsetSweep(ConstTimeSweep):
+    """A list of offset distributions from which to sample the offset of the oscillator signals."""
     offset_dist: List[dist.Dist]
 
 
 
 @dataclass
 class ExpoTimeSweep(ABC):
-    """sweeps of PythonRandSignalArgs where time complexity between experiments is worse then constant, mostly exponential
+    """
+    This abstract class specifies experiments where time complexity between experiments is worse then constant.
+    For example, increasing the number of oscillators increases the duration and memory requirements of the experiment.
     
     args:
         filename: filename for saving the results
@@ -96,21 +114,94 @@ class ExpoTimeSweep(ABC):
 
 @dataclass
 class NOscSweep(ExpoTimeSweep):
-    n_osc: List[int]                    # number of n-oscillators
+    """Specify varying numbers of oscillators to compare in an experiment."""
+    n_osc: List[int]
 
 @dataclass
-class ZOpsSweep(ExpoTimeSweep): # also expo time, in algo_args, not rand_args
-    max_z_ops: List[int]                # maximum number of z-operations
+class ZOpsSweep(ExpoTimeSweep):
+    """Specify varying numbers of maximum perturbations (max-z-ops) to use in an experiment."""
+    max_z_ops: List[int]
 
 @dataclass
 class NumSamplesSweep(ExpoTimeSweep):
-    samples: List[float]   # number of samples in the target signal
+    """
+    Specify varying numbers of target samples to use in an experiment.
+    This approximates the idea of varying the duration of the target signal.
+    """
+    samples: List[float]
+
+@dataclass
+class DurationSweep(ExpoTimeSweep):
+    """
+    Specify varying durations of target samples to use in an experiment.
+    """
+    duration: List[float]
 
 @dataclass
 class TargetSweep(ExpoTimeSweep):
+    """Specify varying target signals to use in an experiment.
+    
+    args:
+        description: text description of the experiment
+        targets: list of target signals against which to compare the algorithms
+        rand_args: a set of parameters used by the signal generator to generate the target signals
+        signal_generator: a signal generator
+        max_z_ops: maximum number of perturbations to use in the experiment
+        m_averages: number of averages for each experimental configuration
+    """
     description: str
-    targets: List[meta_target.MetaTarget] # target signal
-    rand_args: Union[party.PythonSignalRandArgs, party.SpiceSumRandArgs]
-    signal_generator: Union[gen_signal_python.PythonSigGen, gen_signal_spipy.SpipySignalGenerator]
+    targets: List[meta_target.MetaTarget]
+    rand_args: party.UnionRandArgs
+    signal_generator: gen_signal.SignalGenerator
     max_z_ops: int
-    m_averages: int            # number of averages for each experimental configuration
+    m_averages: int
+
+
+
+@dataclass
+class SweepBundle:
+    """Bundle an algorithm sweep with sweeps of secondary independent variables"""
+    # metadata, mainly for convenience
+    # the values of these fields should not change between experiments
+    # for example, max_z_ops reflects the default values
+    # while z_ops_sweep reflects the values to be explored
+    description: str
+    signal_generator: Final[gen_signal.SignalGenerator]
+    generator_args: Final[party.UnionRandArgs]
+    max_z_ops: Final[int]
+    m_averages: Final[int]
+
+    # primary dependent variable shared by all experiments
+    algo_sweep: Final[AlgoSweep]
+
+    # secondary dependent variables
+    # exponential time sweeps
+    target_sweep: Final[TargetSweep]
+    n_osc_sweep: Final[NOscSweep]
+    z_ops_sweep: Final[ZOpsSweep]
+    num_samples_sweep: Final[NumSamplesSweep]
+    # TODO:
+    # duration_sweep: Union[DurationSweep, None] # extrapolation to longer duration
+
+    # constant time sweeps
+    weight_sweep: Final[WeightSweep]
+    phase_sweep: Final[PhaseSweep]
+    offset_sweep: Final[OffsetSweep]
+
+@dataclass
+class PythonSweepBundle(SweepBundle):
+    """Bundle an AlgoSweep with a sweep of secondary independent variables"""
+
+    # constant time sweeps
+    freq_sweep_from_zero: Final[FreqSweep]
+    freq_sweep_around_vo2: Final[FreqSweep]
+    amplitude_sweep: Final[AmplitudeSweep]
+
+
+@dataclass
+class HybridSweepBundle(SweepBundle):
+
+    # constant time sweeps
+    resistor_sweep: Final[FreqSweep] # manipulate netlist generation, R value
+
+UnionSweepBundle = Union[PythonSweepBundle, HybridSweepBundle]

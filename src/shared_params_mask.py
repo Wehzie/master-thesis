@@ -1,41 +1,11 @@
 """
-set of masks over the experiment results
-each mask contains clusters of algorithms which are compared
+This module implements multiple instances of the ExperimentMask class.
+Each instance describes which algorithms are compared against each other.
 """
 
-from dataclasses import dataclass
-from typing import List, Union
+import mask_type
 
-import matplotlib.colors as mcolors
-TABLEAU_COLORS: List[str] = [color for color in list(mcolors.TABLEAU_COLORS.values())] # HEX colors
-
-import algo
-
-@dataclass
-class ExperimentMask:
-    """each mask compares a subset of algorithms against another subset"""
-    filename: str
-    title: str      # title for plots
-    description: Union[str, None]
-    algo_groups: List[List[algo.SearchAlgo]]
-
-    def get_color_map(self) -> dict:
-        """get matplotlib compatible color map for each algorithm in this mask"""
-        color_map = {}
-        for algo_group, color in zip(self.algo_groups, TABLEAU_COLORS):
-            for algo in algo_group:
-                color_map[algo] = color
-        return color_map
-
-    def get_algo_names(self) -> List[str]:
-        """form flat list with names of all algorithms in this mask"""
-        names = []
-        for algo_group in self.algo_groups:
-            for algo in algo_group:
-                names.append(algo)
-        return names
-
-m1 = ExperimentMask(
+m1 = mask_type.ExperimentMask(
     "full_vs_weight_mcexploit",
     "full optimization vs. weight optimization",
     "full optimization vs. weight optimization by example of MCExploit algorithms",
@@ -55,7 +25,7 @@ m1 = ExperimentMask(
     ]
 )
 
-m2 = ExperimentMask(
+m2 = mask_type.ExperimentMask(
     "full_vs_weight_all",
     "full optimization vs. weight optimization",
     "full optimization vs. weight optimization by example of algorithms with both implementations",
@@ -82,7 +52,7 @@ m2 = ExperimentMask(
     ],
 )
 
-m3 = ExperimentMask(
+m3 = mask_type.ExperimentMask(
     "annealing",
     "implementations of sim. annealing",
     "comparison of simulated annealing inspired algorithms",
@@ -111,7 +81,7 @@ m3 = ExperimentMask(
     ],
 )
 
-m4 = ExperimentMask(
+m4 = mask_type.ExperimentMask(
     "best_by_family",
     "best algorithms by family",
     "comparison of best full and weight-only optimizing algorithms",
@@ -137,7 +107,7 @@ m4 = ExperimentMask(
     ],
 )
 
-m5 = ExperimentMask(
+m5 = mask_type.ExperimentMask(
     "best_by_family_weight",
     "best weight-only optimizing algorithms by algorithm family",
     "comparison of weight-only optimizing algorithms by algorithm family",
@@ -160,7 +130,7 @@ m5 = ExperimentMask(
     ],
 )
 
-m6 = ExperimentMask(
+m6 = mask_type.ExperimentMask(
     "greedy_vs_ergodic",
     "greedy vs. ergodic fully optimizing algorithms",
     "greedy vs ergodic for oscillator and weight optimizing algorithms",
@@ -180,7 +150,7 @@ m6 = ExperimentMask(
     ],
 )
 
-m7 = ExperimentMask(
+m7 = mask_type.ExperimentMask(
     "exploit1_vs_exploit10",
     "MCExploit, j=1 vs. j=10",
     "comparison of MCExploit with j=1 and j=10",
@@ -197,11 +167,28 @@ m7 = ExperimentMask(
     ],
 )
 
-algo_masks = [m1, m2, m3, m4, m5, m6, m7]
+m8 = mask_type.ExperimentMask(
+    "weird_algos",
+    "weird algorithms",
+    "comparison of weird algorithms against MCExploit and linear regression",
+    [
+        [
+            "MCExploit",
+        ],
+        [
+            "MCExploitNeighborWeight",
+        ],
+        [
+            "MCExploitFast",
+        ],
+        [
+            "MCGrowShrink",
+        ],
+        [
+            "LinearRegression",
+        ]
+    ],
+)
 
-def main():
-    print(m1.get_algo_names())
-    print(m1.get_color_map())
 
-if __name__ == "__main__":
-    main()
+algo_masks = [m1, m2, m3, m4, m5, m6, m7, m8]

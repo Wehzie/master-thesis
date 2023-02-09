@@ -1,4 +1,6 @@
-"""Parameters for running SPICE simulations with the netlist generator."""
+"""
+Parameters for running SPICE simulations with the SPICE signal generator.
+"""
 
 # parameters to generate bird sounds
 bird_params = {

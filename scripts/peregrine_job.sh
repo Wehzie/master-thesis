@@ -18,7 +18,7 @@
 # RES column indicates RAM usage in bytes
 
 #SBATCH --time=48:00:00
-#SBATCH --mem-per-cpu=500MB
+#SBATCH --mem-per-cpu=2GB
 
 module purge
 module load matplotlib
