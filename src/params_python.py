@@ -20,15 +20,15 @@ DURATION = 0.1 # s
 
 #### #### #### #### BASE PARAMETERS FOR SIGNAL GENERATION #### #### #### ####
 
-py_rand_args_n_osc = 3000
+n_quality_test = 3000
 py_rand_args_quality_test = party.PythonSignalRandArgs(
     description = "for qualitative experiments; parameters for qualitative test of an algorithm; capable of fitting audio such that its recognized by human ear",
-    n_osc=py_rand_args_n_osc,
+    n_osc=n_quality_test,
     duration = None,
     samples = 15000,
     freq_dist = dist.Dist(RNG.uniform, low=1e5, high=1e6),
     amplitude = 0.5,
-    weight_dist = dist.WeightDist(RNG.uniform, low=0, high=1, n=py_rand_args_n_osc),
+    weight_dist = dist.WeightDist(RNG.uniform, low=0, high=1, n=n_quality_test),
     phase_dist = dist.Dist(RNG.uniform, low=-1/3, high=1/3),
     offset_dist = dist.Dist(RNG.uniform, low=0, high=0),
     sampling_rate = 11025,
@@ -41,7 +41,7 @@ py_rand_args_uniform = party.PythonSignalRandArgs(
     samples = SAMPLES,
     freq_dist = dist.Dist(RNG.uniform, low=1e5, high=1e6),
     amplitude = 0.5,
-    weight_dist = dist.WeightDist(RNG.uniform, low=0, high=10, n=py_rand_args_n_osc),
+    weight_dist = dist.WeightDist(RNG.uniform, low=0, high=10, n=N_OSCILLATORS),
     phase_dist = dist.Dist(RNG.uniform, low=-1/3, high=1/3),
     offset_dist = dist.Dist(RNG.uniform, low=0, high=0),
     sampling_rate = 11025

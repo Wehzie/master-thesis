@@ -148,9 +148,7 @@ def bundle_algos_with_args(
     if selector == "test" or const.TEST_PARAMS:
         out_algos = one_shot_algos
     elif selector == "all":
-        out_algos = gradient_algos + mcmc_algos + population_algos + las_vegas_algos + oscillator_anneal_algos + grow_shrink_algos + exploit_algos + one_shot_algos
-    elif selector == "gradient":
-        out_algos = gradient_algos
+        out_algos = one_shot_algos + gradient_algos + exploit_algos + las_vegas_algos + population_algos + mcmc_algos + oscillator_anneal_algos + grow_shrink_algos
     else:
         raise ValueError(f"Unknown selector: {selector}")
     return out_algos

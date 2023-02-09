@@ -29,11 +29,11 @@ def main():
         m_target = meta_target.MetaTargetSample(generator_args, "magpie", shared_params_target.DevSet.MAGPIE.value)
         sweep_bundle = sweep_builder.bundle_python_sweep(sig_gen, generator_args, m_target, algo_selector="all")
 
-        exp.run_qualitative_algo_sweep(sweep_bundle.algo_sweep, m_target, visual=False)
+        # exp.run_qualitative_algo_sweep(sweep_bundle.algo_sweep, m_target, visual=False)
         exp.run_all_experiments(sweep_bundle, m_target.samples, generator_args)
 
     # SpiPy
-    if True:
+    if False:
         generator_args = params_hybrid.spice_rand_args_uniform
         m_target = meta_target.MetaTargetTime(generator_args, "magpie", shared_params_target.DevSet.MAGPIE.value)
 
