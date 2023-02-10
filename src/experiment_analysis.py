@@ -536,6 +536,19 @@ mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
         save_fig_n_legend(fig, legend_as_fig, sweep_name_with_dist, save_dir, mask, show)
     if show: plt.show()
 
+def plot_resistor_range_vs_rmse(df: pd.DataFrame, target_samples: int, save_dir: Path,
+mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
+    """exp11: plot offset range against rmse for multiple algorithms with rand_args and target fixed"""
+
+    def define_plot(dist_name: str) -> None:
+        fig, legend_as_fig = plot_range_vs_rmse(df, target_samples, "freq", dist_name, mask)
+        fig.gca().set_xlabel(r"resistor diversity $\Omega$") # width of offset distribution
+        save_fig_n_legend(fig, legend_as_fig, f"resistor_range_{dist_name}_vs_rmse", save_dir, mask, show)
+    
+    dist_names = find_dists_in_df(df)
+    [define_plot(dist_name) for dist_name in dist_names]
+    
+    if show: plt.show()
 
 def select_generator_inverse_amplitude(df: pd.DataFrame) -> float:
     """select the inverse amplitude of the generator used in the experiment"""

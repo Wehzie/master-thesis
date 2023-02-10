@@ -14,7 +14,6 @@ else:
     print("Import production parameters.")
     import params_python as python_parameters
     import params_hybrid as hybrid_parameters
-import params_hybrid
 import shared_params_target
 import gen_signal_python
 import gen_signal_spipy
@@ -25,7 +24,7 @@ import sweep_builder
 def main():
     # Python
     exp = experimenteur.Experimenteur()
-    if True:
+    if False:
         sig_gen = gen_signal_python.PythonSigGen()
         generator_args = python_parameters.py_rand_args_uniform
         m_target = meta_target.MetaTargetSample(generator_args, "magpie", shared_params_target.DevSet.MAGPIE.value)
@@ -46,7 +45,7 @@ def main():
 
         sweep_bundle = sweep_builder.bundle_hybrid_sweep(sig_gen, generator_args, m_target, algo_selector="all")
 
-        exp.run_qualitative_algo_sweep(sweep_bundle.algo_sweep, m_target, visual=False)
+        # exp.run_qualitative_algo_sweep(sweep_bundle.algo_sweep, m_target, visual=False)
         exp.run_all_experiments(sweep_bundle, m_target.samples, generator_args)
 
 if __name__ == "__main__":

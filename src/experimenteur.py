@@ -249,8 +249,13 @@ class Experimenteur:
             data_io.hoard_experiment_results(self.sweep_name, results, df, self.sweep_dir)
 
         def invoke_resistor_sweep():
-            NotImplemented
-        
+            self.set_sweep_name_and_dir("resistor_vs_rmse")
+            results = self.run_rand_args_sweep(sweep_bundle.algo_sweep, sweep_bundle.resistor_sweep, base_rand_args)
+            df = expan.conv_results_to_pd(results)
+            expan.plot_resistor_range_vs_rmse(df, target_samples, self.sweep_dir, show=self.show_plots)
+            expan.plot_masks(sweep_bundle.algo_sweep.algo_masks, expan.plot_resistor_range_vs_rmse, df, target_samples, self.sweep_dir, show=self.show_plots)
+            data_io.hoard_experiment_results(self.sweep_name, results, df, self.sweep_dir)
+
         def invoke_duration_sweep():
             NotImplemented
 
@@ -271,14 +276,14 @@ class Experimenteur:
         @data_analysis.print_time
         def invoke_hybrid_generator_sweeps():
             # invoke_target_sweep() # TODO
-            invoke_n_osc_sweep() # WORKS
-            invoke_z_ops_sweep() # WORKS
+            # invoke_n_osc_sweep() # WORKS
+            # invoke_z_ops_sweep() # WORKS
             # TODO
             # invoke_duration_sweep()
-            # invoke_resistor_sweep()
-            invoke_weight_sweep() # WORKS
-            invoke_phase_sweep() # WORKS
-            invoke_offset_sweep() # WORKS
+            invoke_resistor_sweep() # WORKS
+            # invoke_weight_sweep() # WORKS
+            # invoke_phase_sweep() # WORKS
+            # invoke_offset_sweep() # WORKS
         
         if isinstance(sweep_bundle.signal_generator, gen_signal_python.PythonSigGen):
             print("Start experiment with Python signal generator")
