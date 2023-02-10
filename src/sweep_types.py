@@ -179,9 +179,7 @@ class SweepBundle:
     target_sweep: Final[TargetSweep]
     n_osc_sweep: Final[NOscSweep]
     z_ops_sweep: Final[ZOpsSweep]
-    num_samples_sweep: Final[NumSamplesSweep]
-    # TODO:
-    # duration_sweep: Union[DurationSweep, None] # extrapolation to longer duration
+    duration_sweep: Union[DurationSweep, None] # extrapolation to longer duration
 
     # constant time sweeps
     weight_sweep: Final[WeightSweep]
@@ -196,6 +194,7 @@ class PythonSweepBundle(SweepBundle):
     freq_sweep_from_zero: Final[FreqSweep]
     freq_sweep_around_vo2: Final[FreqSweep]
     amplitude_sweep: Final[AmplitudeSweep]
+    num_samples_sweep: Final[NumSamplesSweep]
 
 
 @dataclass

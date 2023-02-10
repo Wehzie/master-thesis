@@ -69,6 +69,7 @@ class SpiceSumRandArgs:
     
     r_last: float       # resistance of resistor after summation of resistors
     r_control: float    # # resistor following the control terminal, doesn't affect oscillation
+    # FIXME r_control ends up in dataframe, but we need r_dist
 
     r_dist: dist.Dist        # distribution for main resistor
     c_dist: dist.Dist        # distribution for main capacitor

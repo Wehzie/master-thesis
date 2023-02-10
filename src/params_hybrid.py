@@ -10,9 +10,9 @@ import shared_params_target
 import gen_signal_spipy
 
 RNG = const.RNG
-MAX_Z_OPS = 150
-M_AVERAGES = 1
-N_OSCILLATORS = 10
+MAX_Z_OPS = 10000
+M_AVERAGES = 5
+N_OSCILLATORS = 100
 
 #### #### #### #### #### #### SIGNAL GENERATOR ARGUMENTS #### #### #### #### #### ####
 

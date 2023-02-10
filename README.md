@@ -37,9 +37,13 @@ In order of priority:
 
 - show sampling rate and duration, not samples in the sweep plots
 
-- z-ops plot broken
+- z-ops plot double entry at same value as default value
+
+- hybrid generator not listening to n-osc from hybrid_params_test
 
 ### Medium priority
+
+- Map R to Freq in analysis for Hybrid signal generator
 
 - Normal distribution plots not saved, fix or drop normal distribution plots.
 

@@ -7,7 +7,6 @@ import result_types as resty
 import const
 import gen_signal_args_types as party
 import data_io
-import shared_params_target
 
 from typing import Callable, List, Set, Union, Tuple
 from pathlib import Path
@@ -54,7 +53,13 @@ def add_str2keys(s: str, d: dict) -> dict:
 def compute_dist_ranges(results: List[resty.ResultSweep]) -> List[resty.ResultSweep]:
     """compute the ranges for each distribution in a list of results"""
     for result in results:
-        result.algo_args.rand_args.freq_dist.compute_range()
+        # check if rand_args has freq_dist attribute
+        if hasattr(result.algo_args.rand_args, "freq_dist"):
+            result.algo_args.rand_args.freq_dist.compute_range()
+        elif hasattr(result.algo_args.rand_args, "r_dist"):
+            result.algo_args.rand_args.r_dist.compute_range()
+        else:
+            raise ValueError("rand_args has no freq_dist or r_dist attribute")
         result.algo_args.rand_args.weight_dist.compute_range()
         result.algo_args.rand_args.phase_dist.compute_range()
         result.algo_args.rand_args.offset_dist.compute_range()
@@ -75,6 +80,46 @@ def rename_algos_by_args(name_df: pd.DataFrame, algo_args_df: pd.DataFrame) -> p
     name_df["algo_name"] = temp_df["algo_name_y"].fillna(temp_df["algo_name_x"])
     return name_df
 
+def get_rand_args_dist_names(rand_args: party.UnionRandArgs) -> List[str]:
+    """get the names of the distribution attributes of the rand_args class"""
+    rand_args_dist_names = ["weight_dist", "phase_dist", "offset_dist", "description"]
+    if isinstance(rand_args, party.PythonSignalRandArgs):
+        rand_args_dist_names.append("freq_dist")
+    elif isinstance(rand_args, party.SpiceSumRandArgs):
+        rand_args_dist_names += ["r_last", "r_control", "dependent_component"]
+    else:
+        raise ValueError("rand_args must be PythonSignalRandArgs or SpiceSumRandArgs")
+    return rand_args_dist_names
+
+def select_frequency_controller_dist_range(rand_args: List[party.UnionRandArgs]) -> pd.DataFrame:
+    """This function selects the frequency controller based on the type of rand_args.
+    
+    The implementation is hacky in the sense that r_dist corresponds the resistor values,
+    not the frequency of the signal. This is because the frequency is not a random variable.
+    However the solution could be improved by mapping R to a frequency distribution.
+    """
+    if isinstance(rand_args[0], party.PythonSignalRandArgs):
+        freq_dist_range = pd.DataFrame([ra.freq_dist.range for ra in rand_args], columns=["freq_range"])
+    elif isinstance(rand_args[0], party.SpiceSumRandArgs):
+        freq_dist_range = pd.DataFrame([ra.r_dist.range for ra in rand_args], columns=["freq_range"])
+    else:
+        raise ValueError("rand_args must be PythonSignalRandArgs or SpiceSumRandArgs")
+    return freq_dist_range
+
+def select_frequency_controller_bounds(rand_args: List[party.UnionRandArgs]) -> pd.DataFrame:
+    """This function selects the frequency controller based on the type of rand_args.
+    
+    The implementation is hacky in the sense that r_dist corresponds the resistor values,
+    not the frequency of the signal. This is because the frequency is not a random variable.
+    However the solution could be improved by mapping R to a frequency distribution.
+    """
+    if isinstance(rand_args[0], party.PythonSignalRandArgs):
+        freq_dist_df = pd.DataFrame([add_str2keys("freq_dist", ra.freq_dist.kwargs) for ra in rand_args])
+    elif isinstance(rand_args[0], party.SpiceSumRandArgs):
+        freq_dist_df = pd.DataFrame([add_str2keys("freq_dist", ra.r_dist.kwargs) for ra in rand_args])
+    else:
+        raise ValueError("rand_args must be PythonSignalRandArgs or SpiceSumRandArgs")
+    return freq_dist_df
 
 # TODO: write function to recursively unpack objects inside a dataframe and each field as column
 def conv_results_to_pd(results: List[resty.ResultSweep]) -> pd.DataFrame:
@@ -82,24 +127,28 @@ def conv_results_to_pd(results: List[resty.ResultSweep]) -> pd.DataFrame:
     results = compute_dist_ranges(results)
 
     # initial definitions for convenience
-    rand_args: party.PythonSignalRandArgs = [r.algo_args.rand_args for r in results]
-    rand_args_dist_names = ["freq_dist", "weight_dist", "phase_dist", "offset_dist"]
+    rand_args: party.UnionRandArgs = [r.algo_args.rand_args for r in results]
+    rand_args_to_drop = get_rand_args_dist_names(rand_args[0])
 
     # unpack the nested args such that each entry has its own column
     res_df = pd.DataFrame(results).drop("algo_args", axis=1)
     algo_args_df = pd.DataFrame([r.algo_args for r in results]).drop(["rand_args", "meta_target"], axis=1)
     res_df = rename_algos_by_args(res_df, algo_args_df)
-    rand_args_df = pd.DataFrame(rand_args).drop(rand_args_dist_names, axis=1)
+    rand_args_df = pd.DataFrame(rand_args).drop(rand_args_to_drop, axis=1)
     target_df = pd.DataFrame([r.algo_args.meta_target.name for r in results], columns=["target_name"])
 
+    # rand_args_df.columns:
+    # ['description', 'n_osc', 'v_in', 'r_last', 'r_control', 'c_dist', 'time_step', 'time_stop', 'time_start', 'dependent_component', 'extrapolate', 'down_sample_factor']
+
     # dist ranges
-    freq_dist_range = pd.DataFrame([ra.freq_dist.range for ra in rand_args], columns=["freq_range"])
+    freq_dist_range = select_frequency_controller_dist_range(rand_args)
     weight_dist_range = pd.DataFrame([ra.weight_dist.range for ra in rand_args], columns=["weight_range"])
     phase_dist_range = pd.DataFrame([ra.phase_dist.range for ra in rand_args], columns=["phase_range"])
     offset_dist_range = pd.DataFrame([ra.offset_dist.range for ra in rand_args], columns=["offset_range"])
 
     # dist bounds
-    freq_dist_df = pd.DataFrame([add_str2keys("freq_dist", ra.freq_dist.kwargs) for ra in rand_args])
+    # r_dist_df = pd.DataFrame([add_str2keys("r_dist", ra.r_dist.kwargs) for ra in rand_args])
+    freq_dist_df = select_frequency_controller_bounds(rand_args)
     weight_dist_df = pd.DataFrame([add_str2keys("weight_dist", ra.weight_dist.kwargs) for ra in rand_args])
     phase_dist_df = pd.DataFrame([add_str2keys("phase_dist", ra.phase_dist.kwargs) for ra in rand_args])
     offset_dist_df = pd.DataFrame([add_str2keys("offset_dist", ra.offset_dist.kwargs) for ra in rand_args])
@@ -488,12 +537,21 @@ mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
     if show: plt.show()
 
 
+def select_generator_inverse_amplitude(df: pd.DataFrame) -> float:
+    """select the inverse amplitude of the generator used in the experiment"""
+    if "amplitude" in df.columns:
+        return 1/df["amplitude"].iloc[0]
+    else:
+        return 1/0.5
+        # TODO: 0.5 corresponds to the voltage of the VO2-RC circuit
+        # however this should be read from the data
+
 def plot_weight_range_vs_rmse(df: pd.DataFrame, target_samples: int, save_dir: Path,
 mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
     """exp7: plot weight range against rmse for multiple algorithms with rand_args and target fixed"""
     for dist_name in find_dists_in_df(df):
         fig, legend_as_fig = plot_range_vs_rmse(df, target_samples, "weight", dist_name, mask)
-        inv_amplitude = 1/df["amplitude"].iloc[0]
+        inv_amplitude = select_generator_inverse_amplitude(df)
         fig.gca().set_xlabel(f"dynamic range (scaled by inverse-of-amplitude={inv_amplitude:.0f})") # width of weight band
         # dynamic range would be given with amplitude=1
         fig.gca().set_xscale("log")

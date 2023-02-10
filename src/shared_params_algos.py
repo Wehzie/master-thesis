@@ -146,7 +146,12 @@ def bundle_algos_with_args(
     ]
     
     if selector == "test" or const.TEST_PARAMS:
-        out_algos = one_shot_algos
+        out_algos = [
+            algabun.AlgoWithArgs(
+                almoca.MCOneShotWeight,
+                algarty.AlgoArgs(sig_generator, generator_args, meta_target, max_z_ops),
+            ),
+        ]
     elif selector == "all":
         out_algos = one_shot_algos + gradient_algos + exploit_algos + las_vegas_algos + population_algos + mcmc_algos + oscillator_anneal_algos + grow_shrink_algos
     else:

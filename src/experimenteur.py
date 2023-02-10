@@ -270,16 +270,15 @@ class Experimenteur:
         
         @data_analysis.print_time
         def invoke_hybrid_generator_sweeps():
-            invoke_target_sweep()
-            invoke_n_osc_sweep()
-            invoke_z_ops_sweep()
+            # invoke_target_sweep() # TODO
+            invoke_n_osc_sweep() # WORKS
+            invoke_z_ops_sweep() # WORKS
             # TODO
             # invoke_duration_sweep()
             # invoke_resistor_sweep()
-            invoke_weight_sweep()
-            invoke_phase_sweep()
-            invoke_offset_sweep()
-            invoke_amplitude_sweep()
+            invoke_weight_sweep() # WORKS
+            invoke_phase_sweep() # WORKS
+            invoke_offset_sweep() # WORKS
         
         if isinstance(sweep_bundle.signal_generator, gen_signal_python.PythonSigGen):
             print("Start experiment with Python signal generator")

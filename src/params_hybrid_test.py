@@ -9,10 +9,11 @@ import sweep_types as sweety
 import shared_params_target
 import gen_signal_spipy
 
+
 RNG = const.RNG
-MAX_Z_OPS = 10000
-M_AVERAGES = 5
-N_OSCILLATORS = 100
+MAX_Z_OPS = 150
+M_AVERAGES = 1
+N_OSCILLATORS = 10
 
 #### #### #### #### #### #### SIGNAL GENERATOR ARGUMENTS #### #### #### #### #### ####
 
@@ -73,11 +74,11 @@ target_sweep = sweety.TargetSweep(
 )
 
 n_osc_sweep = sweety.NOscSweep(
-    n_osc=[20, 35, 50],
+    n_osc=[20, 30, 40],
 )
 
 z_ops_sweep = sweety.ZOpsSweep(
-    max_z_ops=[0, 5e2, 1e3, 3e3],
+    max_z_ops=[0, 100, 300, 500],
 )
 
 duration_sweep = sweety.DurationSweep([0.001, 0.005, 0.01])
@@ -100,7 +101,7 @@ weight_sweep = sweety.WeightSweep(
 
 phase_sweep = sweety.PhaseSweep(
     phase_dist = [
-        dist.Dist(RNG.uniform, low=0, high=1/2),
+        dist.Dist(RNG.uniform, low=0, high=0),
         dist.Dist(RNG.uniform, low=0, high=1),
         dist.Dist(RNG.uniform, low=0, high=2),
     ]

@@ -7,7 +7,8 @@ import const
 import sweep_types as sweety
 import meta_target
 import gen_signal_args_types as party
-import gen_signal
+import gen_signal_python
+import gen_signal_spipy
 import shared_params_mask
 import shared_params_algos
 if const.TEST_PARAMS:
@@ -19,7 +20,7 @@ else:
 
 
 def build_algo_sweep(
-sig_generator: gen_signal.SignalGenerator,
+sig_generator: gen_signal_python.PythonSigGen,
 generator_args: party.UnionRandArgs,
 meta_target: meta_target.MetaTarget,
 max_z_ops: Union[int, None],
@@ -43,7 +44,7 @@ algo_selector: str = "all",
     return algo_sweep
 
 def bundle_python_sweep(
-sig_generator: gen_signal.SignalGenerator,
+sig_generator: gen_signal_python.PythonSigGen,
 generator_args: party.UnionRandArgs,
 meta_target: meta_target.MetaTarget,
 algo_selector: str = "all",
@@ -65,11 +66,13 @@ algo_selector: str = "all",
         generator_args=generator_args,
         max_z_ops=params_python.MAX_Z_OPS,
         m_averages=params_python.M_AVERAGES,
+        
         algo_sweep=algo_sweep,
+
         target_sweep=params_python.target_sweep_samples,
         # TODO:
         # target_sweep_time = params_python.target_sweep_time,
-        # duration_sweep=params_python.duration_sweep,
+        duration_sweep=params_python.duration_sweep,
         n_osc_sweep=params_python.n_osc_sweep,
         z_ops_sweep=params_python.z_ops_sweep,
         num_samples_sweep=params_python.num_samples_sweep,
@@ -83,7 +86,7 @@ algo_selector: str = "all",
     return python_sweep_bundle
 
 def bundle_hybrid_sweep(
-sig_generator: gen_signal.SignalGenerator,
+sig_generator: gen_signal_spipy.SpipySignalGenerator,
 generator_args: party.UnionRandArgs,
 meta_target: meta_target.MetaTarget,
 algo_selector: str = "all",
@@ -105,13 +108,14 @@ algo_selector: str = "all",
         generator_args=generator_args,
         max_z_ops=params_python.MAX_Z_OPS,
         m_averages=params_python.M_AVERAGES,
+
         algo_sweep=algo_sweep,
+
         target_sweep=params_hybrid.target_sweep,
         n_osc_sweep=params_hybrid.n_osc_sweep,
         z_ops_sweep=params_hybrid.z_ops_sweep,
-        # TODO:
-        # duration_sweep=params_hybrid.duration_sweep,
-        # resistor_sweep=params_hybrid.resistor_sweep,
+        duration_sweep=params_hybrid.duration_sweep,
+        resistor_sweep=params_hybrid.resistor_sweep,
         weight_sweep=params_hybrid.weight_sweep,
         phase_sweep=params_hybrid.phase_sweep,
         offset_sweep=params_hybrid.offset_sweep,

@@ -12,7 +12,6 @@ import const
 from typing import List, Tuple, Union
 
 import numpy as np
-from tqdm import tqdm
 
 class LasVegas(algo.SearchAlgo):
 
