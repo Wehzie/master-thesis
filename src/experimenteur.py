@@ -150,6 +150,31 @@ class Experimenteur:
             results += self.run_algo_sweep(algo_sweep)
         return results
 
+    def run_duration_sweep(self, sweep_bundle: sweety.SweepBundle, base_args: party.UnionRandArgs) -> resty.ResultSweep:
+        """run all algorithms with targets of varying durations"""
+        print("sweeping with", sweep_bundle.duration_sweep.__class__.__name__)
+
+        # TODO: build external interface that allows uniform access the generator args
+        # for example access to time_start and time_stop for spice and duration for python
+        # e.g. let generator_args be an abstract class with a method get_duration() that returns the duration
+        def inject_duration(generator_args: party.UnionRandArgs) -> party.UnionRandArgs:
+            """inject duration into rand_args"""
+            temp_args = copy.deepcopy(generator_args)
+            if isinstance(generator_args, party.SpiceSumRandArgs):
+                assert temp_args.time_start == 0, "as implemented, time_start must be 0"
+                temp_args.time_stop = d
+            elif isinstance(generator_args, party.PythonSignalRandArgs):
+                temp_args.duration = d
+            return temp_args
+
+        results = list()
+        for d in sweep_bundle.duration_sweep.duration:
+            temp_args = inject_duration(base_args)
+            m_target = meta_target.MetaTargetTime(temp_args, "magpie", shared_params_target.DevSet.MAGPIE.value)
+            algo_sweep = sweep_builder.build_algo_sweep(sweep_bundle.signal_generator, temp_args, m_target, sweep_bundle.max_z_ops, sweep_bundle.m_averages)
+            results += self.run_algo_sweep(algo_sweep)
+        return results
+
     def run_z_ops_sweep(self, sweep_bundle: sweety.UnionSweepBundle, base_args: party.UnionRandArgs) -> resty.ResultSweep:
         """run all algorithms with different numbers of z-operations, corresponding to more extensive search"""
         print("sweeping with", sweep_bundle.z_ops_sweep.__class__.__name__)
@@ -204,6 +229,14 @@ class Experimenteur:
             expan.plot_samples_vs_rmse(df, self.sweep_name, self.sweep_dir, show=self.show_plots)
             expan.plot_masks(sweep_bundle.algo_sweep.algo_masks, expan.plot_samples_vs_rmse, df, self.sweep_name, self.sweep_dir, show=self.show_plots)
             data_io.hoard_experiment_results(self.sweep_name, results, df, self.sweep_dir)
+        
+        def invoke_duration_sweep():
+            self.set_sweep_name_and_dir("duration_vs_rmse")
+            results = self.run_duration_sweep(sweep_bundle, base_rand_args)
+            df = expan.conv_results_to_pd(results)
+            expan.plot_duration_vs_rmse(df, self.sweep_name, self.sweep_dir, show=self.show_plots)
+            expan.plot_masks(sweep_bundle.algo_sweep.algo_masks, expan.plot_duration_vs_rmse, df, self.sweep_name, self.sweep_dir, show=self.show_plots)
+            data_io.hoard_experiment_results(self.sweep_name, results, df, self.sweep_dir)
 
         def invoke_freqs_sweep():
             freq_sweeps = [sweep_bundle.freq_sweep_from_zero, sweep_bundle.freq_sweep_around_vo2]
@@ -256,9 +289,6 @@ class Experimenteur:
             expan.plot_masks(sweep_bundle.algo_sweep.algo_masks, expan.plot_resistor_range_vs_rmse, df, target_samples, self.sweep_dir, show=self.show_plots)
             data_io.hoard_experiment_results(self.sweep_name, results, df, self.sweep_dir)
 
-        def invoke_duration_sweep():
-            NotImplemented
-
         @data_analysis.print_time
         def invoke_python_generator_sweeps():
             invoke_target_sweep()
@@ -276,14 +306,13 @@ class Experimenteur:
         @data_analysis.print_time
         def invoke_hybrid_generator_sweeps():
             # invoke_target_sweep() # TODO
-            # invoke_n_osc_sweep() # WORKS
-            # invoke_z_ops_sweep() # WORKS
-            # TODO
-            # invoke_duration_sweep()
+            invoke_n_osc_sweep() # WORKS
+            invoke_z_ops_sweep() # WORKS
+            invoke_duration_sweep() # WORK
             invoke_resistor_sweep() # WORKS
-            # invoke_weight_sweep() # WORKS
-            # invoke_phase_sweep() # WORKS
-            # invoke_offset_sweep() # WORKS
+            invoke_weight_sweep() # WORKS
+            invoke_phase_sweep() # WORKS
+            invoke_offset_sweep() # WORKS
         
         if isinstance(sweep_bundle.signal_generator, gen_signal_python.PythonSigGen):
             print("Start experiment with Python signal generator")

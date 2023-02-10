@@ -121,6 +121,12 @@ def select_frequency_controller_bounds(rand_args: List[party.UnionRandArgs]) -> 
         raise ValueError("rand_args must be PythonSignalRandArgs or SpiceSumRandArgs")
     return freq_dist_df
 
+def infer_duration(results: List[resty.ResultSweep]) -> pd.DataFrame:
+    """if duration is not set in the results, infer it from the results"""
+    if isinstance(results[0].algo_args.rand_args, party.SpiceSumRandArgs):
+        return pd.DataFrame([r.algo_args.rand_args.get_duration() for r in results], columns=["duration"])
+    return None
+
 # TODO: write function to recursively unpack objects inside a dataframe and each field as column
 def conv_results_to_pd(results: List[resty.ResultSweep]) -> pd.DataFrame:
     """convert ResultSweep to a pandas dataframe for further processing"""
@@ -137,8 +143,7 @@ def conv_results_to_pd(results: List[resty.ResultSweep]) -> pd.DataFrame:
     rand_args_df = pd.DataFrame(rand_args).drop(rand_args_to_drop, axis=1)
     target_df = pd.DataFrame([r.algo_args.meta_target.name for r in results], columns=["target_name"])
 
-    # rand_args_df.columns:
-    # ['description', 'n_osc', 'v_in', 'r_last', 'r_control', 'c_dist', 'time_step', 'time_stop', 'time_start', 'dependent_component', 'extrapolate', 'down_sample_factor']
+    duration_df = infer_duration(results)
 
     # dist ranges
     freq_dist_range = select_frequency_controller_dist_range(rand_args)
@@ -153,7 +158,7 @@ def conv_results_to_pd(results: List[resty.ResultSweep]) -> pd.DataFrame:
     phase_dist_df = pd.DataFrame([add_str2keys("phase_dist", ra.phase_dist.kwargs) for ra in rand_args])
     offset_dist_df = pd.DataFrame([add_str2keys("offset_dist", ra.offset_dist.kwargs) for ra in rand_args])
     
-    return pd.concat([res_df, target_df, algo_args_df, rand_args_df,
+    return pd.concat([res_df, target_df, algo_args_df, rand_args_df, duration_df,
         freq_dist_range, weight_dist_range, phase_dist_range, offset_dist_range,
         freq_dist_df, weight_dist_df, phase_dist_df, offset_dist_df], axis=1)
 
@@ -330,6 +335,21 @@ mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
     fig.gca().set_xlabel("time [a.u.]")
     save_fig_n_legend(fig, legend_as_fig, sweep_name, save_dir, mask, show)
 
+def plot_duration_vs_rmse(df: pd.DataFrame, sweep_name: str, save_dir: Path,
+mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
+    """exp12: plot duration against rmse for multiple algorithms with rand_args (signal generator args) and target fixed"""
+    # before filtering df
+    m_averages = int(df["m_averages"].iloc[[0]])
+    n_osc = df["n_osc"].values[0]
+    max_z_ops = int(df["max_z_ops"].values[0])
+    title = f"m={m_averages}, n={n_osc}, z={max_z_ops}"
+
+    df = df.filter(items=["algo_name", "duration", "mean_rmse", "std_rmse"])
+    df = apply_mask(df, mask)
+    fig, legend_as_fig = plot_rmse_by_algo(df, "duration", mask=mask)
+    fig.gca().set_title(title)
+    fig.gca().set_xlabel("duration [s]")
+    save_fig_n_legend(fig, legend_as_fig, sweep_name, save_dir, mask, show)
 
 def plot_targets_w_all_algos(df: pd.DataFrame, title: str) -> plt.Figure:
     """exp4: plot where each target forms a group of bars, each bar is an algorithm"""

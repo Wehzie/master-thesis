@@ -12,11 +12,13 @@ import gen_signal_spipy
 import shared_params_mask
 import shared_params_algos
 if const.TEST_PARAMS:
-    import params_python_test as params_python
-    import params_hybrid_test as params_hybrid
+    print("Import test parameters.")
+    import params_python_test as python_parameters
+    import params_hybrid_test as hybrid_parameters
 else:
-    import params_python
-    import params_hybrid
+    print("Import production parameters.")
+    import params_python as python_parameters
+    import params_hybrid as hybrid_parameters
 
 
 def build_algo_sweep(
@@ -55,8 +57,8 @@ algo_selector: str = "all",
         sig_generator=sig_generator,
         generator_args=generator_args,
         meta_target=meta_target,
-        max_z_ops=params_python.MAX_Z_OPS,
-        m_averages=params_python.M_AVERAGES,
+        max_z_ops=python_parameters.MAX_Z_OPS,
+        m_averages=python_parameters.M_AVERAGES,
         algo_selector=algo_selector,
     )
 
@@ -64,24 +66,24 @@ algo_selector: str = "all",
         description="Experiments with the python signal generator",
         signal_generator=sig_generator,
         generator_args=generator_args,
-        max_z_ops=params_python.MAX_Z_OPS,
-        m_averages=params_python.M_AVERAGES,
+        max_z_ops=python_parameters.MAX_Z_OPS,
+        m_averages=python_parameters.M_AVERAGES,
         
         algo_sweep=algo_sweep,
 
-        target_sweep=params_python.target_sweep_samples,
+        target_sweep=python_parameters.target_sweep_samples,
         # TODO:
-        # target_sweep_time = params_python.target_sweep_time,
-        duration_sweep=params_python.duration_sweep,
-        n_osc_sweep=params_python.n_osc_sweep,
-        z_ops_sweep=params_python.z_ops_sweep,
-        num_samples_sweep=params_python.num_samples_sweep,
-        freq_sweep_from_zero=params_python.freq_sweep_from_zero,
-        freq_sweep_around_vo2=params_python.freq_sweep_around_vo2,
-        amplitude_sweep=params_python.amplitude_sweep,
-        weight_sweep=params_python.weight_sweep,
-        phase_sweep=params_python.phase_sweep,
-        offset_sweep=params_python.offset_sweep,
+        # target_sweep_time = python_parameters.target_sweep_time,
+        duration_sweep=python_parameters.duration_sweep,
+        n_osc_sweep=python_parameters.n_osc_sweep,
+        z_ops_sweep=python_parameters.z_ops_sweep,
+        num_samples_sweep=python_parameters.num_samples_sweep,
+        freq_sweep_from_zero=python_parameters.freq_sweep_from_zero,
+        freq_sweep_around_vo2=python_parameters.freq_sweep_around_vo2,
+        amplitude_sweep=python_parameters.amplitude_sweep,
+        weight_sweep=python_parameters.weight_sweep,
+        phase_sweep=python_parameters.phase_sweep,
+        offset_sweep=python_parameters.offset_sweep,
     )
     return python_sweep_bundle
 
@@ -97,8 +99,8 @@ algo_selector: str = "all",
         sig_generator=sig_generator,
         generator_args=generator_args,
         meta_target=meta_target,
-        max_z_ops=params_hybrid.MAX_Z_OPS,
-        m_averages=params_hybrid.M_AVERAGES,
+        max_z_ops=hybrid_parameters.MAX_Z_OPS,
+        m_averages=hybrid_parameters.M_AVERAGES,
         algo_selector=algo_selector,
     )
 
@@ -106,18 +108,18 @@ algo_selector: str = "all",
         description="Experiments with the hybrid signal generator",
         signal_generator=sig_generator,
         generator_args=generator_args,
-        max_z_ops=params_python.MAX_Z_OPS,
-        m_averages=params_python.M_AVERAGES,
+        max_z_ops=hybrid_parameters.MAX_Z_OPS,
+        m_averages=hybrid_parameters.M_AVERAGES,
 
         algo_sweep=algo_sweep,
 
-        target_sweep=params_hybrid.target_sweep,
-        n_osc_sweep=params_hybrid.n_osc_sweep,
-        z_ops_sweep=params_hybrid.z_ops_sweep,
-        duration_sweep=params_hybrid.duration_sweep,
-        resistor_sweep=params_hybrid.resistor_sweep,
-        weight_sweep=params_hybrid.weight_sweep,
-        phase_sweep=params_hybrid.phase_sweep,
-        offset_sweep=params_hybrid.offset_sweep,
+        target_sweep=hybrid_parameters.target_sweep,
+        n_osc_sweep=hybrid_parameters.n_osc_sweep,
+        z_ops_sweep=hybrid_parameters.z_ops_sweep,
+        duration_sweep=hybrid_parameters.duration_sweep,
+        resistor_sweep=hybrid_parameters.resistor_sweep,
+        weight_sweep=hybrid_parameters.weight_sweep,
+        phase_sweep=hybrid_parameters.phase_sweep,
+        offset_sweep=hybrid_parameters.offset_sweep,
     )
     return hybrid_sweep_bundle

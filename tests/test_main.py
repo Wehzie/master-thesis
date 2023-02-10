@@ -25,7 +25,7 @@ def test_qualitative_sweep_spipy():
     rand_args = params_hybrid.spice_rand_args_uniform
     m_target = meta_target.MetaTargetTime(rand_args)
     signal_generator = gen_signal_spipy.SpipySignalGenerator()
-    spice_samples = signal_generator.estimate_number_of_samples(rand_args)
+    spice_samples = rand_args.estimate_number_of_samples(rand_args)
     m_target.adjust_samples(spice_samples)
     algo_sweep = parameter_builder.init_algo_sweep(m_target.signal, rand_args, sig_generator=signal_generator, max_z_ops=500)
     main.qualitative_algo_sweep(algo_sweep, m_target, visual=False)

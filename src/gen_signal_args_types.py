@@ -90,6 +90,29 @@ class SpiceSumRandArgs:
     extrapolate: bool = True                    # extrapolate the signal to the full duration
     down_sample_factor: Union[int, None] = None # down sample the generated signal by this factor
 
+    def estimate_number_of_samples(self) -> int:
+        """estimate the number samples that SPICE will produce given the rand_args parameters"""
+        num_samples_float = (self.time_stop - self.time_start) / self.time_step
+        num_samples = np.ceil(num_samples_float).astype(int)
+        
+        if self.down_sample_factor is None:
+            return num_samples
+
+        num_samples_after_downsampling = int(num_samples * self.down_sample_factor)
+        return num_samples_after_downsampling
+
+    def get_sampling_rate(self) -> int:
+        """get the sampling rate of the signal"""
+        if self.down_sample_factor is None:
+            return 1 / self.time_step
+
+        sampling_rate = 1 / (self.time_step * self.down_sample_factor)
+        return sampling_rate
+
+    def get_duration(self) -> float:
+        """get the duration of the signal"""
+        return self.time_stop - self.time_start
+
 @dataclass
 class SpiceSingleDetArgs:
     """define deterministic electric components for a single oscillator circuit"""

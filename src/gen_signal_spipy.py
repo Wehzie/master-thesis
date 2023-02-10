@@ -123,18 +123,6 @@ class SpipySignalGenerator(gen_signal.SignalGenerator):
         return False if single_signal is None or len(single_signal) < samples else True
 
     @staticmethod
-    def estimate_number_of_samples(rand_args: party.SpiceSumRandArgs) -> int:
-        """estimate the number samples that SPICE will produce given the rand_args parameters"""
-        num_samples_float = (rand_args.time_stop - rand_args.time_start) / rand_args.time_step
-        num_samples = np.ceil(num_samples_float).astype(int)
-        
-        if rand_args.down_sample_factor is None:
-            return num_samples
-
-        num_samples_after_downsampling = int(num_samples * rand_args.down_sample_factor)
-        return num_samples_after_downsampling
-
-    @staticmethod
     def draw_n_oscillators(rand_args: party.SpiceSumRandArgs, store_det_args: bool = False) -> Tuple[np.ndarray, List[party.SpiceSingleDetArgs]]:
         """draw a matrix of n oscillators.
         
@@ -143,7 +131,7 @@ class SpipySignalGenerator(gen_signal.SignalGenerator):
         # allocate more memory than necessary
         # exact number of samples is non-deterministic
         # the cost of np.zeros is higher than np.empty, but this seems safer
-        num_samples = SpipySignalGenerator.estimate_number_of_samples(rand_args)
+        num_samples = rand_args.estimate_number_of_samples()
         signal_matrix = np.zeros((rand_args.n_osc, num_samples))
 
         i = 0
