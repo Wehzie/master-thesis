@@ -167,7 +167,7 @@ def main():
         det_args.time_stop = 1e-5
         single_oscillator = sig_gen.draw_single_oscillator(det_args)
         x_time = np.linspace(0, det_args.time_stop, len(single_oscillator), endpoint=False)
-        sampling_rate = np.ceil(1 / det_args.time_step).astype(int)
+        sampling_rate = np.around(1 / det_args.time_step).astype(int)
         data_analysis.plot_signal(single_oscillator, x_time, sampling_rate, show=True)
 
     exit()

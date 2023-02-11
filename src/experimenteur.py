@@ -17,7 +17,6 @@ import result_types as resty
 import algo
 import meta_target
 import const
-import parameter_builder
 import data_io
 import const
 import shared_params_target
@@ -30,7 +29,7 @@ import algo_args_bundle
 import numpy as np
 
 class Experimenteur:
-    def __init__(self, mp: bool = const.MULTIPROCESSING, clean_work_dir: bool = True, show_plots: bool = False) -> None:
+    def __init__(self, experiment_name: str = "", mp: bool = const.MULTIPROCESSING, clean_work_dir: bool = False, show_plots: bool = False) -> None:
         """
         args:
             mp: if true use multiple CPUs for processing
@@ -40,7 +39,8 @@ class Experimenteur:
         self.cpu_count = cpu_count()
         if clean_work_dir:
             data_io.clean_dir(const.WRITE_DIR)
-        self.work_dir = data_io.find_dir_name(const.WRITE_DIR, "quantitative_experiment") # directory in which to write all results
+        experiment_name = "quantitative_experiment" if experiment_name == "" else f"quantitative_experiment_{experiment_name}"
+        self.work_dir = data_io.find_dir_name(const.WRITE_DIR, experiment_name) # directory in which to write all results
         self.sweep_dir = None # directory in which to write results of a sweep for an independent variable
         self.sweep_name = None # name of the sweep for an independent variable
         self.show_plots = show_plots
@@ -305,14 +305,14 @@ class Experimenteur:
         
         @data_analysis.print_time
         def invoke_hybrid_generator_sweeps():
-            # invoke_target_sweep() # TODO
-            invoke_n_osc_sweep() # WORKS
-            invoke_z_ops_sweep() # WORKS
-            invoke_duration_sweep() # WORK
-            invoke_resistor_sweep() # WORKS
-            invoke_weight_sweep() # WORKS
-            invoke_phase_sweep() # WORKS
-            invoke_offset_sweep() # WORKS
+            invoke_target_sweep()
+            invoke_n_osc_sweep()
+            invoke_z_ops_sweep()
+            invoke_duration_sweep()
+            invoke_resistor_sweep()
+            invoke_weight_sweep()
+            invoke_phase_sweep()
+            invoke_offset_sweep()
         
         if isinstance(sweep_bundle.signal_generator, gen_signal_python.PythonSigGen):
             print("Start experiment with Python signal generator")

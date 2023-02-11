@@ -23,10 +23,22 @@ In order of priority:
 
 ### High priority
 
+- Parallelization: Write script to launch quantitative experiments as separate slurm jobs.
+    - Especially necessary for hybrid signal generator.
+    - Command line interface could be useful here
+
+- show sampling rate and duration, not number of samples in the sweep plots
+
+- Normal distribution plots not saved, fix or drop normal distribution plots.
+
+- z-ops plot double entry at same value as default value
+
+- x-label for weight sweep plot is not clear enough
+
+- hybrid generator not listening to n-osc from hybrid_params_test
+
 - SPICE: cache signals for speedup
     - Faster than interpolation alone?
-
-- Automate qualitative run against a list of targets (sine, beat, chirp, magpie, yes, okay)
 
 - SPICE: Fix bias issue.
     1.1 Make bias distribution narrower.
@@ -35,17 +47,11 @@ In order of priority:
 
 - Python: increase sampling rate to avoid aliasing. Verify with individual oscillator plots.
 
-- show sampling rate and duration, not samples in the sweep plots
-
-- z-ops plot double entry at same value as default value
-
-- hybrid generator not listening to n-osc from hybrid_params_test
 
 ### Medium priority
 
 - Map R to Freq in analysis for Hybrid signal generator
 
-- Normal distribution plots not saved, fix or drop normal distribution plots.
 
 - Plot improvement: Reuse algorithm bar chart with z-ops sweep.
 
@@ -54,6 +60,7 @@ In order of priority:
 - Plot Improvement: For number of samples vs. rmse; Convert this to signal duration vs. rmse.
 
 - Plot Improvement: save mean, mode, stddev to frequency diversity plot title.
+
 
 ### Low priority
 

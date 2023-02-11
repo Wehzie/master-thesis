@@ -13,7 +13,6 @@ import sweep_types as sweety
 import const
 import parameter_builder
 import dist
-import meta_target
 import gen_signal_python
 import shared_params_target
 
@@ -58,38 +57,24 @@ py_rand_args_normal = party.PythonSignalRandArgs(
 
 #### #### #### #### BASE PARAMETERS MODIFIERS #### #### #### ####
 
-sample_targets = [
-    meta_target.SineTarget(DURATION, freq=1, samples=SAMPLES),
-    meta_target.TriangleTarget(DURATION, freq=1, samples=SAMPLES),
-    meta_target.SawtoothTarget(DURATION, freq=1, samples=SAMPLES),
-    meta_target.InverseSawtoothTarget(DURATION, freq=1, samples=SAMPLES),
-    meta_target.SquareTarget(DURATION, freq=1, samples=SAMPLES),
-    meta_target.BeatTarget(DURATION, base_freq=1, samples=SAMPLES),
-    meta_target.ChirpTarget(DURATION, start_freq=1, stop_freq=10, samples=SAMPLES),
-    meta_target.DampChirpTarget(DURATION, start_freq=1, stop_freq=10, samples=SAMPLES),
-    meta_target.SmoothGaussianNoiseTarget(DURATION, samples=SAMPLES),
-    meta_target.SmoothUniformNoiseTarget(DURATION, samples=SAMPLES),
-    meta_target.GaussianNoiseTarget(DURATION, samples=SAMPLES),
-    meta_target.UniformNoiseTarget(DURATION, samples=SAMPLES),
-]
-
 target_sweep_samples = sweety.TargetSweep(
     "sample based targets before making the python signal generator adapt its sampling rate to the target",
-    sample_targets,
+    shared_params_target.build_test_targets(duration=DURATION, samples=SAMPLES),
     py_rand_args_uniform,
     gen_signal_python.PythonSigGen(),
     max_z_ops=MAX_Z_OPS,
     m_averages=M_AVERAGES,
 )
 
-target_sweep_time = sweety.TargetSweep(
-    "time based targets",
-    shared_params_target.test_targets,
-    py_rand_args_uniform,
-    gen_signal_python.PythonSigGen(),
-    max_z_ops=MAX_Z_OPS,
-    m_averages=M_AVERAGES,
-)
+# TODO
+# target_sweep_time = sweety.TargetSweep(
+#     "time based targets",
+#     sample_targets,
+#     py_rand_args_uniform,
+#     gen_signal_python.PythonSigGen(),
+#     max_z_ops=MAX_Z_OPS,
+#     m_averages=M_AVERAGES,
+# )
 
 n_osc_sweep = sweety.NOscSweep(
     n_osc=[20, 35, 50],

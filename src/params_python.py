@@ -49,40 +49,24 @@ py_rand_args_uniform = party.PythonSignalRandArgs(
 
 #### #### BASE PARAMETERS MODIFIERS FOR QUANTITATIVE EXPERIMENTS #### #### 
 
-
-sample_targets = [
-    meta_target.SineTarget(DURATION, freq=50, samples=SAMPLES),
-    meta_target.TriangleTarget(DURATION, freq=50, samples=SAMPLES),
-    meta_target.SawtoothTarget(DURATION, freq=50, samples=SAMPLES),
-    meta_target.InverseSawtoothTarget(DURATION, freq=50, samples=SAMPLES),
-    meta_target.SquareTarget(DURATION, freq=50, samples=SAMPLES),
-    meta_target.BeatTarget(DURATION, base_freq=50, samples=SAMPLES),
-    meta_target.ChirpTarget(DURATION, start_freq=50, stop_freq=500, samples=SAMPLES),
-    meta_target.DampChirpTarget(DURATION, start_freq=50, stop_freq=500, samples=SAMPLES),
-    meta_target.SmoothGaussianNoiseTarget(DURATION, samples=SAMPLES),
-    meta_target.SmoothUniformNoiseTarget(DURATION, samples=SAMPLES),
-    meta_target.GaussianNoiseTarget(DURATION, samples=SAMPLES),
-    meta_target.UniformNoiseTarget(DURATION, samples=SAMPLES),
-]
-
-
 target_sweep_samples = sweety.TargetSweep(
     "sample based targets before making the python signal generator adapt its sampling rate to the target",
-    sample_targets,
+    shared_params_target.build_production_targets(duration=DURATION, samples=SAMPLES),
     py_rand_args_uniform,
     gen_signal_python.PythonSigGen(),
     max_z_ops=MAX_Z_OPS,
     m_averages=M_AVERAGES,
 )
 
-target_sweep_time = sweety.TargetSweep(
-    "time based targets",
-    shared_params_target.production_targets,
-    py_rand_args_uniform,
-    gen_signal_python.PythonSigGen(),
-    max_z_ops=MAX_Z_OPS,
-    m_averages=M_AVERAGES,
-)
+# TODO
+# target_sweep_time = sweety.TargetSweep(
+#     "time based targets",
+#     shared_params_target.production_targets,
+#     py_rand_args_uniform,
+#     gen_signal_python.PythonSigGen(),
+#     max_z_ops=MAX_Z_OPS,
+#     m_averages=M_AVERAGES,
+# )
 
 
 n_osc_sweep = sweety.NOscSweep(

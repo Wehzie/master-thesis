@@ -59,7 +59,7 @@ class MetaTargetSample(MetaTarget):
         self.sampling_rate = data_preprocessor.get_sampling_rate_after_resample(target_middle, target_resampled, raw_sampling_rate)
         self.dtype = raw_dtype
         self.duration = len(target_resampled) / self.sampling_rate
-        self.time = np.linspace(0, self.duration, int(self.duration * self.sampling_rate), endpoint=False)
+        self.time = np.linspace(0, self.duration, np.around(self.duration * self.sampling_rate).astype(int), endpoint=False)
     
     def __repr__(self) -> str:
         return f"MetaTargetSample(samples={len(self.signal)}, duration={self.duration}, sampling_rate={self.sampling_rate}, dtype={self.dtype})"
@@ -96,7 +96,7 @@ class MetaTargetTime(MetaTarget):
         """update the signal to the new number of samples"""
         print(f"adjusting samples from {len(self.signal)} to {new_samples}")
         sampling_rate_increase = new_samples / len(self.signal)
-        new_sampling_rate = np.ceil(self.sampling_rate * sampling_rate_increase).astype(int)
+        new_sampling_rate = np.around(self.sampling_rate * sampling_rate_increase).astype(int)
         
         # downsample_typesafe gives a much cleaner signal than scipy.resample
         if new_samples < len(self.signal):
@@ -154,30 +154,42 @@ class SyntheticTarget(MetaTarget):
             max_freq: the maximum frequency in the signal
         """
         nyquist_rate = max_freq * 2
-        return int(nyquist_rate * const.OVERSAMPLING_FACTOR)
+        return np.around(nyquist_rate * const.OVERSAMPLING_FACTOR).astype(int)
 
     def derive_samples_or_sampling_rate(self, duration: float, samples: int, sampling_rate: int, max_freq: float) -> None:
         """given a duration infer the number of samples samples or sampling rate"""
-        if sampling_rate is not None and max_freq is not None:
+        print(self.__class__.__name__)
+        print(duration, samples, sampling_rate)
+        if duration and sampling_rate and max_freq:
             assert sampling_rate >= self.compute_oversampling_rate(max_freq), "sampling rate is too low for the given max frequency"
             self.sampling_rate = sampling_rate
-            self.samples = int(self.sampling_rate * duration)
-            return
-        if samples is not None and max_freq is not None:
-            self.samples = samples
-            self.sampling_rate = int(samples*1/duration)
+            self.samples = np.around(self.sampling_rate * duration).astype(int)
             return
 
-        assert len(set([samples, sampling_rate, max_freq])) == 2, "only one of samples, sampling rate or max_freq should be specified"
-        if max_freq is not None:
-            self.sampling_rate = self.compute_oversampling_rate(max_freq)
-            self.samples = int(self.sampling_rate * duration)
-        elif samples is not None:
-            self.samples = samples
-            self.sampling_rate = self.samples * 1/duration
-        elif sampling_rate is not None: # sampling rate is not None
+        if duration and sampling_rate:
+            print("Can't assert that sampling_rate > Nyquist rate for signal", self.__class__.__name__)
             self.sampling_rate = sampling_rate
-            self.samples = int(self.sampling_rate * duration)
+            self.samples = np.around(self.sampling_rate * duration).astype(int)
+            return
+        
+        if samples and max_freq:
+            print("Can't assert that sampling_rate > Nyquist rate for signal", self.__class__.__name__)
+            self.samples = samples
+            self.sampling_rate = np.around(samples*1/duration).astype(int)
+            return
+
+        assert len(set([samples, sampling_rate, max_freq])) == 2, "only one of samples, sampling rate or max_freq should be specified at this point"
+        if max_freq:
+            self.sampling_rate = self.compute_oversampling_rate(max_freq)
+            self.samples = np.around(self.sampling_rate * duration).astype(int)
+        elif samples:
+            print("Can't assert that sampling_rate > Nyquist rate for signal", self.__class__.__name__)
+            self.samples = samples
+            self.sampling_rate = np.around(self.samples * 1/duration).astype(int)
+        elif sampling_rate: # sampling rate is not None
+            print("Can't assert that sampling_rate > Nyquist rate for signal", self.__class__.__name__)
+            self.sampling_rate = sampling_rate
+            self.samples = np.around(self.sampling_rate * duration).astype(int)
         else:
             raise ValueError("checks have failed: only one of samples, sampling rate or max_freq should be specified")
 

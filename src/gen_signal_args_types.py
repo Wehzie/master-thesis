@@ -93,7 +93,7 @@ class SpiceSumRandArgs:
     def estimate_number_of_samples(self) -> int:
         """estimate the number samples that SPICE will produce given the rand_args parameters"""
         num_samples_float = (self.time_stop - self.time_start) / self.time_step
-        num_samples = np.ceil(num_samples_float).astype(int)
+        num_samples = np.around(num_samples_float).astype(int)
         
         if self.down_sample_factor is None:
             return num_samples
@@ -104,9 +104,9 @@ class SpiceSumRandArgs:
     def get_sampling_rate(self) -> int:
         """get the sampling rate of the signal"""
         if self.down_sample_factor is None:
-            return 1 / self.time_step
+            return np.around(1 / self.time_step).astype(int)
 
-        sampling_rate = 1 / (self.time_step * self.down_sample_factor)
+        sampling_rate = np.around(1 / (self.time_step * self.down_sample_factor)).astype(int)
         return sampling_rate
 
     def get_duration(self) -> float:
