@@ -196,7 +196,11 @@ class Experimenteur:
             results += self.run_algo_sweep(algo_sweep)
         return results
 
-    def run_all_experiments(self, sweep_bundle: sweety.UnionSweepBundle, target_samples: int, base_rand_args: party.UnionRandArgs) -> None:
+    def run_all_experiments(self,
+    sweep_bundle: sweety.UnionSweepBundle,
+    target_samples: int,
+    base_rand_args: party.UnionRandArgs,
+    selector: str) -> None:
         """run all experiments and plot results"""
 
         def invoke_target_sweep():
@@ -291,28 +295,45 @@ class Experimenteur:
 
         @data_analysis.print_time
         def invoke_python_generator_sweeps():
-            invoke_target_sweep()
-            invoke_n_osc_sweep()
-            invoke_z_ops_sweep()
-            invoke_samples_sweep()
-            invoke_freqs_sweep()
-            invoke_weight_sweep()
-            invoke_phase_sweep()
-            invoke_offset_sweep()
-            invoke_amplitude_sweep()
+            if selector in ["all", "target"]:
+                invoke_target_sweep()
+            if selector in ["all", "n_osc"]:
+                invoke_n_osc_sweep()
+            if selector in ["all", "z_ops"]:
+                invoke_z_ops_sweep()
+            if selector in ["all", "samples"]:
+                invoke_samples_sweep()
+            if selector in ["all", "frequency"]:
+                invoke_freqs_sweep()
+            if selector in ["all", "weight"]:
+                invoke_weight_sweep()
+            if selector in ["all", "phase"]:
+                invoke_phase_sweep()
+            if selector in ["all", "offset"]:
+                invoke_offset_sweep()
+            if selector in ["all", "amplitude"]:
+                invoke_amplitude_sweep()
             # TODO
             # invoke_duration_sweep()
         
         @data_analysis.print_time
         def invoke_hybrid_generator_sweeps():
-            invoke_target_sweep()
-            invoke_n_osc_sweep()
-            invoke_z_ops_sweep()
-            invoke_duration_sweep()
-            invoke_resistor_sweep()
-            invoke_weight_sweep()
-            invoke_phase_sweep()
-            invoke_offset_sweep()
+            if selector in ["all", "target"]:
+                invoke_target_sweep()
+            if selector in ["all", "n_osc"]:
+                invoke_n_osc_sweep()
+            if selector in ["all", "z_ops"]:
+                invoke_z_ops_sweep()
+            if selector in ["all", "duration"]:
+                invoke_duration_sweep()
+            if selector in ["all", "resistor"]:
+                invoke_resistor_sweep()
+            if selector in ["all", "weight"]:
+                invoke_weight_sweep()
+            if selector in ["all", "phase"]:
+                invoke_phase_sweep()
+            if selector in ["all", "offset"]:
+                invoke_offset_sweep()
         
         if isinstance(sweep_bundle.signal_generator, gen_signal_python.PythonSigGen):
             print("Start experiment with Python signal generator")

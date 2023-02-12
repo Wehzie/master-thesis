@@ -37,21 +37,18 @@ In order of priority:
 
 - hybrid generator not listening to n-osc from hybrid_params_test
 
-- SPICE: cache signals for speedup
-    - Faster than interpolation alone?
-
-- SPICE: Fix bias issue.
+- Fine tune SPICE parameters for improved fit.
     1.1 Make bias distribution narrower.
     1.2 Optimize bias separately (e.g. at start and end of runtime)
     1.3 Choose normal distribution for bias instead of uniform.
-
-- Python: increase sampling rate to avoid aliasing. Verify with individual oscillator plots.
-
+    1.4 Lower weight distribution upper bound.
+    1.5 Add gain on target signal.
 
 ### Medium priority
 
-- Map R to Freq in analysis for Hybrid signal generator
+- Python: increase sampling rate to avoid aliasing. Verify with individual oscillator plots.
 
+- Map R to Freq in analysis for Hybrid signal generator
 
 - Plot improvement: Reuse algorithm bar chart with z-ops sweep.
 
@@ -61,10 +58,11 @@ In order of priority:
 
 - Plot Improvement: save mean, mode, stddev to frequency diversity plot title.
 
+- Reproducibility issue: Maffezzoni et al. report different oscillator frequencies than I have.
 
 ### Low priority
 
-- Reproducibility issue: Maffezzoni et al. report different oscillator frequencies than I have.
+- Profile Python's memory usage.
 
 - Plotting custom legend for mask with multiple members in a group. Such that a group shares a color and one entry in the legend (individual algorithm names shouldn't be visible).
 
