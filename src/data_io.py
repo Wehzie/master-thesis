@@ -12,6 +12,7 @@ import wave
 import copy
 import pickle
 import shutil
+import sys
 
 import const
 
@@ -154,6 +155,29 @@ def clean_dir(path: Path) -> None:
             file.unlink()
         else:
             print(f"unknown file type: {file}")
+
+def load_signal_cache(path: Path = const.CACHE_DIR / "signal_cache.pickle") -> pd.DataFrame:
+    """load a dataframe from file that maps signal's resistance to frequency and waveform
+    
+    args:
+        path: path to dataframe saved as pickle
+    returns:
+        df: dataframe with columns ["r", "freq", "duration", "sampling_rate", "signal"]
+    """
+    if not path.exists():
+        print(f"signal cache not found at {path}")
+        print("would you like to create a new cache? (y/n)")
+        if input() == "y":
+            print("creating new cache...")
+            import spice_sweep
+            spice_sweep.build_signal_cache()
+            print("done")
+        else:
+            print("exiting...")
+            sys.exit()
+    with open(path, "rb") as f:
+        df = pickle.load(f)
+    return df
 
 def main():
     sampling_rate, data, dtype = load_data()

@@ -11,6 +11,7 @@ from typing import List, Tuple
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 
 import gen_signal
 import data_analysis
@@ -20,6 +21,7 @@ import gen_signal_args_types as party
 import netlist_generator
 import const
 
+DF_CACHE = None
 
 class SpipySignalGenerator(gen_signal.SignalGenerator):
     """spice netlists generate single signals and Python sums them up
@@ -33,12 +35,34 @@ class SpipySignalGenerator(gen_signal.SignalGenerator):
     offset is added in Python, instead of using an operational amplifier in SPICE
     """
 
+    def __init__(self) -> None:
+        super().__init__()
+        # TODO: make this a class variable
+        global DF_CACHE
+        if DF_CACHE is None:
+            DF_CACHE = data_io.load_signal_cache()
+
     @staticmethod
     def get_tmp_path(work_dir: Path = const.WRITE_DIR) -> Path:
         """get the path to save the netlist and simulation data"""
         experiment_path = work_dir / "spice_single_oscillator"
         experiment_path.mkdir(parents=True, exist_ok=True)
         return experiment_path / "netlist.cir"
+
+    @staticmethod
+    def load_from_cache_and_extrapolate_signal(det_args: party.SpiceSingleDetArgs,
+    df_cache: pd.DataFrame) -> np.ndarray:
+        """load a signal from cache and extrapolate it to a longer duration"""
+        dist_between_rs = df_cache["r"].iloc[1] - df_cache["r"].iloc[0]
+        decimal_places = (np.log10(dist_between_rs)).astype(int)
+        rounded_r = int(round(det_args.r, -decimal_places))
+        row = df_cache[df_cache["r"] == rounded_r]
+        single_period_signal = row["signal"].values[0]
+        sampling_rate = row["sampling_rate"].values[0]
+        goal_duration = det_args.time_stop
+        phase = det_args.phase
+        full_signal = data_preprocessor.extrapolate_from_period(single_period_signal, sampling_rate, goal_duration, phase)
+        return full_signal
 
     @staticmethod
     def simulate_and_extrapolate_signal(det_args: party.SpiceSingleDetArgs, work_dir: Path, period_multiplier: float = 1) -> np.ndarray:
@@ -59,7 +83,7 @@ class SpipySignalGenerator(gen_signal.SignalGenerator):
     @staticmethod
     def simulate_single_period(det_args: party.SpiceSingleDetArgs, work_dir: Path, period_multiplier: float = 1) -> np.ndarray:
         """simulate a single oscillator for a short time preparing the signal to be cached to non volatile memory"""
-        det_args.time_stop = const.LONGEST_VO2_PERIOD * period_multiplier # inject duration needed to observe the first period for frequencies up to f(R=69k)
+        det_args.time_stop = const.LONGEST_VO2_PERIOD * 3 # inject duration needed to observe the first period for frequencies up to f(R=69k)
         netlist_generator.build_single_netlist(work_dir, det_args)
         netlist_generator.run_ngspice(work_dir)
         df = data_io.load_sim_data(Path(str(work_dir) + ".dat"))
@@ -93,20 +117,26 @@ class SpipySignalGenerator(gen_signal.SignalGenerator):
         """generate a time series from a single spice oscillator"""
         tmp_path = SpipySignalGenerator.get_tmp_path(work_dir)
 
-        if det_args.extrapolate:
-            patience_counter = 0
-            while patience_counter < const.SPICE_PATIENCE:
-                pred = SpipySignalGenerator.simulate_and_extrapolate_signal(det_args, tmp_path, patience_counter+1)
-                if pred is not None:
-                    break
-                patience_counter += 1
-            if patience_counter == const.SPICE_PATIENCE:
-                raise Exception(f"SPICE simulation failed {const.SPICE_PATIENCE} times in a row")
+        if det_args.generator_mode == party.SpipyGeneratorMode.CACHE:
+            pred = SpipySignalGenerator.load_from_cache_and_extrapolate_signal(det_args, DF_CACHE)
+        elif det_args.generator_mode == party.SpipyGeneratorMode.EXTRAPOLATE:
+            if det_args.extrapolate:
+                patience_counter = 0
+                while patience_counter < const.SPICE_PATIENCE:
+                    pred = SpipySignalGenerator.simulate_and_extrapolate_signal(det_args, tmp_path, patience_counter+1)
+                    if pred is not None:
+                        break
+                    patience_counter += 1
+                if patience_counter == const.SPICE_PATIENCE:
+                    raise Exception(f"SPICE simulation failed {const.SPICE_PATIENCE} times in a row")
+        elif det_args.generator_mode == party.SpipyGeneratorMode.SPICE:
+                pred = SpipySignalGenerator.fully_simulate_signal(det_args, tmp_path)
         else:
-            pred = SpipySignalGenerator.fully_simulate_signal(det_args, tmp_path)
+            raise ValueError(f"generator mode {det_args.generator_mode} not supported")
         
-        if det_args.down_sample_factor is not None:
-            return data_preprocessor.downsample_by_factor_typesafe(pred, det_args.down_sample_factor)
+        if (det_args.generator_mode in [party.SpipyGeneratorMode.EXTRAPOLATE, party.SpipyGeneratorMode.SPICE]
+            and det_args.down_sample_factor is not None):
+                return data_preprocessor.downsample_by_factor_typesafe(pred, det_args.down_sample_factor)
 
         return pred
 
@@ -124,10 +154,10 @@ class SpipySignalGenerator(gen_signal.SignalGenerator):
         time_start = args.time_start
         dependent_component = args.dependent_component
         phase = args.phase_dist.draw()
-        extrapolate = args.extrapolate
+        generator_mode = args.generator_mode
         down_sample_factor = args.down_sample_factor
 
-        return party.SpiceSingleDetArgs(n_osc, v_in, r, r_last, r_control, c, time_step, time_stop, time_start, dependent_component, phase, extrapolate, down_sample_factor)
+        return party.SpiceSingleDetArgs(n_osc, v_in, r, r_last, r_control, c, time_step, time_stop, time_start, dependent_component, phase, generator_mode, down_sample_factor)
 
     @staticmethod
     def simulation_successful(single_signal: np.ndarray, samples: int) -> bool:
@@ -152,7 +182,7 @@ class SpipySignalGenerator(gen_signal.SignalGenerator):
         infinity_breaker = 0 # prevent infinite loop
         # non-deterministic runtime due to possible simulation failure
         while i < rand_args.n_osc:
-            if rand_args.n_osc > 1:
+            if rand_args.n_osc > 1 and rand_args.generator_mode != party.SpipyGeneratorMode.CACHE:
                 print(f"added {i} out of {rand_args.n_osc} oscillators")
             det_params = SpipySignalGenerator.draw_params_random(rand_args)
             single_signal = SpipySignalGenerator.draw_single_oscillator(det_params)
@@ -178,13 +208,12 @@ def main():
     if True:
         # test single oscillator generation
         det_args = params.spice_single_det_args
-        det_args.time_stop = 1e-5
+        det_args.time_stop = 2e-5
         single_oscillator = sig_gen.draw_single_oscillator(det_args)
         x_time = np.linspace(0, det_args.time_stop, len(single_oscillator), endpoint=False)
         sampling_rate = np.around(1 / det_args.time_step).astype(int)
         data_analysis.plot_signal(single_oscillator, x_time, sampling_rate, show=True)
 
-    exit()
     # test drawing single oscillators from SPICE and summing them up in Python
     if True:
         print("test drawing single oscillators from SPICE and summing them up in Python")

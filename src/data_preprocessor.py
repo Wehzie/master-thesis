@@ -197,6 +197,33 @@ debug: bool = False) -> Tuple[float, np.ndarray]:
 
     return snippet_duration, snippet
 
+def extrapolate_from_period(single_period_signal: np.ndarray,
+sampling_rate: int,
+new_duration: float,
+phase_shift: Union[float, None] = None) -> np.ndarray:
+    """extrapolate a signal from a single period to the desired duration
+    
+    args:
+        single_period_signal: the signal of a single period
+        sampling_rate: the sampling rate of the signal
+        new_duration: the new duration of the signal in seconds
+        phase_shift: the phase shift in periods, e.g. multiples of 2 yield the original signal
+    """
+    if phase_shift is not None:
+        single_period_signal = np.roll(single_period_signal, int(phase_shift*len(single_period_signal)))
+
+    period_duration = len(single_period_signal)/sampling_rate
+    if new_duration < period_duration:
+        fractional_duration = new_duration/period_duration
+        fractional_samples = int(fractional_duration*len(single_period_signal))
+        return single_period_signal[0:fractional_samples]
+    
+    full_periods = np.floor(new_duration // period_duration).astype(int)
+    partial_period = new_duration % period_duration
+    partial_period_samples = int(partial_period * sampling_rate)
+    partial_period_snippet = single_period_signal[0:partial_period_samples]
+    return np.concatenate([single_period_signal]*full_periods + [partial_period_snippet])
+
 
 def extrapolate_oscillation(signal: np.ndarray, sampling_rate: int, new_duration: float,
 phase_shift: Union[float, None] = None) -> np.ndarray:

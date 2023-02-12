@@ -6,7 +6,6 @@ Multiple netlists are constructed with different values of R.
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from pathlib import Path
 
 import gen_signal_spipy
 import data_analysis
@@ -26,8 +25,8 @@ base_args = party.SpiceSingleDetArgs(
     time_start=0,
     dependent_component="v(osc1)",
     phase=0,
-    extrapolate=True,
-    down_sample_factor=1/200,
+    generator_mode=party.SpipyGeneratorMode.CACHE,
+    down_sample_factor=1/200, # must be same as in rand_args of params_hybrid.py
 )
 
 def freq_to_r_sweep(debug=True, show=True):
@@ -55,7 +54,7 @@ def freq_to_r_sweep(debug=True, show=True):
     if show:
         plt.show()
 
-def build_signal_cache(r_min: int = 19e3, r_max: int = 120e3, r_step: int = 1000, debug: bool = False):
+def build_signal_cache(r_min: int = 19e3, r_max: int = 141e3, r_step: int = 1000, debug: bool = False):
     """build a cache of signals with different values of R.
     This is useful for debugging and testing.
     """
@@ -66,7 +65,7 @@ def build_signal_cache(r_min: int = 19e3, r_max: int = 120e3, r_step: int = 1000
         patience_counter = 0
         while patience_counter < const.SPICE_PATIENCE:
 
-            period_duration, sampling_rate, period_signal = sig_gen.simulate_single_period(base_args, tmp_path, patience_counter+1)
+            period_duration, sampling_rate, period_signal = gen_signal_spipy.SpipySignalGenerator.simulate_single_period(base_args, tmp_path, patience_counter+1)
             if period_duration is not None:
                 break
             else:
@@ -79,8 +78,7 @@ def build_signal_cache(r_min: int = 19e3, r_max: int = 120e3, r_step: int = 1000
 
     r_sweep = range(r_min, r_max, r_step)
     df = pd.DataFrame(columns=["r", "freq", "duration", "sampling_rate", "signal"], index=range(len(r_sweep)))
-    sig_gen = gen_signal_spipy.SpipySignalGenerator()
-    tmp_path = sig_gen.get_tmp_path()
+    tmp_path = gen_signal_spipy.SpipySignalGenerator.get_tmp_path()
     for i, r in enumerate(r_sweep):
         base_args.r = r
         period_duration, sampling_rate, period_signal = simulate_failure_tolerant()
@@ -89,7 +87,6 @@ def build_signal_cache(r_min: int = 19e3, r_max: int = 120e3, r_step: int = 1000
         if base_args.down_sample_factor < 1:
             period_signal = data_preprocessor.downsample_by_factor_typesafe(period_signal, base_args.down_sample_factor)
             sampling_rate = np.round(sampling_rate * base_args.down_sample_factor).astype(int)
-            print("freq", freq, "sampling freq", sampling_rate)
         assert sampling_rate > 2*freq, "Sampling rate is below Nyquist rate."
 
         df.loc[i] = [r, freq, period_duration, sampling_rate, period_signal]
@@ -99,7 +96,7 @@ def build_signal_cache(r_min: int = 19e3, r_max: int = 120e3, r_step: int = 1000
 
     const.CACHE_DIR.mkdir(parents=True, exist_ok=True)
     save_dir = const.CACHE_DIR
-    df.to_pickle(save_dir / "signal_cache.pkl")
+    df.to_pickle(save_dir / "signal_cache.pickle")
     df.to_csv(save_dir / "signal_cache.csv")
 
 if __name__ == "__main__":

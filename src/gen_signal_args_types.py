@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 from typing import List, Union
+from enum import Enum
 
 import numpy as np
 
@@ -57,6 +58,11 @@ class PythonSignalDetArgs:
 
 #### #### #### #### SPICE SIGNALS #### #### #### ####
 
+# class syntax
+class SpipyGeneratorMode(Enum):
+    SPICE = 1 # fully generate signals in SPICE
+    EXTRAPOLATE = 2 # generate a short signal in SPICE and extrapolate it to the full duration in Python
+    CACHE = 3 # use cached SPICE signals and extrapolate them to the full duration in Python
 
 @dataclass
 class SpiceSumRandArgs:
@@ -87,7 +93,7 @@ class SpiceSumRandArgs:
     weight_dist: dist.WeightDist # scale amplitude ot SPICE signal in Python
     offset_dist: dist.Dist       # alter offset of SPICE signal in Python
 
-    extrapolate: bool = True                    # extrapolate the signal to the full duration
+    generator_mode: SpipyGeneratorMode # method of generating the signal
     down_sample_factor: Union[int, None] = None # down sample the generated signal by this factor
 
     def estimate_number_of_samples(self) -> int:
@@ -127,10 +133,9 @@ class SpiceSingleDetArgs:
     time_start: float   # simulation start time in seconds
     dependent_component: str = "v(osc1)"        # the node to read out and report back to Python
     phase: float = 0.0                          # phase shift in radians, added on Python side
-    extrapolate: bool = True                    # extrapolate the signal to the full duration
+    generator_mode: SpipyGeneratorMode = SpipyGeneratorMode.CACHE
     down_sample_factor: Union[int, None] = None # down sample the generated signal by this factor, None means no downsampling
                                                 #   a value of 0.1 means that 1 sample is taken every 10 samples
-
 
 @dataclass
 class SpiceSumDetArgs:

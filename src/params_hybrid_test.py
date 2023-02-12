@@ -30,8 +30,8 @@ spice_single_det_args = party.SpiceSingleDetArgs(
     time_start=0,
     dependent_component="v(osc1)",
     phase=0.5,
-    extrapolate=True,
-    down_sample_factor=1/10,
+    generator_mode=party.SpipyGeneratorMode.CACHE,
+    down_sample_factor=1/200,
 )
 
 
@@ -58,8 +58,8 @@ spice_rand_args_uniform = party.SpiceSumRandArgs(
     offset_dist = dist.Dist(RNG.uniform, low=0, high=0),
 
     # runtime and memory optimizations
-    extrapolate=True,
-    down_sample_factor=1/100,
+    generator_mode=party.SpipyGeneratorMode.CACHE,
+    down_sample_factor=1/200,
 )
 
 #### #### #### #### #### #### EXPERIMENT PARAMETERS #### #### #### #### #### ####
