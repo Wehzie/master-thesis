@@ -26,7 +26,7 @@ def main():
 
     data_io.clean_dir(const.WRITE_DIR)
     # Python
-    if True:
+    if False:
         exp = experimenteur.Experimenteur("python_sweep")
         sig_gen = gen_signal_python.PythonSigGen()
         generator_args = python_parameters.py_rand_args_uniform

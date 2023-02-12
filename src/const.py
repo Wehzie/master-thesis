@@ -6,6 +6,7 @@ Some constants need to be frequently changed during development and testing and 
 from typing import Final
 from pathlib import Path
 import numpy as np
+CACHE_DIR: Final[Path] = Path("cache/")
 WRITE_DIR: Final[Path] = Path("data/")
 MULTIPROCESSING: Final = False
 if MULTIPROCESSING:

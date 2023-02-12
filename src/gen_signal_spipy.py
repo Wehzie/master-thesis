@@ -49,10 +49,24 @@ class SpipySignalGenerator(gen_signal.SignalGenerator):
         netlist_generator.run_ngspice(work_dir)
         df = data_io.load_sim_data(Path(str(work_dir) + ".dat"))
         arr = df.iloc[:,1].to_numpy()
+        # FIXME: sampling_rate = np.round((1 / det_args.time_step) * det_args.down_sample_factor).astype(int)
+        # maybe reason for down_sample_factor**2
         sampling_rate = 1 / det_args.time_step
         det_args.time_stop = original_duration
         full_signal = data_preprocessor.extrapolate_oscillation(arr, sampling_rate, original_duration, det_args.phase)
         return full_signal
+
+    @staticmethod
+    def simulate_single_period(det_args: party.SpiceSingleDetArgs, work_dir: Path, period_multiplier: float = 1) -> np.ndarray:
+        """simulate a single oscillator for a short time preparing the signal to be cached to non volatile memory"""
+        det_args.time_stop = const.LONGEST_VO2_PERIOD * period_multiplier # inject duration needed to observe the first period for frequencies up to f(R=69k)
+        netlist_generator.build_single_netlist(work_dir, det_args)
+        netlist_generator.run_ngspice(work_dir)
+        df = data_io.load_sim_data(Path(str(work_dir) + ".dat"))
+        arr = df.iloc[:,1].to_numpy()
+        sampling_rate = np.round(1 / det_args.time_step).astype(int)
+        period_duration, period_signal = data_preprocessor.extract_single_period(arr, sampling_rate)
+        return period_duration, sampling_rate, period_signal
     
     @staticmethod
     def fully_simulate_signal(det_args: party.SpiceSingleDetArgs, work_dir: Path) -> np.ndarray:

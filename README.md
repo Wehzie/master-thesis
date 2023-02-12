@@ -166,6 +166,8 @@ Get information about a running job.
 #### Notes on Runtime
 
 Results except target sweep
+    - hardware = Peregrine
+    - multiprocessor = False
     - m_averages=7
     - z_ops=1e4
     - n_osc = 100
@@ -173,13 +175,21 @@ Results except target sweep
     - wall time: 6 h 30 m
     - max memory: 1.2 GB
 
-Results Sweep with
+Target sweep
+    - hardware = Peregrine
+    - multiprocessor = False
     - generator=Python
     - z_ops = 5e4
     - n_osc = 100
     - samples = 300
     - wall time. 6 h 18 m
     - max memory: 133.29 MB
+
+Test Sweep with
+    - hardware = Laptop
+    - multiprocessor = False
+    - generator=Hybrid
+    - test parameters
 
 ## Testing
 
