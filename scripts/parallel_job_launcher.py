@@ -3,9 +3,9 @@ from typing import List
 
 import argparse
 
-def build_job_script(command: str, time: str, mem: str) -> str:
-    return f"""
-#!/bin/bash
+def build_job_script(command: str, time: str, mem: str, partition: str) -> str:
+    return (
+f"""#!/bin/bash
 
 # SBATCH --job-name=experiment
 # SBATCH --mail-type=ALL
@@ -13,7 +13,7 @@ def build_job_script(command: str, time: str, mem: str) -> str:
 # SBATCH --output=job-%j.log
 
 # regular, short, vulture
-# SBATCH --partition=regular
+# SBATCH --partition={partition}
 # SBATCH --nodes=1
 # SBATCH --ntasks=1
 # SBATCH --cpus-per-task=1
@@ -36,7 +36,7 @@ module load GCC
 module load ngspice
 
 {command}
-"""
+""")
 
 parser = argparse.ArgumentParser(description="Launch multiple Slurm processes.")
 
@@ -91,10 +91,11 @@ def build_job_commands():
     return invocations
 
 
-def ask_for_confirmation(srun_commands: List[str]):
+def ask_for_confirmation(srun_commands: List[str], time: str, memory: str, partition: str):
     print("The following commands will be executed:")
     for command in srun_commands:
         print(command)
+    print(f"Running with partition {partition}, memory {memory}, time {time}.")
     proceed = input("Continue? (y/n)")
     if proceed != "y":
         print("Aborting.")
@@ -102,11 +103,13 @@ def ask_for_confirmation(srun_commands: List[str]):
     print("Proceeding...")
 
 def main():
-    memory = "500MB" if args.production else "2GB"
-    time = "00:01:00" if args.production else "03:00:00"
+    partition = "regular" if args.production else "vulture"
+    memory = "2GB" if args.production else "500MB"
+    time = "03:00:00" if args.production else "00:01:00"
+
     srun_commands = build_job_commands()
 
-    ask_for_confirmation(srun_commands)
+    ask_for_confirmation(srun_commands, time, memory, partition)
 
     for command in srun_commands:
         script = build_job_script(command, time, memory)
