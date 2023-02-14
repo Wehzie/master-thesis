@@ -3,24 +3,23 @@ from typing import List
 
 import argparse
 
-def build_job_script(command: str, time: str, mem: str, partition: str, name: str) -> str:
+send_mail_config = (
+f"""#SBATCH --mail-type=ALL
+#SBATCH --mail-user=r.tappe.maestro@student.rug.nl"""
+)
+
+
+def build_job_script(command: str, time: str, mem: str, partition: str, name: str, mail: str) -> str:
     return (
 f"""#!/bin/bash
 
-# SBATCH --job-name=experiment
-# SBATCH --mail-type=ALL
-# SBATCH --mail-user=r.tappe.maestro@student.rug.nl
-# SBATCH --output=logs/job-{name}-%j.log
-
-# regular, short, vulture
-# SBATCH --partition={partition}
-# SBATCH --nodes=1
-# SBATCH --ntasks=1
-# SBATCH --cpus-per-task=1
-
-# gauge memory usage with top
-# RES column indicates RAM usage in bytes
-
+#SBATCH --job-name={name}
+{mail}
+#SBATCH --output=job-{name}-%j.log
+#SBATCH --partition={partition}
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
 #SBATCH --time={time}
 #SBATCH --mem-per-cpu={mem}
 
@@ -45,7 +44,7 @@ parser.add_argument("--production", action="store_true", help="Launch scripts wi
 args = parser.parse_args()
 print(f"Running with {args}")
 
-legal_python_experiments = [
+python_experiments = [
     "target",
     "n_osc",
     "z_ops",
@@ -55,11 +54,9 @@ legal_python_experiments = [
     "offset",
     "phase",
     "amplitude",
-    "all",
-    "none"
 ]
 
-legal_hybrid_experiments = [
+hybrid_experiments = [
     "target",
     "n_osc",
     "z_ops",
@@ -68,8 +65,6 @@ legal_hybrid_experiments = [
     "weight",
     "offset",
     "phase",
-    "all",
-    "none"
 ]
 
 def build_job_commands():
@@ -77,14 +72,14 @@ def build_job_commands():
 
     invocations = []
     names = []
-    for e in legal_python_experiments:
+    for e in python_experiments:
         extension_args = ["--signal_generator", "python", f"--experiment {e}", "--target magpie"]
         if args.production:
             extension_args.append("--production")
         invocations.append(base_call + extension_args)
         names.append(f"python-{e}")
 
-    for e in legal_hybrid_experiments:
+    for e in hybrid_experiments:
         extension_args = ["--signal_generator", "spipy", f"--experiment {e}", "--target sine"]
         if args.production:
             extension_args.append("--production")
@@ -107,18 +102,25 @@ def ask_for_confirmation(srun_commands: List[str], time: str, memory: str, parti
 
 def main():
     partition = "regular" if args.production else "vulture"
-    memory = "2GB" if args.production else "500MB"
+    memory = "2GB" if args.production else "300MB"
     time = "03:00:00" if args.production else "00:01:00"
+    mail = send_mail_config if args.production else ""
 
     srun_commands, names = build_job_commands()
 
     ask_for_confirmation(srun_commands, time, memory, partition)
 
+    counter = 0
     for command, name in zip(srun_commands, names):
-        script = build_job_script(command, time, memory, partition, name)
+        joined_command = " ".join(command)
+        script = build_job_script(joined_command, time, memory, partition, name, mail)
         with open("job.sh", "w") as f:
             f.write(script)
         subprocess.run(["sbatch", "job.sh"])
+        counter += 1
+        if counter == 2 and not args.production:
+            break
+
 
 if __name__ == "__main__":
     main()

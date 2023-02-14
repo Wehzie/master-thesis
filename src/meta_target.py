@@ -260,7 +260,7 @@ class InverseSawtoothTarget(SyntheticTarget):
 
     def __init__(self, duration: float, sampling_rate: Union[int, None] = None, samples: Union[int, None] = None, freq: float = 1, amplitude: float = 1, phase: float = 0, offset: float = 0) -> None:
         super().__init__(duration, sampling_rate, samples, freq)
-        self.name = "inverse_sawtooth"
+        self.name = "inverse sawtooth"
         self.signal = -signal.sawtooth(2 * np.pi * freq * self.time + phase*np.pi) * amplitude + offset
 
 class ChirpTarget(SyntheticTarget):
@@ -319,7 +319,7 @@ class DampChirpTarget(SyntheticTarget):
                        when None the stop frequency is derived from the sampling rate   
         """
         super().__init__(duration, sampling_rate, samples, stop_freq)
-        self.name = "damp_chirp"
+        self.name = "damped chirp"
         if stop_freq is None:
             stop_freq = self.sampling_rate/20
         self.signal = signal.chirp(self.time, start_freq, self.duration, stop_freq) * amplitude + offset
@@ -330,7 +330,7 @@ class SmoothGaussianNoiseTarget(SyntheticTarget):
     def __init__(self, duration: float, sampling_rate: Union[int, None] = None, samples: Union[int, None] = None,
     amplitude: float = 1, offset: float = 0, avg_window: int = 10) -> None:
         super().__init__(duration, sampling_rate, samples)
-        self.name = "smooth_gaussian_noise"
+        self.name = "smooth gaussian noise"
         self.signal = const.RNG.normal(0, 1, self.samples) * amplitude + offset
         self.signal = self.moving_average(self.signal, avg_window)
 
@@ -339,7 +339,7 @@ class SmoothUniformNoiseTarget(SyntheticTarget):
     def __init__(self, duration: float, sampling_rate: Union[int, None] = None, samples: Union[int, None] = None,
     amplitude: float = 1, offset: float = 0, avg_window: int = 10) -> None:
         super().__init__(duration, sampling_rate, samples)
-        self.name = "smooth_uniform_noise"
+        self.name = "smooth uniform noise"
         self.signal = const.RNG.uniform(-1, 1, self.samples) * amplitude + offset
         self.signal = self.moving_average(self.signal, avg_window)
 
@@ -348,7 +348,7 @@ class GaussianNoiseTarget(SyntheticTarget):
     def __init__(self, duration: float, sampling_rate: Union[int, None] = None, samples: Union[int, None] = None,
     amplitude: float = 1, offset: float = 0) -> None:
         super().__init__(duration, sampling_rate, samples)
-        self.name = "gaussian_noise"
+        self.name = "gaussian noise"
         self.signal = const.RNG.normal(0, 1, self.samples) * amplitude + offset
 
 class UniformNoiseTarget(SyntheticTarget):
@@ -356,5 +356,5 @@ class UniformNoiseTarget(SyntheticTarget):
     def __init__(self, duration: float, sampling_rate: Union[int, None] = None, samples: Union[int, None] = None,
     amplitude: float = 1, offset: float = 0) -> None:
         super().__init__(duration, sampling_rate, samples)
-        self.name = "uniform_noise"
+        self.name = "uniform noise"
         self.signal = const.RNG.uniform(-1, 1, self.samples) * amplitude + offset

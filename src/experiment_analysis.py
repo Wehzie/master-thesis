@@ -127,6 +127,12 @@ def infer_duration(results: List[resty.ResultSweep]) -> pd.DataFrame:
         return pd.DataFrame([r.algo_args.rand_args.get_duration() for r in results], columns=["duration"])
     return None
 
+def infer_sampling_rate(results: List[resty.ResultSweep]) -> pd.DataFrame:
+    """if sampling_rate is not set in the results, infer it from the results"""
+    if isinstance(results[0].algo_args.rand_args, party.SpiceSumRandArgs):
+        return pd.DataFrame([r.algo_args.rand_args.get_sampling_rate() for r in results], columns=["sampling_rate"])
+    return None
+
 # TODO: write function to recursively unpack objects inside a dataframe and each field as column
 def conv_results_to_pd(results: List[resty.ResultSweep]) -> pd.DataFrame:
     """convert ResultSweep to a pandas dataframe for further processing"""
@@ -145,6 +151,7 @@ def conv_results_to_pd(results: List[resty.ResultSweep]) -> pd.DataFrame:
     target_max_freq_df = pd.DataFrame([r.algo_args.meta_target.get_max_freq() for r in results], columns=["target_max_freq"])
 
     duration_df = infer_duration(results)
+    sampling_rate_df = infer_sampling_rate(results)
 
     # dist ranges
     freq_dist_range = select_frequency_controller_dist_range(rand_args)
@@ -158,7 +165,7 @@ def conv_results_to_pd(results: List[resty.ResultSweep]) -> pd.DataFrame:
     phase_dist_df = pd.DataFrame([add_str2keys("phase_dist", ra.phase_dist.kwargs) for ra in rand_args])
     offset_dist_df = pd.DataFrame([add_str2keys("offset_dist", ra.offset_dist.kwargs) for ra in rand_args])
     
-    return pd.concat([res_df, target_df, target_max_freq_df, algo_args_df, rand_args_df, duration_df,
+    return pd.concat([res_df, target_df, target_max_freq_df, algo_args_df, rand_args_df, duration_df, sampling_rate_df,
         freq_dist_range, weight_dist_range, phase_dist_range, offset_dist_range,
         freq_dist_df, weight_dist_df, phase_dist_df, offset_dist_df], axis=1)
 
@@ -168,7 +175,16 @@ def get_plot_title(df: pd.DataFrame, target_samples: int, z_ops: bool = True) ->
     n_osc = df["n_osc"].values[0]
     max_z_ops = int(df["max_z_ops"].values[0])
     str_max_z_ops = f", z={max_z_ops}" if z_ops else ""
-    return f"m={m_averages}, n={n_osc}, samples={target_samples}{str_max_z_ops}" 
+
+    duration = df["duration"].values[0] if "duration" in df else None
+    sampling_rate = df["sampling_rate"].values[0] if "sampling_rate" in df else None
+
+    duration_txt = f", t={duration} s" if duration is not None else ""
+    sampling_rate_txt = f", fs={sampling_rate} Hz" if sampling_rate is not None else ""
+    time_vars = duration_txt+sampling_rate_txt if duration_txt is not "" or sampling_rate_txt is not "" else f"#s={target_samples}"
+    
+    title = f"m={m_averages}, n={n_osc}{time_vars}{str_max_z_ops}" 
+    return title
 
 def filter_df_by_dist_name(df: pd.DataFrame, attr_name: str, dist_name: str) -> pd.DataFrame:
     """
@@ -228,7 +244,7 @@ def plot_rmse_by_algo(df: pd.DataFrame, column_name: str, separate_legend: bool 
         color, linestyle = pick_color_linestyle(mask, name)
         plt.errorbar(data[column_name], data["mean_rmse"], data["std_rmse"], elinewidth=1, capsize=5, capthick=1, markeredgewidth=1, label=name, color=color, linestyle=linestyle)
     plt.legend(title="Algorithm", framealpha=0.5)
-    plt.gca().set_ylabel("RMSE(generated, target)")
+    plt.gca().set_ylabel("RMSE")
 
     if separate_legend == False: return fig, None
     
@@ -315,19 +331,14 @@ mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
     df = apply_mask(df, mask)
     fig, legend_as_fig = plot_rmse_by_algo(df, "max_z_ops", mask=mask)
     fig.gca().set_title(title)
-    fig.gca().set_xlabel("z-operations")
+    fig.gca().set_xlabel("z-perturbations")
     save_fig_n_legend(fig, legend_as_fig, sweep_name, save_dir, mask, show)
 
 
 def plot_samples_vs_rmse(df: pd.DataFrame, sweep_name: str, save_dir: Path,
 mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
     """exp3: plot number of samples against rmse for multiple algorithms with rand_args and target fixed"""
-    # before filtering df
-    m_averages = int(df["m_averages"].iloc[[0]])
-    n_osc = df["n_osc"].values[0]
-    max_z_ops = int(df["max_z_ops"].values[0])
-    title = f"m={m_averages}, n={n_osc}, z={max_z_ops}"
-
+    title = get_plot_title(df, target_samples=None)
     df = df.filter(items=["algo_name", "samples", "mean_rmse", "std_rmse"])
     df = apply_mask(df, mask)
     fig, legend_as_fig = plot_rmse_by_algo(df, "samples", mask=mask)
@@ -342,7 +353,8 @@ mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
     m_averages = int(df["m_averages"].iloc[[0]])
     n_osc = df["n_osc"].values[0]
     max_z_ops = int(df["max_z_ops"].values[0])
-    title = f"m={m_averages}, n={n_osc}, z={max_z_ops}"
+    sampling_rate = int(df["sampling_rate"].values[0])
+    title = f"m={m_averages}, n={n_osc}, z={max_z_ops}, fs={sampling_rate} Hz"
 
     df = df.filter(items=["algo_name", "duration", "mean_rmse", "std_rmse"])
     df = apply_mask(df, mask)
@@ -452,7 +464,7 @@ def tab_targets_vs_rmse(df: pd.DataFrame, sweep_name: str, save_dir: Path) -> Tu
 def plot_average_target_vs_rmse(target_df: pd.DataFrame, num_algos: int, sweep_name: str, save_dir: Path, title: str,
 mask: param_mask.ExperimentMask = None, show: bool = False):
     """exp4: show rmse for targets averaged over algorithms"""
-    title += f", num algos={num_algos}"
+    title += f", #a={num_algos}"
     target_df = target_df.sort_values(by="mean_rmse", ascending=False)
     cmap = mpl.cm.get_cmap('Spectral')
     colors = target_df["mean_rmse"].apply(lambda x: cmap(x / target_df["mean_rmse"].max())).tolist()
@@ -482,7 +494,7 @@ mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
     target_df, algo_df = tab_targets_vs_rmse(df, sweep_name, save_dir)
     num_algos = len(algo_df)
     num_targets = len(target_df)
-    title = f"m={int(df['m_averages'].iloc[[0]])}, n={int(df['n_osc'].iloc[[0]])}, z={int(df['max_z_ops'].iloc[[0]])}"
+    title = get_plot_title(df, None)
     
     plot_average_target_vs_rmse(target_df, num_algos, sweep_name, save_dir, title, mask, show)
     plot_average_algo_vs_rmse(algo_df, num_targets, sweep_name, save_dir, title, mask, show)
@@ -532,16 +544,31 @@ def find_dists_in_df(df: pd.DataFrame) -> List[str]:
 def get_freq_plot_label(dist_name: str, sweep_name: str, df: pd.DataFrame) -> str:
     """get the x label for the frequency plots"""
     x_label = "frequency diversity [Hz]"
-    if dist_name == "uniform" and sweep_name == "freq_range_from_zero":
-        x_label += r", lower bound $\rightarrow$ 0, upper bound = $x$"
-    elif dist_name == "uniform" and sweep_name == "freq_range_around_vo2":
-        x_label += r", lower + upper bound = $x$"
-    elif dist_name == "normal" and sweep_name == "freq_range_from_zero":
-        x_label += r", $\mu + \sigma = x$ , $\mu \approx \sigma$"
-    elif dist_name == "normal" and sweep_name == "freq_range_around_vo2":
-        mu = df["freq_dist_loc"].dropna().iloc[0]
-        x_label += r", $\mu$=" + f"{mu:.0f}, " + r"$\sigma = x/2$"
+    # if dist_name == "uniform" and sweep_name == "freq_range_from_zero":
+    #     x_label += r", lower bound $\rightarrow$ 0, upper bound = $x$"
+    # elif dist_name == "uniform" and sweep_name == "freq_range_around_vo2":
+    #     x_label += r", lower + upper bound = $x$"
+    # elif dist_name == "normal" and sweep_name == "freq_range_from_zero":
+    #     x_label += r", $\mu + \sigma = x$ , $\mu \approx \sigma$"
+    # elif dist_name == "normal" and sweep_name == "freq_range_around_vo2":
+    #     mu = df["freq_dist_loc"].dropna().iloc[0]
+    #     x_label += r", $\mu$=" + f"{mu:.0f}, " + r"$\sigma = x/2$"
     return x_label
+
+def get_freq_sup_title(dist_name: str, sweep_name: str, df: pd.DataFrame) -> str:
+    """get the super title for the frequency plots"""
+    if sweep_name == "freq_range_around_vo2":
+        if dist_name == "uniform":
+            bounds = df[["freq_dist_high", "freq_dist_low"]].dropna().iloc[0]
+            high = bounds["freq_dist_high"]
+            low = bounds["freq_dist_low"]
+            mean_freq = (high + low) / 2
+        if dist_name == "normal":
+            mean_freq = df["freq_dist_loc"].dropna().iloc[0]
+        sup_title = r"$\mu(f)=$" + f"{mean_freq:.0f} Hz"
+    else:
+        sup_title = "min(f) = 0 Hz"
+    return sup_title
 
 
 def plot_freq_range_vs_rmse(df: pd.DataFrame, target_samples: int, sweep_name: str, save_dir: Path,
@@ -550,6 +577,8 @@ mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
     for dist_name in find_dists_in_df(df):
         fig, legend_as_fig = plot_range_vs_rmse(df, target_samples, "freq", dist_name, mask)
         x_label = get_freq_plot_label(dist_name, sweep_name, df)
+        suptitle = get_freq_sup_title(dist_name, sweep_name, df)
+        fig.suptitle(suptitle)
         fig.gca().set_xlabel(x_label) # width of frequency band
         fig.gca().set_xscale("log")
         sweep_name_with_dist = f"{sweep_name}_{dist_name}_vs_rmse"
@@ -585,7 +614,7 @@ mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
     for dist_name in find_dists_in_df(df):
         fig, legend_as_fig = plot_range_vs_rmse(df, target_samples, "weight", dist_name, mask)
         inv_amplitude = select_generator_inverse_amplitude(df)
-        fig.gca().set_xlabel(f"dynamic range (scaled by inverse-of-amplitude={inv_amplitude:.0f})") # width of weight band
+        fig.gca().set_xlabel(f"dynamic range") # width of weight band
         # dynamic range would be given with amplitude=1
         fig.gca().set_xscale("log")
         save_fig_n_legend(fig, legend_as_fig, f"weight_range_{dist_name}_vs_rmse", save_dir, mask, show)
@@ -618,11 +647,11 @@ mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
     "exp10: plot amplitude against rmse for multiple algorithms with rand_args and target fixed"
     title = get_plot_title(df, target_samples) # before filtering df
     weight_range = df["weight_range"].iloc[0]
-    title += f", weight_range={weight_range:.1f}"
+    title += f", dynamic range={weight_range:.0f}"
     df = df.filter(items=["algo_name", "mean_rmse", "std_rmse", "amplitude"])
     df = apply_mask(df, mask)
     fig, legend_as_fig = plot_rmse_by_algo(df, "amplitude", mask=mask)
     fig.gca().set_title(title)
-    fig.gca().set_ylabel("RMSE(generated, target)")
+    fig.gca().set_ylabel("RMSE")
     fig.gca().set_xlabel("unweighted amplitude")
     save_fig_n_legend(fig, legend_as_fig, sweep_name, save_dir, mask, show)

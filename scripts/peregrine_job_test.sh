@@ -3,16 +3,16 @@
 # RUNNING
 # sbatch jobscript.sh
 
-# SBATCH --job-name=python_sweep_test
-# SBATCH --mail-type=ALL
-# SBATCH --mail-user=r.tappe.maestro@student.rug.nl
-# SBATCH --output=test-job-%j.log
+#SBATCH --job-name=python_sweep_test
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=r.tappe.maestro@student.rug.nl
+#SBATCH --output=test-job-%j.log
 
 # regular, short, vulture
-# SBATCH --partition=vulture
-# SBATCH --nodes=1
-# SBATCH --ntasks=1
-# SBATCH --cpus-per-task=1
+#SBATCH --partition=vulture
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
 
 # gauge memory usage with top
 # RES column indicates RAM usage in bytes

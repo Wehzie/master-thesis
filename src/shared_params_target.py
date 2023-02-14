@@ -55,17 +55,19 @@ def build_production_targets(duration: float, sampling_rate: Union[int, None] = 
 
 def build_target_freq_sweep(duration: float, sampling_rate: Union[int, None] = None, samples: Union[int, None] = None) -> List[meta_target.MetaTarget]:
     target_freq_sweep = [
-        meta_target.SineTarget(duration, sampling_rate, samples=samples, freq=1e2, name="sine_1e2Hz"),
-        meta_target.SineTarget(duration, sampling_rate, samples=samples, freq=1e3, name="sine_1e3Hz"),
-        meta_target.SineTarget(duration, sampling_rate, samples=samples, freq=1e4, name="sine_1e4Hz"),
-        meta_target.SineTarget(duration, sampling_rate, samples=samples, freq=1e5, name="sine_1e5Hz"),
-        meta_target.SineTarget(duration, sampling_rate, samples=samples, freq=1e6, name="sine_1e6Hz"),
-        meta_target.ChirpTarget(duration, sampling_rate, samples=samples, start_freq=1, stop_freq=1e1, name="chirp_1Hz_to_1e1Hz"),
-        meta_target.ChirpTarget(duration, sampling_rate, samples=samples, start_freq=1e1, stop_freq=1e2, name="chirp_1e1Hz_to_1e2Hz"),
-        meta_target.ChirpTarget(duration, sampling_rate, samples=samples, start_freq=1e2, stop_freq=1e3, name="chirp_1e2Hz_to_1e3Hz"),
-        meta_target.ChirpTarget(duration, sampling_rate, samples=samples, start_freq=1e3, stop_freq=1e4, name="chirp_1e3Hz_to_1e4Hz"),
-        meta_target.ChirpTarget(duration, sampling_rate, samples=samples, start_freq=1e4, stop_freq=1e5, name="chirp_1e4Hz_to_1e5Hz"),
-        meta_target.ChirpTarget(duration, sampling_rate, samples=samples, start_freq=1e5, stop_freq=1e6, name="chirp_1e5Hz_to_1e6Hz"),
+        meta_target.SineTarget(duration, sampling_rate, samples=samples, freq=1, name="sine 1 Hz"),
+        meta_target.SineTarget(duration, sampling_rate, samples=samples, freq=1e1, name="sine 10 Hz"),
+        meta_target.SineTarget(duration, sampling_rate, samples=samples, freq=1e2, name="sine 100 Hz"),
+        meta_target.SineTarget(duration, sampling_rate, samples=samples, freq=1e3, name="sine 1e3 Hz"),
+        meta_target.SineTarget(duration, sampling_rate, samples=samples, freq=1e4, name="sine 1e4 Hz"),
+        meta_target.SineTarget(duration, sampling_rate, samples=samples, freq=1e5, name="sine 1e5 Hz"),
+        meta_target.SineTarget(duration, sampling_rate, samples=samples, freq=1e6, name="sine 1e6 Hz"),
+        meta_target.ChirpTarget(duration, sampling_rate, samples=samples, start_freq=1, stop_freq=1e1, name="chirp 1 to 10 Hz"),
+        meta_target.ChirpTarget(duration, sampling_rate, samples=samples, start_freq=1e1, stop_freq=1e2, name="chirp 10 to 100 Hz"),
+        meta_target.ChirpTarget(duration, sampling_rate, samples=samples, start_freq=1e2, stop_freq=1e3, name="chirp 100 to 1e3 Hz"),
+        meta_target.ChirpTarget(duration, sampling_rate, samples=samples, start_freq=1e3, stop_freq=1e4, name="chirp 1e3 to 1e4 Hz"),
+        meta_target.ChirpTarget(duration, sampling_rate, samples=samples, start_freq=1e4, stop_freq=1e5, name="chirp 1e4 to 1e5 Hz"),
+        meta_target.ChirpTarget(duration, sampling_rate, samples=samples, start_freq=1e5, stop_freq=1e6, name="chirp 1e5 to 1e6 Hz"),
     ]
     return target_freq_sweep
 

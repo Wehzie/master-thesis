@@ -92,7 +92,7 @@ def find_dir_name(parent_path: Path, experiment_description: Union[str, None]) -
     for i in range(100):
         path = Path(parent_path / f"{experiment_description}{i}")
         if not path.exists():
-            path.mkdir()
+            path.mkdir(exist_ok=True) # TODO: hack for launching multiple experiments in parallel via external slurm script
             break
     return path
 
