@@ -130,8 +130,9 @@ def plot_f0_hist(signal_matrix: np.ndarray, sample_spacing: float, title: str = 
     for i in range(signal_matrix.shape[0]):
         f0_li.append(get_freq_from_fft_v2(signal_matrix[i, :], sample_spacing))
 
+    n_bins = int(max(len(f0_li), 10+2*np.log(len(f0_li))))
     plt.figure()
-    plt.hist(f0_li, bins=len(f0_li)//10)
+    plt.hist(f0_li, bins=n_bins)
     plt.gca().set_xlabel("f0 [Hz]")
     plt.gca().set_ylabel("count")
 

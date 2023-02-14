@@ -22,10 +22,9 @@ M_AVERAGES = 1
 N_OSCILLATORS = 10
 SAMPLES = 30
 DURATION = 0.1 # s
+SYNTH_FREQ = 1e3 # Hz
 
 #### #### #### #### BASE PARAMETERS FOR SIGNAL GENERATION #### #### #### ####
-
-
 
 py_rand_args_uniform = party.PythonSignalRandArgs(
     description = "test base-parameters for drawing oscillators from a uniform distribution",
@@ -53,13 +52,13 @@ py_rand_args_normal = party.PythonSignalRandArgs(
     sampling_rate = 11025
 )
 
-
-
 #### #### #### #### BASE PARAMETERS MODIFIERS #### #### #### ####
+
+test_targets = shared_params_target.build_test_targets(duration=DURATION, samples=SAMPLES, synth_freq=SYNTH_FREQ)
 
 target_sweep_samples = sweety.TargetSweep(
     "sample based targets before making the python signal generator adapt its sampling rate to the target",
-    shared_params_target.build_test_targets(duration=DURATION, samples=SAMPLES),
+    test_targets,
     py_rand_args_uniform,
     gen_signal_python.PythonSigGen(),
     max_z_ops=MAX_Z_OPS,

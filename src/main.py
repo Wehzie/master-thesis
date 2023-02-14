@@ -9,20 +9,18 @@ parser.add_argument("--production", action="store_true", help="Run a simulation 
 parser.add_argument("--clean", action="store_true", help="Clean the write directory before running the simulation.", default=False, required=False)
 parser.add_argument("--signal_generator", type=str, help="Select the signal generator to use.", choices=["python", "spipy", "hybrid", "all"], default="all", required=False)
 parser.add_argument("--qualitative", action="store_true", help="Run optimization without statistical analysis.", default=False, required=False)
-parser.add_argument("--experiment", type=str, help="Select the quantitative experiments to run; not all experiments are compatible with each signal generator.", default="all", required=False, choices=[
-    "none",
-    "all",
+parser.add_argument("--experiment", type=str, help="Select the quantitative experiments to run; not all experiments are compatible with each signal generator.",
+default="all", required=False, choices=[
+    "none", "all",
     "target",
-    "n_osc",
-    "z_ops",
-    "samples",
-    "duration",
-    "frequency",
-    "resistor",
-    "weight",
-    "offset",
-    "phase",
-    "amplitude"])
+    "n_osc", "z_ops", "samples", "duration",
+    "frequency", "resistor", "weight", "offset", "phase", "amplitude"])
+parser.add_argument("--target", type=str, help="Select the default target to approximate.", default="magpie", required=False, choices=[
+    "sine", "triangle", "square", "sawtooth", "inverse_sawtooth",
+    "chirp", "beat", "damp_chirp",
+    "smooth_gauss", "smooth_uniform", "gauss_noise", "uniform_noise",
+    "magpie", "human_yes", "bellbird", "human_okay",
+    ])
 
 args = parser.parse_args()
 
@@ -35,7 +33,6 @@ if args.production:
     const.TEST_PARAMS = False
 
 import data_io
-import meta_target
 import data_analysis
 import experimenteur
 if const.TEST_PARAMS:
@@ -61,7 +58,8 @@ legal_python_experiments = [
     "offset",
     "phase",
     "amplitude",
-    "all"
+    "all",
+    "none"
 ]
 
 legal_hybrid_experiments = [
@@ -73,7 +71,8 @@ legal_hybrid_experiments = [
     "weight",
     "offset",
     "phase",
-    "all"
+    "all",
+    "none"
 ]
 
 if "python" in args.signal_generator:
@@ -93,7 +92,7 @@ def main():
         exp = experimenteur.Experimenteur("python_sweep")
         sig_gen = gen_signal_python.PythonSigGen()
         generator_args = python_parameters.py_rand_args_uniform
-        m_target = meta_target.MetaTargetSample(generator_args, "magpie", shared_params_target.DevSet.MAGPIE.value)
+        m_target = shared_params_target.select_target_by_string(args.target, generator_args, python_parameters.SYNTH_FREQ, python_parameters.DURATION)
         sweep_bundle = sweep_builder.bundle_python_sweep(sig_gen, generator_args, m_target, algo_selector="all")
         
         if args.qualitative:
@@ -107,7 +106,7 @@ def main():
         exp = experimenteur.Experimenteur("hybrid_sweep")
         sig_gen = gen_signal_spipy.SpipySignalGenerator()
         generator_args = hybrid_parameters.spice_rand_args_uniform
-        m_target = meta_target.MetaTargetTime(generator_args, "magpie", shared_params_target.DevSet.MAGPIE.value)
+        m_target = shared_params_target.select_target_by_string(args.target, generator_args, hybrid_parameters.SYNTH_FREQ)
         sweep_bundle = sweep_builder.bundle_hybrid_sweep(sig_gen, generator_args, m_target, algo_selector="all")
 
         if args.qualitative:

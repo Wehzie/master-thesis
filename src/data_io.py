@@ -179,6 +179,11 @@ def load_signal_cache(path: Path = const.CACHE_DIR / "signal_cache.pickle") -> p
         df = pickle.load(f)
     return df
 
+def save_object_to_string(obj: object, path: Path) -> None:
+    """save meta information to a file as a string"""
+    with open(path, "w") as f:
+        f.write(str(obj))
+
 def main():
     sampling_rate, data, dtype = load_data()
     save_signal_to_wav(data, sampling_rate, dtype)

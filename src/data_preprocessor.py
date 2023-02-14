@@ -55,8 +55,8 @@ def scale_up(short: np.ndarray, len_long: int) -> np.ndarray:
     return padded
 
 
-def interpolate_sinc(signal: np.ndarray, time: np.ndarray, time_new: np.ndarray) -> np.ndarray:
-    """interpolate a signal using sinc interpolation
+def interpolate_sinc_time(signal: np.ndarray, time: np.ndarray, time_new: np.ndarray) -> np.ndarray:
+    """interpolate a signal using sinc (sinus cardinalis, Whittaker-Shannon) interpolation
     
     args:
         signal: the signal to be interpolated
@@ -72,6 +72,23 @@ def interpolate_sinc(signal: np.ndarray, time: np.ndarray, time_new: np.ndarray)
     T = time[1] - time[0] # period/signal spacing
     
     sincM = np.tile(time_new, (len(time), 1)) - np.tile(time[:, np.newaxis], (1, len(time_new)))
+    signal_new = np.dot(signal, np.sinc(sincM/T))
+    return signal_new
+
+def interpolate_sinc_sampling_rate(signal: np.ndarray, old_sampling_rate: int, new_sampling_rate: int) -> np.ndarray:
+    """interpolate a signal using sinc (sinus cardinalis, Whittaker–Shannon) interpolation"""
+    if new_sampling_rate < old_sampling_rate:
+        raise ValueError("interpolation requires the new sampling rate to be larger")
+    
+    duration = len(signal) / old_sampling_rate
+    old_time = np.linspace(0, duration, len(signal), endpoint=False)
+
+    new_samples = np.round(duration*new_sampling_rate).astype(int)
+    new_time = np.linspace(0, duration, new_samples)
+
+    T = old_time[1] - old_time[0] # period/signal spacing
+    
+    sincM = np.tile(new_time, (len(old_time), 1)) - np.tile(old_time[:, np.newaxis], (1, len(new_time)))
     signal_new = np.dot(signal, np.sinc(sincM/T))
     return signal_new
 

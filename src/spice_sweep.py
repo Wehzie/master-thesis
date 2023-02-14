@@ -54,7 +54,7 @@ def freq_to_r_sweep(debug=True, show=True):
     if show:
         plt.show()
 
-def build_signal_cache(r_min: int = 19e3, r_max: int = 141e3, r_step: int = 1000, debug: bool = False):
+def build_signal_cache(r_min: int = 19e3, r_max: int = 141e3, r_step: int = 500, debug: bool = False):
     """build a cache of signals with different values of R.
     This is useful for debugging and testing.
     """

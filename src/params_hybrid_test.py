@@ -14,6 +14,7 @@ RNG = const.RNG
 MAX_Z_OPS = 150
 M_AVERAGES = 1
 N_OSCILLATORS = 10
+SYNTH_FREQ = 3e5 # Hz
 
 #### #### #### #### #### #### SIGNAL GENERATOR ARGUMENTS #### #### #### #### #### ####
 
@@ -47,7 +48,7 @@ spice_rand_args_uniform = party.SpiceSumRandArgs(
     c_dist=dist.Dist(300e-12),
 
     time_step=2e-9,
-    time_stop=1e-3,
+    time_stop=1e-5,
     time_start=0,
 
     dependent_component="v(osc1)",
@@ -64,12 +65,15 @@ spice_rand_args_uniform = party.SpiceSumRandArgs(
 
 #### #### #### #### #### #### EXPERIMENT PARAMETERS #### #### #### #### #### ####
 
+test_targets = shared_params_target.build_test_targets(
+        duration=spice_rand_args_uniform.get_duration(),
+        sampling_rate=spice_rand_args_uniform.get_sampling_rate(),
+        synth_freq=SYNTH_FREQ
+),
+
 target_sweep = sweety.TargetSweep(
     "evaluate the ability of the hybrid signal generator to fit a variety of targets",
-    shared_params_target.build_test_targets(
-        duration=spice_rand_args_uniform.get_duration(),
-        sampling_rate=spice_rand_args_uniform.get_sampling_rate()*spice_rand_args_uniform.down_sample_factor**2,
-    ),
+    test_targets,  
     spice_rand_args_uniform,
     gen_signal_spipy.SpipySignalGenerator(),
     max_z_ops=MAX_Z_OPS,

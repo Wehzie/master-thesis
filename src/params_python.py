@@ -7,7 +7,6 @@ import sweep_types as sweety
 import const
 import dist
 import parameter_builder
-import meta_target
 import gen_signal_python
 import shared_params_target
 
@@ -17,6 +16,7 @@ M_AVERAGES = 7
 N_OSCILLATORS = 100
 SAMPLES = 300
 DURATION = 0.1 # s
+SYNTH_FREQ = 1e3 # Hz
 
 #### #### #### #### BASE PARAMETERS FOR SIGNAL GENERATION #### #### #### ####
 
@@ -49,9 +49,11 @@ py_rand_args_uniform = party.PythonSignalRandArgs(
 
 #### #### BASE PARAMETERS MODIFIERS FOR QUANTITATIVE EXPERIMENTS #### #### 
 
+production_targets = shared_params_target.build_production_targets(duration=DURATION, samples=SAMPLES)
+
 target_sweep_samples = sweety.TargetSweep(
     "sample based targets before making the python signal generator adapt its sampling rate to the target",
-    shared_params_target.build_production_targets(duration=DURATION, samples=SAMPLES),
+    production_targets,
     py_rand_args_uniform,
     gen_signal_python.PythonSigGen(),
     max_z_ops=MAX_Z_OPS,

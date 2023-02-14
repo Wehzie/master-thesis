@@ -23,6 +23,8 @@ In order of priority:
 
 ### High priority
 
+- Saving for qualitative results
+
 - Parallelization: Write script to launch quantitative experiments as separate slurm jobs.
     - Especially necessary for hybrid signal generator.
     - Command line interface could be useful here
@@ -36,13 +38,6 @@ In order of priority:
 - x-label for weight sweep plot is not clear enough
 
 - hybrid generator not listening to n-osc from hybrid_params_test
-
-- Fine tune SPICE parameters for improved fit.
-    1.1 Make bias distribution narrower.
-    1.2 Optimize bias separately (e.g. at start and end of runtime)
-    1.3 Choose normal distribution for bias instead of uniform.
-    1.4 Lower weight distribution upper bound.
-    1.5 Add gain on target signal.
 
 ### Medium priority
 

@@ -21,6 +21,7 @@ import data_analysis
 import data_preprocessor
 import meta_target
 import data_io
+import const
 
 class Sample():
     """a sample consists of n-oscillators with constant parameters
@@ -148,8 +149,14 @@ class Sample():
         return Sample(signal_matrix, weights, weighted_sum, offset, rmse, sample.signal_args)
 
 def evaluate_prediction(best_sample: Sample, m_target: meta_target.MetaTarget,
-    z_ops: int, alg_name: str, plot_time: bool = True, plot_freq: bool = False, decompose_sample: bool = True) -> None:
+    z_ops: int, alg_name: str,
+    plot_time: bool = True, plot_freq: bool = True, decompose_sample: bool = True, interpolate: bool = True,
+    write_dir: Path = const.WRITE_DIR) -> None:
     """evaluate a generated signal (sample) against the target by qualitative (plots) and quantitative (RMSE) means"""
+    save_path = data_io.find_dir_name(write_dir, f"qualitative_{m_target.__class__.__name__}_{alg_name}")
+
+    n_osc = best_sample.signal_matrix.shape[0]
+
     # normalize target to range 0 1
     target_norm = data_preprocessor.norm1d(m_target.signal)
 
@@ -169,25 +176,36 @@ def evaluate_prediction(best_sample: Sample, m_target: meta_target.MetaTarget,
 
     # plots
     if plot_time: # time-domain
-        #plot_rmse_hist(rmse_list, title="sum distribution")
-        #plot_rmse_hist(rmse_norm_list, title="norm-sum distribution")
-        data_analysis.plot_pred_target(best_sample.weighted_sum, m_target.signal, time=m_target.time, title=f"{alg_name}, sum")
-        data_analysis.plot_pred_target(reg_sample.weighted_sum, m_target.signal, time=m_target.time, title=f"{alg_name}, regression")
-        data_analysis.plot_pred_target(norm_sample.weighted_sum, target_norm, time=m_target.time, title=f"{alg_name}, norm-sum")
-        data_analysis.plot_pred_target(norm_reg_sample.weighted_sum, target_norm, time=m_target.time, title=f"{alg_name}, norm after fit")
+        time_dir = save_path / "time_domain"
+        time_dir.mkdir(parents=True, exist_ok=True)
+        data_analysis.plot_pred_target(best_sample.weighted_sum, m_target.signal, time=m_target.time, title=f"{alg_name}, n={n_osc}", save_path=time_dir / "base_algorithm")
+        data_analysis.plot_pred_target(reg_sample.weighted_sum, m_target.signal, time=m_target.time, title=f"regression after {alg_name}, n={n_osc}", save_path=time_dir / "regression")
+        data_analysis.plot_pred_target(norm_sample.weighted_sum, target_norm, time=m_target.time, title=f"{alg_name}, normalized, n={n_osc}", save_path=time_dir / "normalized_base_algorithm")
+        data_analysis.plot_pred_target(norm_reg_sample.weighted_sum, target_norm, time=m_target.time, title=f"normalized after regression, n={n_osc}", save_path=time_dir / "normalized_regression")
     if plot_freq: # frequency-domain
-        data_analysis.plot_fourier(m_target.signal, title=f"{alg_name}, target")
-        data_analysis.plot_fourier(best_sample.weighted_sum, title=f"{alg_name}, sum")
-        data_analysis.plot_fourier(reg_sample.weighted_sum, title=f"{alg_name}, regression")
+        freq_dir = save_path / "frequency_domain"
+        freq_dir.mkdir(parents=True, exist_ok=True)
+        data_analysis.plot_fourier(m_target.signal, title=f"{alg_name}, target, n={n_osc}", save_path=freq_dir / "target")
+        data_analysis.plot_fourier(best_sample.weighted_sum, title=f"{alg_name}, sum, n={n_osc}", save_path=freq_dir / "sum")
+        data_analysis.plot_fourier(reg_sample.weighted_sum, title=f"{alg_name}, regression, n={n_osc}", save_path=freq_dir / "regression")
     if decompose_sample: # show individual signals in best sample
-        data_analysis.plot_individual_oscillators(best_sample.signal_matrix, m_target.time)
-        data_analysis.plot_f0_hist(best_sample.signal_matrix, 1/m_target.sampling_rate, title=f"fundamental frequency distribution")
+        data_analysis.plot_individual_oscillators(best_sample.signal_matrix, m_target.time, save_path=time_dir / "individual_signals")
+        data_analysis.plot_f0_hist(best_sample.signal_matrix, 1/m_target.sampling_rate, title=f"fundamental frequency distribution, n={n_osc}", save_path=time_dir / "frequency_distribution")
+    if interpolate: # apply sinc interpolation on time domain signals
+        new_sampling_rate = np.round(m_target.sampling_rate * const.OVERSAMPLING_FACTOR).astype(int)
+        interpol_sum = data_preprocessor.interpolate_sinc_sampling_rate(best_sample.weighted_sum, m_target.sampling_rate, new_sampling_rate)
+        interpol_reg = data_preprocessor.interpolate_sinc_sampling_rate(reg_sample.weighted_sum, m_target.sampling_rate, new_sampling_rate)
+        m_target.sinc_interpolate(new_sampling_rate)
+        
+        data_analysis.plot_pred_target(interpol_sum, m_target.signal, time=m_target.time, title=f"{alg_name}, interpolated, n={n_osc}", save_path=time_dir / "interpolated_sum")
+        data_analysis.plot_pred_target(interpol_reg, m_target.signal, time=m_target.time, title=f"regression after {alg_name}, interpolated, n={n_osc}", save_path=time_dir / "interpolated_regression")
 
-    print(f"{alg_name}")
-    print(f"z_ops: {z_ops}")
-    print(f"best_sample.rmse_sum {best_sample.rmse}")
-    print(f"best_sample.rmse_sum-norm {norm_sample.rmse}")
-    print(f"best_sample.rmse_fit {reg_sample.rmse}")
-    print(f"best_sample.rmse_fit-norm {norm_reg_sample.rmse}")
-
-    plt.show()
+    out = f"""
+z_ops: {z_ops}
+{alg_name} RMSE: {best_sample.rmse}
+{alg_name} normalized RMSE: {norm_sample.rmse}
+regression after {alg_name} RMSE: {reg_sample.rmse}
+regression after {alg_name} normalized RMSE: {norm_reg_sample.rmse}
+    """
+    data_io.save_object_to_string(out, save_path / "results.txt")
+    print(out)

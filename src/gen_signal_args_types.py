@@ -112,7 +112,8 @@ class SpiceSumRandArgs:
         if self.down_sample_factor is None:
             return np.around(1 / self.time_step).astype(int)
 
-        sampling_rate = np.around(1 / (self.time_step * self.down_sample_factor)).astype(int)
+        spice_sampling_rate = 1/self.time_step
+        sampling_rate = np.around(spice_sampling_rate * self.down_sample_factor).astype(int)
         return sampling_rate
 
     def get_duration(self) -> float:

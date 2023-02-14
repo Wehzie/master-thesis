@@ -29,5 +29,6 @@ module load networkx
 module load scikit-learn
 module load tqdm
 module load GCC
+module load ngspice
 
 srun python3 src/main.py
