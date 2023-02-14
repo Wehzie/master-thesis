@@ -1,4 +1,5 @@
 import subprocess
+from typing import List
 
 import argparse
 
@@ -90,7 +91,10 @@ def build_job_commands():
     return invocations
 
 
-def ask_for_confirmation():
+def ask_for_confirmation(srun_commands: List[str]):
+    print("The following commands will be executed:")
+    for command in srun_commands:
+        print(command)
     proceed = input("Continue? (y/n)")
     if proceed != "y":
         print("Aborting.")
@@ -102,7 +106,7 @@ def main():
     time = "00:01:00" if args.production else "03:00:00"
     srun_commands = build_job_commands()
 
-    ask_for_confirmation()
+    ask_for_confirmation(srun_commands)
 
     for command in srun_commands:
         script = build_job_script(command, time, memory)
