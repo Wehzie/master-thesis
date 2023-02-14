@@ -3,14 +3,14 @@ from typing import List
 
 import argparse
 
-def build_job_script(command: str, time: str, mem: str, partition: str) -> str:
+def build_job_script(command: str, time: str, mem: str, partition: str, name: str) -> str:
     return (
 f"""#!/bin/bash
 
 # SBATCH --job-name=experiment
 # SBATCH --mail-type=ALL
 # SBATCH --mail-user=r.tappe.maestro@student.rug.nl
-# SBATCH --output=job-%j.log
+# SBATCH --output=logs/job-{name}-%j.log
 
 # regular, short, vulture
 # SBATCH --partition={partition}
@@ -76,19 +76,22 @@ def build_job_commands():
     base_call = ["srun", "python3", "src/main.py"]
 
     invocations = []
+    names = []
     for e in legal_python_experiments:
         extension_args = ["--signal_generator", "python", f"--experiment {e}", "--target magpie"]
         if args.production:
             extension_args.append("--production")
         invocations.append(base_call + extension_args)
+        names.append(f"python-{e}")
 
     for e in legal_hybrid_experiments:
         extension_args = ["--signal_generator", "spipy", f"--experiment {e}", "--target sine"]
         if args.production:
             extension_args.append("--production")
         invocations.append(base_call + extension_args)
+        names.append(f"spipy-{e}")
 
-    return invocations
+    return invocations, names
 
 
 def ask_for_confirmation(srun_commands: List[str], time: str, memory: str, partition: str):
@@ -107,12 +110,12 @@ def main():
     memory = "2GB" if args.production else "500MB"
     time = "03:00:00" if args.production else "00:01:00"
 
-    srun_commands = build_job_commands()
+    srun_commands, names = build_job_commands()
 
     ask_for_confirmation(srun_commands, time, memory, partition)
 
-    for command in srun_commands:
-        script = build_job_script(command, time, memory)
+    for command, name in zip(srun_commands, names):
+        script = build_job_script(command, time, memory, partition, name)
         with open("job.sh", "w") as f:
             f.write(script)
         subprocess.run(["sbatch", "job.sh"])
