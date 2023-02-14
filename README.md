@@ -23,11 +23,7 @@ In order of priority:
 
 ### High priority
 
-- Saving for qualitative results
-
 - Parallelization: Write script to launch quantitative experiments as separate slurm jobs.
-    - Especially necessary for hybrid signal generator.
-    - Command line interface could be useful here
 
 - show sampling rate and duration, not number of samples in the sweep plots
 
