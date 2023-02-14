@@ -195,10 +195,15 @@ def evaluate_prediction(best_sample: Sample, m_target: meta_target.MetaTarget,
         new_sampling_rate = np.round(m_target.sampling_rate * const.OVERSAMPLING_FACTOR).astype(int)
         interpol_sum = data_preprocessor.interpolate_sinc_sampling_rate(best_sample.weighted_sum, m_target.sampling_rate, new_sampling_rate)
         interpol_reg = data_preprocessor.interpolate_sinc_sampling_rate(reg_sample.weighted_sum, m_target.sampling_rate, new_sampling_rate)
-        m_target.sinc_interpolate(new_sampling_rate)
-        
-        data_analysis.plot_pred_target(interpol_sum, m_target.signal, time=m_target.time, title=f"{alg_name}, interpolated, n={n_osc}", save_path=time_dir / "interpolated_sum")
-        data_analysis.plot_pred_target(interpol_reg, m_target.signal, time=m_target.time, title=f"regression after {alg_name}, interpolated, n={n_osc}", save_path=time_dir / "interpolated_regression")
+        m_target.signal = data_preprocessor.interpolate_sinc_sampling_rate(m_target.signal, m_target.sampling_rate, new_sampling_rate)
+
+        new_samples = np.round(m_target.duration * new_sampling_rate).astype(int)
+        new_time = np.linspace(0, m_target.duration, new_samples, endpoint=False)
+        if len(new_time) > len(m_target.signal):
+            new_time = new_time[0:len(m_target.signal)]
+            
+        data_analysis.plot_pred_target(interpol_sum, m_target.signal, time=new_time, title=f"{alg_name}, interpolated, n={n_osc}", save_path=time_dir / "interpolated_sum")
+        data_analysis.plot_pred_target(interpol_reg, m_target.signal, time=new_time, title=f"regression after {alg_name}, interpolated, n={n_osc}", save_path=time_dir / "interpolated_regression")
 
     out = f"""
 z_ops: {z_ops}

@@ -114,6 +114,7 @@ algo_selector: str = "all",
         algo_sweep=algo_sweep,
 
         target_sweep=hybrid_parameters.target_sweep,
+        target_freq_sweep=hybrid_parameters.target_freq_sweep,
         n_osc_sweep=hybrid_parameters.n_osc_sweep,
         z_ops_sweep=hybrid_parameters.z_ops_sweep,
         duration_sweep=hybrid_parameters.duration_sweep,

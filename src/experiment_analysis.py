@@ -142,6 +142,7 @@ def conv_results_to_pd(results: List[resty.ResultSweep]) -> pd.DataFrame:
     res_df = rename_algos_by_args(res_df, algo_args_df)
     rand_args_df = pd.DataFrame(rand_args).drop(rand_args_to_drop, axis=1)
     target_df = pd.DataFrame([r.algo_args.meta_target.name for r in results], columns=["target_name"])
+    target_max_freq_df = pd.DataFrame([r.algo_args.meta_target.get_max_freq() for r in results], columns=["target_max_freq"])
 
     duration_df = infer_duration(results)
 
@@ -152,13 +153,12 @@ def conv_results_to_pd(results: List[resty.ResultSweep]) -> pd.DataFrame:
     offset_dist_range = pd.DataFrame([ra.offset_dist.range for ra in rand_args], columns=["offset_range"])
 
     # dist bounds
-    # r_dist_df = pd.DataFrame([add_str2keys("r_dist", ra.r_dist.kwargs) for ra in rand_args])
     freq_dist_df = select_frequency_controller_bounds(rand_args)
     weight_dist_df = pd.DataFrame([add_str2keys("weight_dist", ra.weight_dist.kwargs) for ra in rand_args])
     phase_dist_df = pd.DataFrame([add_str2keys("phase_dist", ra.phase_dist.kwargs) for ra in rand_args])
     offset_dist_df = pd.DataFrame([add_str2keys("offset_dist", ra.offset_dist.kwargs) for ra in rand_args])
     
-    return pd.concat([res_df, target_df, algo_args_df, rand_args_df, duration_df,
+    return pd.concat([res_df, target_df, target_max_freq_df, algo_args_df, rand_args_df, duration_df,
         freq_dist_range, weight_dist_range, phase_dist_range, offset_dist_range,
         freq_dist_df, weight_dist_df, phase_dist_df, offset_dist_df], axis=1)
 

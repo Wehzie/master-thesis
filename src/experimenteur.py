@@ -46,16 +46,17 @@ class Experimenteur:
         self.show_plots = show_plots
     
     @staticmethod
-    def run_qualitative_algo_sweep(algo_sweep: sweety.AlgoSweep, m_target: meta_target.MetaTarget, visual: bool = False) -> None:
+    def run_qualitative_algo_sweep(algo_sweep: sweety.AlgoSweep, m_target: meta_target.MetaTarget) -> None:
         """
         Perform an experiment to compare multiple algorithms but don't collect results over multiple runs or average.
         Plots the best sample for each algorithm against the target.
         """
+        local_target = copy.deepcopy(m_target)
         for awa in algo_sweep.algo_with_args:
             awa: algo_args_bundle.AlgoWithArgs
             search_alg = awa.Algo(awa.algo_args)
             best_sample, z_ops = search_alg.search()
-            if visual: sample.evaluate_prediction(best_sample, m_target, z_ops, search_alg.__class__.__name__)
+            sample.evaluate_prediction(best_sample, local_target, z_ops, search_alg.__class__.__name__)
 
     def set_sweep_name_and_dir(self, sweep_name: str) -> None:
         """set the name and directory of the sweep for the next experiment"""
@@ -210,6 +211,13 @@ class Experimenteur:
             expan.analyze_targets_vs_rmse(df, self.sweep_name, self.sweep_dir, show=self.show_plots)
             data_io.hoard_experiment_results(self.sweep_name, results, df, self.sweep_dir)
 
+        def invoke_target_freq_sweep():
+            self.set_sweep_name_and_dir("target_freq_vs_rmse")
+            results = self.run_target_sweep(sweep_bundle.target_freq_sweep)
+            df = expan.conv_results_to_pd(results)
+            expan.analyze_targets_vs_rmse(df, self.sweep_name, self.sweep_dir, show=self.show_plots)
+            data_io.hoard_experiment_results(self.sweep_name, results, df, self.sweep_dir)
+
         def invoke_n_osc_sweep():
             self.set_sweep_name_and_dir("n_osc_vs_rmse")
             results = self.run_rand_args_sweep(sweep_bundle.algo_sweep, sweep_bundle.n_osc_sweep, base_rand_args)
@@ -320,6 +328,7 @@ class Experimenteur:
         def invoke_hybrid_generator_sweeps():
             if selector in ["all", "target"]:
                 invoke_target_sweep()
+                invoke_target_freq_sweep()
             if selector in ["all", "n_osc"]:
                 invoke_n_osc_sweep()
             if selector in ["all", "z_ops"]:

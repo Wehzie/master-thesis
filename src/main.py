@@ -15,7 +15,7 @@ default="all", required=False, choices=[
     "target",
     "n_osc", "z_ops", "samples", "duration",
     "frequency", "resistor", "weight", "offset", "phase", "amplitude"])
-parser.add_argument("--target", type=str, help="Select the default target to approximate.", default="magpie", required=False, choices=[
+parser.add_argument("--target", type=str, help="Select the default target to approximate.", default="sine", required=False, choices=[
     "sine", "triangle", "square", "sawtooth", "inverse_sawtooth",
     "chirp", "beat", "damp_chirp",
     "smooth_gauss", "smooth_uniform", "gauss_noise", "uniform_noise",
@@ -96,7 +96,7 @@ def main():
         sweep_bundle = sweep_builder.bundle_python_sweep(sig_gen, generator_args, m_target, algo_selector="all")
         
         if args.qualitative:
-            exp.run_qualitative_algo_sweep(sweep_bundle.algo_sweep, m_target, visual=True)
+            exp.run_qualitative_algo_sweep(sweep_bundle.algo_sweep, m_target)
         
         if args.experiment != "none":
             exp.run_all_experiments(sweep_bundle, m_target.samples, generator_args, args.experiment)
@@ -110,7 +110,7 @@ def main():
         sweep_bundle = sweep_builder.bundle_hybrid_sweep(sig_gen, generator_args, m_target, algo_selector="all")
 
         if args.qualitative:
-            exp.run_qualitative_algo_sweep(sweep_bundle.algo_sweep, m_target, visual=True)
+            exp.run_qualitative_algo_sweep(sweep_bundle.algo_sweep, m_target)
 
         if args.experiment != "none":
             exp.run_all_experiments(sweep_bundle, m_target.samples, generator_args, args.experiment)

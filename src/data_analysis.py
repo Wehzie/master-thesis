@@ -330,6 +330,12 @@ def get_freq_from_fft_v2(s: np.ndarray, sample_spacing: float) -> float:
     f0, f1 = freq[nlargest_arg[0]], freq[nlargest_arg[1]]
     return abs(max(f0, f1, key=abs))
 
+
+def get_max_freq_from_fft(s: np.ndarray, sample_spacing: float) -> float:
+    """find the fastest frequency component in a signal using FFT"""
+    freqs = np.fft.rfftfreq(len(s), sample_spacing) # frequency axis
+    return freqs[-1]
+
 def main():
     sampling_rate, data, _ = data_io.load_data()
     plot_pred_target(data, data-10)

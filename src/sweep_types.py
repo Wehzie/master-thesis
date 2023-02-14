@@ -202,5 +202,6 @@ class HybridSweepBundle(SweepBundle):
 
     # constant time sweeps
     resistor_sweep: Final[FreqSweep] # manipulate netlist generation, R value
+    target_freq_sweep: Final[TargetSweep]
 
 UnionSweepBundle = Union[PythonSweepBundle, HybridSweepBundle]

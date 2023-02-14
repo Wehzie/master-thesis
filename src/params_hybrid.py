@@ -77,6 +77,18 @@ target_sweep = sweety.TargetSweep(
     m_averages=M_AVERAGES,
 )
 
+target_freq_sweep = sweety.TargetSweep(
+    "evaluate the ability of the hybrid signal generator to fit varying frequency sinusoids",
+    shared_params_target.build_target_freq_sweep(
+        duration=spice_rand_args_uniform.get_duration(),
+        sampling_rate=spice_rand_args_uniform.get_sampling_rate()
+    ),
+    spice_rand_args_uniform,
+    gen_signal_spipy.SpipySignalGenerator(),
+    max_z_ops=MAX_Z_OPS,
+    m_averages=M_AVERAGES,
+)
+
 n_osc_sweep = sweety.NOscSweep(
     n_osc=[50, 100, 200, 500, 1000],
 )

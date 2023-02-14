@@ -8,6 +8,7 @@ import gen_signal_args_types as party
 import data_io
 import data_preprocessor
 import const
+import data_analysis
 
 from typing import Final, Union
 from pathlib import Path
@@ -35,13 +36,21 @@ class MetaTarget(ABC):
         return f"MetaTarget({self.name}, sampling_rate={self.sampling_rate}, dtype={self.dtype}, duration={self.duration})"
     
     def sinc_interpolate(self, new_sampling_rate: int):
+        new_signal = data_preprocessor.interpolate_sinc_sampling_rate(self.signal, self.sampling_rate, new_sampling_rate)
         new_samples = np.round(self.duration * new_sampling_rate).astype(int)
-        new_time = np.linspace(0, self.duration, new_samples)
+        new_time = np.linspace(0, self.duration, new_samples, endpoint=False)
 
-        self.signal = data_preprocessor.interpolate_sinc_time(self.signal, self.time, new_time)
+        self.signal = new_signal
         self.time = new_time
         self.sampling_rate = new_sampling_rate
         self.samples = new_samples
+
+    def get_max_freq(self) -> float:
+        """returns the maximum frequency in the signal"""
+        if hasattr(self, "max_freq"):
+            return self.max_freq
+        else:
+            return data_analysis.get_max_freq_from_fft(self.signal, 1/self.sampling_rate)
 
 class MetaTargetSample(MetaTarget):
     """load signal from file, save meta data; use sample based processing"""
@@ -159,6 +168,7 @@ class SyntheticTarget(MetaTarget):
         self.duration = duration
         self.derive_samples_or_sampling_rate(duration, samples, sampling_rate, max_freq)
         self.time = np.linspace(0, duration, self.samples, endpoint=False)
+        self.max_freq = max_freq
 
     def compute_oversampling_rate(self, max_freq: float) -> int:
         """compute the oversampling rate for the given sampling rate
@@ -220,9 +230,9 @@ class SyntheticTarget(MetaTarget):
 
 class SineTarget(SyntheticTarget):
 
-    def __init__(self, duration: float, sampling_rate: Union[int, None] = None, samples: Union[int, None] = None, freq: float = 1, amplitude: float = 1, phase: float = 0, offset: float = 0) -> None:
+    def __init__(self, duration: float, sampling_rate: Union[int, None] = None, samples: Union[int, None] = None, freq: float = 1, amplitude: float = 1, phase: float = 0, offset: float = 0, name: str = "sine") -> None:
         super().__init__(duration, sampling_rate, samples, freq)
-        self.name = "sine"
+        self.name = name
         self.signal = np.sin(2 * np.pi * freq * self.time + phase*np.pi) * amplitude + offset
 
 class TriangleTarget(SyntheticTarget):
@@ -255,7 +265,7 @@ class InverseSawtoothTarget(SyntheticTarget):
 
 class ChirpTarget(SyntheticTarget):
 
-    def __init__(self, duration: float, sampling_rate: Union[int, None] = None, samples: Union[int, None] = None, start_freq: float = 0.1, stop_freq: Union[float, None] = None, amplitude: float = 1, offset: float = 0) -> None:
+    def __init__(self, duration: float, sampling_rate: Union[int, None] = None, samples: Union[int, None] = None, start_freq: float = 0.1, stop_freq: Union[float, None] = None, amplitude: float = 1, offset: float = 0, name: str = "chirp") -> None:
         """
         initialize a chirp signal.
 
@@ -270,7 +280,7 @@ class ChirpTarget(SyntheticTarget):
                        when None the stop frequency is derived from the sampling rate   
         """
         super().__init__(duration, sampling_rate, samples, stop_freq)
-        self.name = "chirp"
+        self.name = name
         if stop_freq is None:
             stop_freq = self.sampling_rate/20
         self.signal = signal.chirp(self.time, start_freq, self.duration, stop_freq) * amplitude + offset
