@@ -141,7 +141,7 @@ def bundle_algos_with_args(
     gradient_algos = [
         algabun.AlgoWithArgs(
             algra.LinearRegression,
-            algarty.AlgoArgs(sig_generator, generator_args, meta_target),
+            algarty.AlgoArgs(sig_generator, generator_args, meta_target, max_z_ops),
         ),
     ]
     

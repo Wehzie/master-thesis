@@ -47,6 +47,8 @@ import shared_params_target
 import gen_signal_python
 import gen_signal_spipy
 import sweep_builder
+import matplotlib.pyplot as plt
+plt.rcParams.update({'font.size': 8})
 
 legal_python_experiments = [
     "target",

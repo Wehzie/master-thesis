@@ -183,7 +183,8 @@ def get_plot_title(df: pd.DataFrame, target_samples: int, z_ops: bool = True) ->
     sampling_rate_txt = f", fs={sampling_rate} Hz" if sampling_rate is not None else ""
     time_vars = duration_txt+sampling_rate_txt if duration_txt is not "" or sampling_rate_txt is not "" else f"#s={target_samples}"
     
-    title = f"m={m_averages}, n={n_osc}{time_vars}{str_max_z_ops}" 
+    target_name = df["target_name"].values[0]
+    title = f"{target_name}, m={m_averages}, n={n_osc}{time_vars}{str_max_z_ops}" 
     return title
 
 def filter_df_by_dist_name(df: pd.DataFrame, attr_name: str, dist_name: str) -> pd.DataFrame:
@@ -354,13 +355,15 @@ mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
     n_osc = df["n_osc"].values[0]
     max_z_ops = int(df["max_z_ops"].values[0])
     sampling_rate = int(df["sampling_rate"].values[0])
-    title = f"m={m_averages}, n={n_osc}, z={max_z_ops}, fs={sampling_rate} Hz"
+    target_name = df["target_name"].values[0]
+    title = f"m={m_averages}, n={n_osc}, z={max_z_ops}, fs={sampling_rate} Hz, {target_name}"
 
     df = df.filter(items=["algo_name", "duration", "mean_rmse", "std_rmse"])
     df = apply_mask(df, mask)
     fig, legend_as_fig = plot_rmse_by_algo(df, "duration", mask=mask)
     fig.gca().set_title(title)
     fig.gca().set_xlabel("duration [s]")
+    fig.gca().set_xscale("log")
     save_fig_n_legend(fig, legend_as_fig, sweep_name, save_dir, mask, show)
 
 def plot_targets_w_all_algos(df: pd.DataFrame, title: str) -> plt.Figure:

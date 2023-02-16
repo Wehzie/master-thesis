@@ -210,7 +210,7 @@ class Experimenteur:
     target_samples: int,
     base_rand_args: party.UnionRandArgs,
     selector: str,
-    target_selector: str,
+    target_selector: str = None,
     ) -> None:
         """run all experiments and plot results
         

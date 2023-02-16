@@ -21,6 +21,25 @@ import numpy as np
 from tqdm import tqdm
 
 
+def debug(sample: sample.Sample):
+    m = np.mean(sample.weighted_sum)
+    m2 = np.mean(np.sum(sample.signal_matrix, axis=0))
+    mean10rows = [np.mean(row) for row in sample.signal_matrix[:10, :]]
+    o = sample.offset
+    maximum_matrix = np.max(sample.signal_matrix)
+    minimum_matrix = np.min(sample.signal_matrix)
+    maximum_weighted_sum = np.max(sample.weighted_sum)
+    minimum_weighted_sum = np.min(sample.weighted_sum)
+
+    print("\n\n")
+    print(f"shape_matrix: {sample.signal_matrix.shape}")
+    print(f"shape_weighted_sum: {sample.weighted_sum.shape}")
+    print(f"mean_weighted_sum: {m}, mean_matrix: {m2}, offset: {o}")
+    print(f"mean10rows: {mean10rows}")
+    print(f"max_matrix: {maximum_matrix}, min_matrix: {minimum_matrix}")
+    print(f"max_weighted_sum: {maximum_weighted_sum}, min_weighted_sum: {minimum_weighted_sum}")
+    exit()
+
 class MonteCarlo(algo.SearchAlgo):
     """abstract class"""
 

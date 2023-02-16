@@ -69,25 +69,22 @@ hybrid_experiments = [
 
 def build_job_commands():
     base_call = ["srun", "python3", "src/main.py"]
+    if args.production:
+        base_call.append("--production")
 
     invocations = []
     names = []
     for e in python_experiments:
-        extension_args = ["--signal_generator", "python", f"--experiment {e}", "--target magpie"]
-        if args.production:
-            extension_args.append("--production")
+        extension_args = ["--signal_generator", "python", f"--experiment {e}", "--target", "magpie"]
         invocations.append(base_call + extension_args)
         names.append(f"python-{e}")
 
     for e in hybrid_experiments:
-        extension_args = ["--signal_generator", "spipy", f"--experiment {e}", "--target sine"]
-        if args.production:
-            extension_args.append("--production")
+        extension_args = ["--signal_generator", "spipy", f"--experiment {e}", "--target", "sine"]
         invocations.append(base_call + extension_args)
         names.append(f"spipy-{e}")
 
     return invocations, names
-
 
 def ask_for_confirmation(srun_commands: List[str], time: str, memory: str, partition: str):
     print("The following commands will be executed:")
@@ -100,16 +97,7 @@ def ask_for_confirmation(srun_commands: List[str], time: str, memory: str, parti
         exit()
     print("Proceeding...")
 
-def main():
-    partition = "regular" if args.production else "vulture"
-    memory = "2GB" if args.production else "300MB"
-    time = "03:00:00" if args.production else "00:01:00"
-    mail = send_mail_config if args.production else ""
-
-    srun_commands, names = build_job_commands()
-
-    ask_for_confirmation(srun_commands, time, memory, partition)
-
+def run_jobs(srun_commands: List[List[str]], names: List[str], time: str, memory: str, partition: str, mail: str):
     counter = 0
     for command, name in zip(srun_commands, names):
         joined_command = " ".join(command)
@@ -121,6 +109,45 @@ def main():
         if counter == 2 and not args.production:
             break
 
+def launch_quantitative_experiments():
+    partition = "regular" if args.production else "vulture"
+    memory = "2GB" if args.production else "300MB"
+    time = "03:00:00" if args.production else "00:01:00"
+    mail = send_mail_config if args.production else ""
+
+    srun_commands, names = build_job_commands()
+
+    ask_for_confirmation(srun_commands, time, memory, partition)
+
+    run_jobs(srun_commands, names, time, memory, partition, mail)
+
+
+def launch_quantitative_experiments():
+
+    def build_job_commands():
+        base_call = ["srun", "python3", "src/main.py", "--experiment", "none", "--qualitative"]
+        if args.production:
+                base_call.append("--production")
+        
+        python_extension = ["--signal_generator", "python", "--target", "magpie"]
+        python_args = base_call + python_extension
+
+        spipy_extension = ["--signal_generator", "spipy", "--target", "damp_chirp"]
+        spipy_args = base_call + spipy_extension
+        return [python_args, spipy_args]
+    
+    partition = "regular" if args.production else "vulture"
+    memory = "500MB" if args.production else "500MB"
+    time = "00:30:00" if args.production else "00:01:00"
+    mail = send_mail_config if args.production else ""
+
+    srun_commands = build_job_commands()
+    names = ["python-qualitative", "spipy-qualitative"]
+
+    ask_for_confirmation(srun_commands, time, memory, partition)
+
+    run_jobs(srun_commands, names, time, memory, partition, mail)
 
 if __name__ == "__main__":
-    main()
+    launch_quantitative_experiments()
+    launch_quantitative_experiments()

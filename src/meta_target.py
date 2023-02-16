@@ -304,7 +304,7 @@ class BeatTarget(SyntheticTarget):
 
 class DampChirpTarget(SyntheticTarget):
 
-    def __init__(self, duration: float, sampling_rate: Union[int, None] = None, samples: Union[int, None] = None, start_freq: float = 0.1, stop_freq: Union[float, None] = None, amplitude: float = 1, offset: float = 0) -> None:
+    def __init__(self, duration: float, sampling_rate: Union[int, None] = None, samples: Union[int, None] = None, start_freq: float = 0.1, stop_freq: Union[float, None] = None, amplitude: float = 1, offset: float = 0, name: str = "d. chirp") -> None:
         """
         initialize a chirp signal.
 
@@ -323,7 +323,7 @@ class DampChirpTarget(SyntheticTarget):
         if stop_freq is None:
             stop_freq = self.sampling_rate/20
         self.signal = signal.chirp(self.time, start_freq, self.duration, stop_freq) * amplitude + offset
-        self.signal = self.signal * np.exp(-self.time)
+        self.signal = self.signal * np.exp(-self.time) ** (1/self.duration)
 
 class SmoothGaussianNoiseTarget(SyntheticTarget):
 

@@ -48,7 +48,7 @@ spice_rand_args_uniform = party.SpiceSumRandArgs(
     c_dist=dist.Dist(300e-12),
 
     time_step=2e-9,
-    time_stop=1e-4,
+    time_stop=2e-5,
     time_start=0,
 
     dependent_component="v(osc1)",
@@ -98,7 +98,7 @@ z_ops_sweep = sweety.ZOpsSweep(
     max_z_ops=[0, 100, 300, 500],
 )
 
-duration_sweep = sweety.DurationSweep([0.001, 0.005, 0.01])
+duration_sweep = sweety.DurationSweep([1e-4, 1e-3, 1e-2])
 
 resistor_sweep = sweety.ResistorSweep(
     r_dist = [

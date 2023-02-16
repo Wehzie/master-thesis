@@ -17,21 +17,17 @@ In order of priority:
 
 ### High priority
 
-- BUG: MCOneShot doesn't plot all n_osc in n_osc sweep
-- BUG: z-ops plot double entry at same value as default value
-- Potential bug: Normal distribution plots not saved, fix or drop normal distribution plots.
-- BUG: Linear regression not showing up on z_ops with hybrid sweep because z_ops is not set; return the z_ops value passed to linear regression after search, as other algorithms do.
-- BUG: Check duration sweep dataframe.
-- Plot Improvement: logarithmic x-scale for duration plot.
-- Plot Improvement: save mean, mode, stddev to frequency diversity plot title.
-- Plot Improvement: custom legend for mask with multiple members in a group. Such that a group shares a color and one entry in the legend (individual algorithm names shouldn't be visible).
 - Do target sweep with linear regression only or 1 or 2 more good algorithms.
+
+- The mean of a sample's matrix across all rows is far off zero when using SpiPy.CACHING.
 
 ### Medium priority
 
-- Add magpie to target sweep.
+- Plot Improvement: custom legend for mask with multiple members in a group. Such that a group shares a color and one entry in the legend (individual algorithm names shouldn't be visible).
 
-- Qualitative sweeps with parallel jobs script.
+- Plot Improvement: save mean, mode, stddev to frequency diversity plot title.
+
+- Add magpie to target sweep.
 
 - Plot improvement: Reuse algorithm bar chart with z-ops sweep.
 

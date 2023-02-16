@@ -120,15 +120,14 @@ class SpipySignalGenerator(gen_signal.SignalGenerator):
         if det_args.generator_mode == party.SpipyGeneratorMode.CACHE:
             pred = SpipySignalGenerator.load_from_cache_and_extrapolate_signal(det_args, DF_CACHE)
         elif det_args.generator_mode == party.SpipyGeneratorMode.EXTRAPOLATE:
-            if det_args.extrapolate:
-                patience_counter = 0
-                while patience_counter < const.SPICE_PATIENCE:
-                    pred = SpipySignalGenerator.simulate_and_extrapolate_signal(det_args, tmp_path, patience_counter+1)
-                    if pred is not None:
-                        break
-                    patience_counter += 1
-                if patience_counter == const.SPICE_PATIENCE:
-                    raise Exception(f"SPICE simulation failed {const.SPICE_PATIENCE} times in a row")
+            patience_counter = 0
+            while patience_counter < const.SPICE_PATIENCE:
+                pred = SpipySignalGenerator.simulate_and_extrapolate_signal(det_args, tmp_path, patience_counter+1)
+                if pred is not None:
+                    break
+                patience_counter += 1
+            if patience_counter == const.SPICE_PATIENCE:
+                raise Exception(f"SPICE simulation failed {const.SPICE_PATIENCE} times in a row")
         elif det_args.generator_mode == party.SpipyGeneratorMode.SPICE:
                 pred = SpipySignalGenerator.fully_simulate_signal(det_args, tmp_path)
         else:

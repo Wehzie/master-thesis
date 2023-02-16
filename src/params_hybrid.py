@@ -46,7 +46,7 @@ spice_rand_args_uniform = party.SpiceSumRandArgs(
     c_dist=dist.Dist(300e-12),
 
     time_step=2e-9,
-    time_stop=1e-4,
+    time_stop=2e-5,
     time_start=0,
 
     dependent_component="v(osc1)",
@@ -97,7 +97,7 @@ z_ops_sweep = sweety.ZOpsSweep(
     max_z_ops=[0, 5e2, 1e3, 5e3, 1e4, 5e4],
 )
 
-duration_sweep = sweety.DurationSweep([1e-4, 5e-4, 1e-3, 5e-3, 1e-2])
+duration_sweep = sweety.DurationSweep([1e-4, 1e-3, 1e-2, 1e-1, 1e0])
 
 resistor_sweep = sweety.ResistorSweep(
     r_dist = [
@@ -133,9 +133,9 @@ phase_sweep = sweety.PhaseSweep(
 offset_sweep = sweety.OffsetSweep(
     offset_dist= [
         dist.Dist(RNG.uniform, low=0, high=0), # works better with experiment analysis than Dist(0)
-        dist.Dist(RNG.uniform, low=-1, high=1),
-        dist.Dist(RNG.uniform, low=-5, high=5),
         dist.Dist(RNG.uniform, low=-25, high=25),
         dist.Dist(RNG.uniform, low=-50, high=50),
+        dist.Dist(RNG.uniform, low=-75, high=75),
+        dist.Dist(RNG.uniform, low=-100, high=100),
     ]
 )

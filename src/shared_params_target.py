@@ -62,12 +62,12 @@ def build_target_freq_sweep(duration: float, sampling_rate: Union[int, None] = N
         meta_target.SineTarget(duration, sampling_rate, samples=samples, freq=1e4, name="sine 1e4 Hz"),
         meta_target.SineTarget(duration, sampling_rate, samples=samples, freq=1e5, name="sine 1e5 Hz"),
         meta_target.SineTarget(duration, sampling_rate, samples=samples, freq=1e6, name="sine 1e6 Hz"),
-        meta_target.ChirpTarget(duration, sampling_rate, samples=samples, start_freq=1, stop_freq=1e1, name="chirp 1 to 10 Hz"),
-        meta_target.ChirpTarget(duration, sampling_rate, samples=samples, start_freq=1e1, stop_freq=1e2, name="chirp 10 to 100 Hz"),
-        meta_target.ChirpTarget(duration, sampling_rate, samples=samples, start_freq=1e2, stop_freq=1e3, name="chirp 100 to 1e3 Hz"),
-        meta_target.ChirpTarget(duration, sampling_rate, samples=samples, start_freq=1e3, stop_freq=1e4, name="chirp 1e3 to 1e4 Hz"),
-        meta_target.ChirpTarget(duration, sampling_rate, samples=samples, start_freq=1e4, stop_freq=1e5, name="chirp 1e4 to 1e5 Hz"),
-        meta_target.ChirpTarget(duration, sampling_rate, samples=samples, start_freq=1e5, stop_freq=1e6, name="chirp 1e5 to 1e6 Hz"),
+        meta_target.DampChirpTarget(duration, sampling_rate, samples=samples, start_freq=1, stop_freq=1e1, name="d. chirp 1 to 10 Hz"),
+        meta_target.DampChirpTarget(duration, sampling_rate, samples=samples, start_freq=1e1, stop_freq=1e2, name="d. chirp 10 to 100 Hz"),
+        meta_target.DampChirpTarget(duration, sampling_rate, samples=samples, start_freq=1e2, stop_freq=1e3, name="d. chirp 100 to 1e3 Hz"),
+        meta_target.DampChirpTarget(duration, sampling_rate, samples=samples, start_freq=1e3, stop_freq=1e4, name="d. chirp 1e3 to 1e4 Hz"),
+        meta_target.DampChirpTarget(duration, sampling_rate, samples=samples, start_freq=1e4, stop_freq=1e5, name="d. chirp 1e4 to 1e5 Hz"),
+        meta_target.DampChirpTarget(duration, sampling_rate, samples=samples, start_freq=1e5, stop_freq=1e6, name="d. chirp 1e5 to 1e6 Hz"),
     ]
     return target_freq_sweep
 

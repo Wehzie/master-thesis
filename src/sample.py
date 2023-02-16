@@ -180,19 +180,19 @@ def evaluate_prediction(best_sample: Sample, m_target: meta_target.MetaTarget,
     if plot_time: # time-domain
         time_dir = save_path / "time_domain"
         time_dir.mkdir(parents=True, exist_ok=True)
-        data_analysis.plot_pred_target(best_sample.weighted_sum, m_target.signal, time=m_target.time, title=f"{alg_name}, n={n_osc}", save_path=time_dir / "base_algorithm")
-        data_analysis.plot_pred_target(reg_sample.weighted_sum, m_target.signal, time=m_target.time, title=f"regression after {alg_name}, n={n_osc}", save_path=time_dir / "regression")
-        data_analysis.plot_pred_target(norm_sample.weighted_sum, target_norm, time=m_target.time, title=f"{alg_name}, normalized, n={n_osc}", save_path=time_dir / "normalized_base_algorithm")
-        data_analysis.plot_pred_target(norm_reg_sample.weighted_sum, target_norm, time=m_target.time, title=f"normalized after regression, n={n_osc}", save_path=time_dir / "normalized_regression")
+        data_analysis.plot_pred_target(best_sample.weighted_sum, m_target.signal, time=m_target.time, title=f"{alg_name}, n={n_osc}, z={z_ops}", save_path=time_dir / "base_algorithm")
+        data_analysis.plot_pred_target(reg_sample.weighted_sum, m_target.signal, time=m_target.time, title=f"regression after {alg_name}, n={n_osc}, z={z_ops}", save_path=time_dir / "regression")
+        data_analysis.plot_pred_target(norm_sample.weighted_sum, target_norm, time=m_target.time, title=f"{alg_name}, normalized, n={n_osc}, z={z_ops}", save_path=time_dir / "normalized_base_algorithm")
+        data_analysis.plot_pred_target(norm_reg_sample.weighted_sum, target_norm, time=m_target.time, title=f"normalized after regression, n={n_osc}, z={z_ops}", save_path=time_dir / "normalized_regression")
     if plot_freq: # frequency-domain
         freq_dir = save_path / "frequency_domain"
         freq_dir.mkdir(parents=True, exist_ok=True)
-        data_analysis.plot_fourier(m_target.signal, title=f"{alg_name}, target, n={n_osc}", save_path=freq_dir / "target")
-        data_analysis.plot_fourier(best_sample.weighted_sum, title=f"{alg_name}, sum, n={n_osc}", save_path=freq_dir / "sum")
-        data_analysis.plot_fourier(reg_sample.weighted_sum, title=f"{alg_name}, regression, n={n_osc}", save_path=freq_dir / "regression")
+        data_analysis.plot_fourier(m_target.signal, title=f"{alg_name}, target, n={n_osc}, z={z_ops}", save_path=freq_dir / "target")
+        data_analysis.plot_fourier(best_sample.weighted_sum, title=f"{alg_name}, sum, n={n_osc}, z={z_ops}", save_path=freq_dir / "sum")
+        data_analysis.plot_fourier(reg_sample.weighted_sum, title=f"{alg_name}, regression, n={n_osc}, z={z_ops}", save_path=freq_dir / "regression")
     if decompose_sample: # show individual signals in best sample
         data_analysis.plot_individual_oscillators(best_sample.signal_matrix, m_target.time, save_path=time_dir / "individual_signals")
-        data_analysis.plot_f0_hist(best_sample.signal_matrix, 1/m_target.sampling_rate, title=f"fundamental frequency distribution, n={n_osc}", save_path=time_dir / "frequency_distribution")
+        data_analysis.plot_f0_hist(best_sample.signal_matrix, 1/m_target.sampling_rate, title=f"fundamental frequency distribution, n={n_osc}, z={z_ops}", save_path=time_dir / "frequency_distribution")
     
     out = f"""
 {alg_name}
@@ -218,5 +218,5 @@ regression after {alg_name} normalized RMSE: {norm_reg_sample.rmse}
         if len(new_time) > len(m_target.signal):
             new_time = new_time[0:len(m_target.signal)]
             
-        data_analysis.plot_pred_target(interpol_sum, m_target.signal, time=new_time, title=f"{alg_name}, interpolated, n={n_osc}", save_path=time_dir / "interpolated_sum")
-        data_analysis.plot_pred_target(interpol_reg, m_target.signal, time=new_time, title=f"regression after {alg_name}, interpolated, n={n_osc}", save_path=time_dir / "interpolated_regression")
+        data_analysis.plot_pred_target(interpol_sum, m_target.signal, time=new_time, title=f"{alg_name}, interpolated, n={n_osc}, z={z_ops}", save_path=time_dir / "interpolated_sum")
+        data_analysis.plot_pred_target(interpol_reg, m_target.signal, time=new_time, title=f"regression after {alg_name}, interpolated, n={n_osc}, z={z_ops}", save_path=time_dir / "interpolated_regression")
