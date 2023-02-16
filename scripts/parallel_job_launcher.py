@@ -109,7 +109,7 @@ def run_jobs(srun_commands: List[List[str]], names: List[str], time: str, memory
         if counter == 2 and not args.production:
             break
 
-def launch_quantitative_experiments():
+def launch_experiments():
     partition = "regular" if args.production else "vulture"
     memory = "2GB" if args.production else "300MB"
     time = "03:00:00" if args.production else "00:01:00"
@@ -122,7 +122,7 @@ def launch_quantitative_experiments():
     run_jobs(srun_commands, names, time, memory, partition, mail)
 
 
-def launch_quantitative_experiments():
+def launch_quantitative():
 
     def build_job_commands():
         base_call = ["srun", "python3", "src/main.py", "--experiment", "none", "--qualitative"]
@@ -149,5 +149,5 @@ def launch_quantitative_experiments():
     run_jobs(srun_commands, names, time, memory, partition, mail)
 
 if __name__ == "__main__":
-    launch_quantitative_experiments()
-    launch_quantitative_experiments()
+    launch_experiments()
+    launch_quantitative()
