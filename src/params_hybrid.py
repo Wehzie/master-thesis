@@ -54,7 +54,7 @@ spice_rand_args_uniform = party.SpiceSumRandArgs(
     # Python controlled parameters
     phase_dist = dist.Dist(RNG.uniform, low=0, high=2),
     weight_dist = dist.WeightDist(RNG.uniform, low=0, high=10, n=N_OSCILLATORS),
-    offset_dist = dist.Dist(RNG.uniform, low=0, high=0),
+    offset_dist = dist.Dist(RNG.uniform, low=-10, high=10),
 
     # runtime and memory optimizations
     generator_mode=party.SpipyGeneratorMode.CACHE,

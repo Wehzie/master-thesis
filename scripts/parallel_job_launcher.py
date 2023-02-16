@@ -137,7 +137,7 @@ def launch_quantitative():
         return [python_args, spipy_args]
     
     partition = "regular" if args.production else "vulture"
-    memory = "500MB" if args.production else "500MB"
+    memory = "2GB" if args.production else "500MB"
     time = "00:30:00" if args.production else "00:01:00"
     mail = send_mail_config if args.production else ""
 
