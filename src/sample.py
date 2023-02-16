@@ -6,6 +6,7 @@ A sample is tuned by an algorithm to minimize the rmse between the sum and the t
 """
 
 from __future__ import annotations
+import copy
 
 from pathlib import Path
 import csv
@@ -153,6 +154,7 @@ def evaluate_prediction(best_sample: Sample, m_target: meta_target.MetaTarget,
     plot_time: bool = True, plot_freq: bool = True, decompose_sample: bool = True, interpolate: bool = True,
     write_dir: Path = const.WRITE_DIR) -> None:
     """evaluate a generated signal (sample) against the target by qualitative (plots) and quantitative (RMSE) means"""
+    m_target = copy.deepcopy(m_target) # local copy to avoid side effects when running multiple times
     save_path = data_io.find_dir_name(write_dir, f"qualitative_{m_target.__class__.__name__}_{alg_name}")
 
     n_osc = best_sample.signal_matrix.shape[0]
@@ -191,6 +193,20 @@ def evaluate_prediction(best_sample: Sample, m_target: meta_target.MetaTarget,
     if decompose_sample: # show individual signals in best sample
         data_analysis.plot_individual_oscillators(best_sample.signal_matrix, m_target.time, save_path=time_dir / "individual_signals")
         data_analysis.plot_f0_hist(best_sample.signal_matrix, 1/m_target.sampling_rate, title=f"fundamental frequency distribution, n={n_osc}", save_path=time_dir / "frequency_distribution")
+    
+    out = f"""
+{alg_name}
+n_osc: {n_osc}
+z_ops: {z_ops}
+duration: {m_target.duration}
+{alg_name} RMSE: {best_sample.rmse}
+{alg_name} normalized RMSE: {norm_sample.rmse}
+regression after {alg_name} RMSE: {reg_sample.rmse}
+regression after {alg_name} normalized RMSE: {norm_reg_sample.rmse}
+    """
+    data_io.save_object_to_string(out, save_path / "results.txt")
+    print(out)
+    
     if interpolate: # apply sinc interpolation on time domain signals
         new_sampling_rate = np.round(m_target.sampling_rate * const.OVERSAMPLING_FACTOR).astype(int)
         interpol_sum = data_preprocessor.interpolate_sinc_sampling_rate(best_sample.weighted_sum, m_target.sampling_rate, new_sampling_rate)
@@ -204,13 +220,3 @@ def evaluate_prediction(best_sample: Sample, m_target: meta_target.MetaTarget,
             
         data_analysis.plot_pred_target(interpol_sum, m_target.signal, time=new_time, title=f"{alg_name}, interpolated, n={n_osc}", save_path=time_dir / "interpolated_sum")
         data_analysis.plot_pred_target(interpol_reg, m_target.signal, time=new_time, title=f"regression after {alg_name}, interpolated, n={n_osc}", save_path=time_dir / "interpolated_regression")
-
-    out = f"""
-z_ops: {z_ops}
-{alg_name} RMSE: {best_sample.rmse}
-{alg_name} normalized RMSE: {norm_sample.rmse}
-regression after {alg_name} RMSE: {reg_sample.rmse}
-regression after {alg_name} normalized RMSE: {norm_reg_sample.rmse}
-    """
-    data_io.save_object_to_string(out, save_path / "results.txt")
-    print(out)

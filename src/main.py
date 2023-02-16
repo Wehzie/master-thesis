@@ -113,7 +113,7 @@ def main():
             exp.run_qualitative_algo_sweep(sweep_bundle.algo_sweep, m_target)
 
         if args.experiment != "none":
-            exp.run_all_experiments(sweep_bundle, m_target.samples, generator_args, args.experiment)
+            exp.run_all_experiments(sweep_bundle, m_target.samples, generator_args, args.experiment, args.target)
 
 if __name__ == "__main__":
     main()

@@ -1,11 +1,5 @@
 # Circuit Generator
 
-- build graphs in Python using networkX
-- convert graphs to SPICE netlists 
-- run SPICE netlists with ngspice
-- solve non-linear transformation (NLT) tasks. for example sinus to square wave.
-
-
 ## DevOps
 
 - Before running a full sweep run a test sweep with m-averages=1 with the final parameters
@@ -17,37 +11,35 @@ Unit tests are executed with
 
     pytest src/tests
 
-## In order of Priority: IDEAS and TODOS before final experiment can run
+## In order of Priority: IDEAS and TODOS
 
 In order of priority:
 
 ### High priority
 
-- Parallelization: Write script to launch quantitative experiments as separate slurm jobs.
-
-- show sampling rate and duration, not number of samples in the sweep plots
-
-- Normal distribution plots not saved, fix or drop normal distribution plots.
-
-- z-ops plot double entry at same value as default value
-
-- x-label for weight sweep plot is not clear enough
-
-- hybrid generator not listening to n-osc from hybrid_params_test
+- BUG: MCOneShot doesn't plot all n_osc in n_osc sweep
+- BUG: z-ops plot double entry at same value as default value
+- Potential bug: Normal distribution plots not saved, fix or drop normal distribution plots.
+- BUG: Linear regression not showing up on z_ops with hybrid sweep because z_ops is not set; return the z_ops value passed to linear regression after search, as other algorithms do.
+- BUG: Check duration sweep dataframe.
+- Plot Improvement: logarithmic x-scale for duration plot.
+- Plot Improvement: save mean, mode, stddev to frequency diversity plot title.
+- Plot Improvement: custom legend for mask with multiple members in a group. Such that a group shares a color and one entry in the legend (individual algorithm names shouldn't be visible).
+- Do target sweep with linear regression only or 1 or 2 more good algorithms.
 
 ### Medium priority
+
+- Add magpie to target sweep.
+
+- Qualitative sweeps with parallel jobs script.
+
+- Plot improvement: Reuse algorithm bar chart with z-ops sweep.
 
 - Python: increase sampling rate to avoid aliasing. Verify with individual oscillator plots.
 
 - Map R to Freq in analysis for Hybrid signal generator
 
-- Plot improvement: Reuse algorithm bar chart with z-ops sweep.
-
 - Plot Improvement: For oscillators vs. rmse. Show up to 1k oscillators, but draw a dotted line into the plot at around 300 oscillators to indicate what's technologically feasible.
-
-- Plot Improvement: For number of samples vs. rmse; Convert this to signal duration vs. rmse.
-
-- Plot Improvement: save mean, mode, stddev to frequency diversity plot title.
 
 - Reproducibility issue: Maffezzoni et al. report different oscillator frequencies than I have.
 
@@ -55,23 +47,13 @@ In order of priority:
 
 - Profile Python's memory usage.
 
-- Plotting custom legend for mask with multiple members in a group. Such that a group shares a color and one entry in the legend (individual algorithm names shouldn't be visible).
-
 - SPICE: Add phase via delayed voltage delivery.
-
-- Plot Improvement: Histogram over the frequencies in an ensemble of oscillators currently doesn't accurately measure the frequencies, and the bins are too large.
 
 - Plot: Frequency diversity (band) (y-axis) vs. number of oscillators (x-axis) for n algorithms. Hypothesis: As the number of oscillators increases, the frequency diversity increases.
 
 - Algorithm: Algorithm finds the best combination of parameters iteratively.
 
 - Implement different signal generation function for Python, more similar to spice (instead of sawtooth).
-
-- Implement custom extrapolator function to accelerate SPICE signal generation.
-
-- Implement MP for SpiPy
-
-- Implement time in seconds vs. rmse based on samples vs. rmse
 
 - Renaming:
     - algo_monte_carlo -> algo_monte_carlo_greedy
@@ -82,6 +64,8 @@ In order of priority:
     - param -> param_py, param_hybrid
 
 - Make phase a separate vector of an ensample similar to weights and allow separate phase tuning without replacing the underlying time series
+
+- solve non-linear transformation (NLT) tasks. for example sinus to square wave.
 
 ## Requirements
 

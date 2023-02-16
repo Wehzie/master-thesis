@@ -10,10 +10,10 @@ import shared_params_target
 import gen_signal_spipy
 
 RNG = const.RNG
-MAX_Z_OPS = 10000
-M_AVERAGES = 5
+MAX_Z_OPS = 20000
+M_AVERAGES = 10
 N_OSCILLATORS = 100
-SYNTH_FREQ = 3e5 # Hz
+SYNTH_FREQ = 5e5 # Hz
 
 #### #### #### #### #### #### SIGNAL GENERATOR ARGUMENTS #### #### #### #### #### ####
 
@@ -97,7 +97,7 @@ z_ops_sweep = sweety.ZOpsSweep(
     max_z_ops=[0, 5e2, 1e3, 5e3, 1e4, 5e4],
 )
 
-duration_sweep = sweety.DurationSweep([1e-5, 1e-4, 1e-3, 1e-2, 1e-1])
+duration_sweep = sweety.DurationSweep([1e-4, 5e-4, 1e-3, 5e-3, 1e-2])
 
 resistor_sweep = sweety.ResistorSweep(
     r_dist = [

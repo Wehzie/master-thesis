@@ -103,7 +103,7 @@ def select_target_by_string(selector: str, generator_args: party.UnionRandArgs, 
         synth_freq: the frequency of the synthesized signal
         selector: the string to select the target sample
     """
-    amplitude = 10
+    amplitude = 1
     if isinstance(generator_args, party.PythonSignalRandArgs):
         duration = duration
         sampling_rate = None
@@ -148,7 +148,7 @@ def select_target_by_string(selector: str, generator_args: party.UnionRandArgs, 
     elif selector == "chirp":
         m_target = meta_target.ChirpTarget(duration, sampling_rate, samples, start_freq=1, stop_freq=synth_freq, amplitude=amplitude)
     elif selector == "beat":
-        m_target = meta_target.ChirpTarget(duration, sampling_rate, samples, start_freq=1, stop_freq=synth_freq, amplitude=amplitude)
+        m_target = meta_target.BeatTarget(duration, sampling_rate, samples, base_freq=synth_freq, amplitude=amplitude)
     elif selector == "damp_chirp":
         m_target = meta_target.DampChirpTarget(duration, sampling_rate, samples, start_freq=1, stop_freq=synth_freq, amplitude=amplitude)
     elif selector == "smooth_gauss":

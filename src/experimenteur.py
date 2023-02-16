@@ -25,6 +25,14 @@ import gen_signal_python
 import gen_signal_spipy
 import sweep_builder
 import algo_args_bundle
+if const.TEST_PARAMS:
+    print("Import test parameters.")
+    import params_python_test as python_parameters
+    import params_hybrid_test as hybrid_parameters
+else:
+    print("Import production parameters.")
+    import params_python as python_parameters
+    import params_hybrid as hybrid_parameters
 
 import numpy as np
 
@@ -151,7 +159,7 @@ class Experimenteur:
             results += self.run_algo_sweep(algo_sweep)
         return results
 
-    def run_duration_sweep(self, sweep_bundle: sweety.SweepBundle, base_args: party.UnionRandArgs) -> resty.ResultSweep:
+    def run_duration_sweep(self, sweep_bundle: sweety.SweepBundle, base_args: party.UnionRandArgs, target_selector: str) -> resty.ResultSweep:
         """run all algorithms with targets of varying durations"""
         print("sweeping with", sweep_bundle.duration_sweep.__class__.__name__)
 
@@ -171,7 +179,7 @@ class Experimenteur:
         results = list()
         for d in sweep_bundle.duration_sweep.duration:
             temp_args = inject_duration(base_args)
-            m_target = meta_target.MetaTargetTime(temp_args, "magpie", shared_params_target.DevSet.MAGPIE.value)
+            m_target = shared_params_target.select_target_by_string(target_selector, temp_args, hybrid_parameters.SYNTH_FREQ)
             algo_sweep = sweep_builder.build_algo_sweep(sweep_bundle.signal_generator, temp_args, m_target, sweep_bundle.max_z_ops, sweep_bundle.m_averages)
             results += self.run_algo_sweep(algo_sweep)
         return results
@@ -201,8 +209,15 @@ class Experimenteur:
     sweep_bundle: sweety.UnionSweepBundle,
     target_samples: int,
     base_rand_args: party.UnionRandArgs,
-    selector: str) -> None:
-        """run all experiments and plot results"""
+    selector: str,
+    target_selector: str,
+    ) -> None:
+        """run all experiments and plot results
+        
+        args:
+            selector: experiment to run
+            target_selector: target to use for experiments that require initializing a target
+        """
 
         def invoke_target_sweep():
             self.set_sweep_name_and_dir("targets_vs_rmse")
@@ -244,7 +259,7 @@ class Experimenteur:
         
         def invoke_duration_sweep():
             self.set_sweep_name_and_dir("duration_vs_rmse")
-            results = self.run_duration_sweep(sweep_bundle, base_rand_args)
+            results = self.run_duration_sweep(sweep_bundle, base_rand_args, target_selector)
             df = expan.conv_results_to_pd(results)
             expan.plot_duration_vs_rmse(df, self.sweep_name, self.sweep_dir, show=self.show_plots)
             expan.plot_masks(sweep_bundle.algo_sweep.algo_masks, expan.plot_duration_vs_rmse, df, self.sweep_name, self.sweep_dir, show=self.show_plots)

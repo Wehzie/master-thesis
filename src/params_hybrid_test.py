@@ -14,7 +14,7 @@ RNG = const.RNG
 MAX_Z_OPS = 150
 M_AVERAGES = 1
 N_OSCILLATORS = 10
-SYNTH_FREQ = 3e5 # Hz
+SYNTH_FREQ = 5e5 # Hz
 
 #### #### #### #### #### #### SIGNAL GENERATOR ARGUMENTS #### #### #### #### #### ####
 
