@@ -188,16 +188,13 @@ def clean_spice_signal(signal: np.ndarray, samples: int) -> np.ndarray:
     x = remove_spice_offset(x)
     return pad_spice_signal(x, samples)
 
-def remove_offset_iteratively(signal: np.ndarray, iterations: int = 10) -> np.ndarray:
+def remove_offset_two_sided(signal: np.ndarray) -> np.ndarray:
     """remove the offset from a signal"""
-    mean = np.mean(signal)
-    
-    for _ in range(iterations):
-        if mean > 0:
-            signal = signal - mean / 2
-        else:
-            signal = signal + mean / 2
-    return signal
+    mean = np.mean(signal)    
+    if mean > 0:
+        return signal - np.abs(mean)
+    else:
+        return signal + np.abs(mean)
 
 def extract_single_period(signal: np.ndarray,
 sampling_rate: int,

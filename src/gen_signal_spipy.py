@@ -62,7 +62,8 @@ class SpipySignalGenerator(gen_signal.SignalGenerator):
         goal_duration = det_args.time_stop
         phase = det_args.phase
         full_signal = data_preprocessor.extrapolate_from_period(single_period_signal, sampling_rate, goal_duration, phase)
-        return full_signal
+        offset_realigned = data_preprocessor.remove_offset_two_sided(full_signal)
+        return offset_realigned
 
     @staticmethod
     def simulate_and_extrapolate_signal(det_args: party.SpiceSingleDetArgs, work_dir: Path, period_multiplier: float = 1) -> np.ndarray:
