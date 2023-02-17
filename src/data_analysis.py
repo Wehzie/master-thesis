@@ -191,7 +191,7 @@ def plot_pred_target(pred: np.ndarray, target: np.ndarray, time: Union[np.ndarra
         duration = time[-1] - time[0]
         samples = len(time)
         sampling_rate = int(1 / (duration/samples))
-        title += r"; $f_s$=" + f"{sampling_rate} [1/s]"
+        title += r"; $f_s$=" + f"{sampling_rate} [Hz]"
     plt.legend()
     if title: plt.title(title)
 

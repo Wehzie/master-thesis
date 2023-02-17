@@ -79,13 +79,15 @@ class Job:
 
     def assign_special_time(self):
         if "duration" in self.name:
-            self.time = "06:00:00"
+            self.time = "12:00:00"
         if "target" in self.name:
-            self.time = "06:00:00"
+            self.time = "12:00:00"
+        if "frequency" in self.name:
+            self.time = "08:00:00"
         if "n_osc" in self.name:
-            self.time = "06:00:00"
-        if "resistor" in self.name or "frequency" in self.name:
-            self.time = "06:00:00"
+            self.time = "05:00:00"
+        if "resistor" in self.name:
+            self.time = "04:00:00"
 
 def build_job_commands(time: str, memory: str, partition: str, mail: str) -> List[Job]:
     base_call = ["srun", "python3", "src/main.py"]
@@ -110,7 +112,7 @@ def build_job_commands(time: str, memory: str, partition: str, mail: str) -> Lis
 def ask_for_confirmation(jobs: List[Job], time: str, memory: str, partition: str):
     print("The following commands will be executed:")
     for job in jobs:
-        print(job.command)
+        print(job.command, job.time, job.memory)
     print(f"Running with partition {partition}, memory {memory}, time {time}.")
     proceed = input("Continue? (y/n)")
     if proceed != "y":
@@ -132,7 +134,7 @@ def run_jobs(jobs: List[Job], time: str, memory: str, partition: str, mail: str)
 def launch_experiments():
     partition = "regular" if args.production else "vulture"
     memory = "2GB" if args.production else "300MB"
-    time = "05:00:00" if args.production else "00:01:00"
+    time = "03:00:00" if args.production else "00:01:00"
     mail = send_mail_config if args.production else ""
 
     jobs = build_job_commands(time, memory, partition, mail)

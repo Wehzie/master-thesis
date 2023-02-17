@@ -17,11 +17,15 @@ In order of priority:
 
 ### High priority
 
+- Set legend false on algo ranking bar chart
+
 - Do target sweep with linear regression only or 1 or 2 more good algorithms.
 
 - The mean of a sample's matrix across all rows is far off zero when using SpiPy.CACHING.
 
 ### Medium priority
+
+- Implement Las Vegas initialization options, in particular one with a full set of oscillators.
 
 - Plot Improvement: custom legend for mask with multiple members in a group. Such that a group shares a color and one entry in the legend (individual algorithm names shouldn't be visible).
 
