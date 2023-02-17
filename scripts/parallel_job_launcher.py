@@ -188,6 +188,17 @@ def launch_qualitative():
             print("Aborting.")
             exit()
         print("Proceeding...")
+
+    def run_jobs(commands: List[List[str]], names: List[str], time: str, memory: str, partition: str, mail: str):
+        counter = 0
+        for command, name in zip(commands, names):
+            script = build_job_script(command, time, memory, partition, name, mail)
+            with open("job.sh", "w") as f:
+                f.write(script)
+            subprocess.run(["sbatch", "job.sh"])
+            counter += 1
+            if counter == 2 and not args.production:
+                break
     
     partition = "regular" if args.production else "vulture"
     memory = "8GB" if args.production else "500MB"
@@ -206,5 +217,5 @@ def launch_qualitative():
     run_jobs(srun_commands, names, time, memory, partition, mail)
 
 if __name__ == "__main__":
-    launch_experiments()
+    #launch_experiments()
     launch_qualitative()
