@@ -191,8 +191,6 @@ class SyntheticTarget(MetaTarget):
 
     def derive_samples_or_sampling_rate(self, duration: float, samples: int, sampling_rate: int, max_freq: float) -> None:
         """given a duration infer the number of samples samples or sampling rate"""
-        print(self.__class__.__name__)
-        print(duration, samples, sampling_rate)
         if duration and sampling_rate and max_freq:
             assert sampling_rate >= self.compute_nyquist_rate(max_freq), "sampling rate is too low for the given max frequency"
             self.sampling_rate = sampling_rate

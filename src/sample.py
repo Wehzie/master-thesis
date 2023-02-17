@@ -220,3 +220,5 @@ regression after {alg_name} normalized RMSE: {norm_reg_sample.rmse}
             
         data_analysis.plot_pred_target(interpol_sum, m_target.signal, time=new_time, title=f"{alg_name}, interpolated, n={n_osc}, z={z_ops}", save_path=time_dir / "interpolated_sum")
         data_analysis.plot_pred_target(interpol_reg, m_target.signal, time=new_time, title=f"regression after {alg_name}, interpolated, n={n_osc}, z={z_ops}", save_path=time_dir / "interpolated_regression")
+
+    plt.close("all")

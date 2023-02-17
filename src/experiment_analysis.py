@@ -488,6 +488,7 @@ mask: param_mask.ExperimentMask = None, show: bool = False):
     ax = target_df.plot.barh(x="algo_name", y="mean_rmse", xerr="std_rmse", title=title, color=colors, legend=True)
     ax.set_xlabel("RMSE")
     ax.set_ylabel("algorithm")
+    ax.legend().set_visible(False)
     plt.tight_layout()
     save_fig_n_legend(ax.get_figure(), None, sweep_name + f"_averaged_algorithms", save_dir, mask, show)
 

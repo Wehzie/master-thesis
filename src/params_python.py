@@ -11,7 +11,7 @@ import gen_signal_python
 import shared_params_target
 
 RNG = const.RNG
-MAX_Z_OPS = 25000
+MAX_Z_OPS = 20000
 M_AVERAGES = 10
 N_OSCILLATORS = 100
 SAMPLES = 300

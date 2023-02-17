@@ -59,13 +59,13 @@ python_experiments = [
 
 hybrid_experiments = [
     "target",
-    # "n_osc",
-    # "z_ops",
+    "n_osc",
+    "z_ops",
     "duration",
-    # "resistor",
-    # "weight",
-    # "offset",
-    # "phase",
+    "resistor",
+    "weight",
+    "offset",
+    "phase",
 ]
 
 @dataclass
@@ -78,6 +78,7 @@ class Job:
     mail: str
 
     def assign_special_time(self):
+        """durations are given for m=10 and z=20000 and n=100"""
         if "duration" in self.name:
             self.time = "12:00:00"
         if "target" in self.name:
@@ -88,6 +89,25 @@ class Job:
             self.time = "05:00:00"
         if "resistor" in self.name:
             self.time = "04:00:00"
+        if "z_ops" in self.name:
+            self.time = "03:00:00"
+        if "offset" in self.name:
+            self.time = "03:00:00"
+        if "phase" in self.name:
+            self.time = "03:00:00"
+        if "weight" in self.name:
+            self.time = "03:00:00"
+        if "amplitude" in self.name:
+            self.time = "02:30:00"
+        if "samples" in self.name:
+            self.time = "02:00:00"
+        
+    def assign_special_memory(self):
+        if "n_osc" in self.name:
+            self.memory = "3GB"
+        if "duration" in self.name:
+            self.memory = "2GB"
+        
 
 def build_job_commands(time: str, memory: str, partition: str, mail: str) -> List[Job]:
     base_call = ["srun", "python3", "src/main.py"]
@@ -99,12 +119,14 @@ def build_job_commands(time: str, memory: str, partition: str, mail: str) -> Lis
         extension_args = ["--signal_generator", "python", f"--experiment {e}", "--target", "magpie"]
         job = Job(f"python-{e}", " ".join(base_call + extension_args), time, memory, partition, mail)
         job.assign_special_time()
+        job.assign_special_memory()
         jobs.append(job)
 
     for e in hybrid_experiments:
         extension_args = ["--signal_generator", "spipy", f"--experiment {e}", "--target", "sine"]
         job = Job(f"spipy-{e}", " ".join(base_call + extension_args), time, memory, partition, mail)
         job.assign_special_time()
+        job.assign_special_memory()
         jobs.append(job)
 
     return jobs
@@ -132,7 +154,7 @@ def run_jobs(jobs: List[Job], time: str, memory: str, partition: str, mail: str)
 
 def launch_experiments():
     partition = "regular" if args.production else "vulture"
-    memory = "2GB" if args.production else "300MB"
+    memory = "1GB" if args.production else "300MB"
     time = "03:00:00" if args.production else "00:01:00"
     mail = send_mail_config if args.production else ""
 

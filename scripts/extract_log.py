@@ -120,7 +120,7 @@ def extract_log(data: str):
     return df
 
 def load_data(path: Path = Path("results/data/aggregate_log.txt")) -> str:
-    with open(path, 'r') as file:
+    with open(path, 'r', encoding="ISO-8859-1") as file:
         data = file.read()
     return data
 
