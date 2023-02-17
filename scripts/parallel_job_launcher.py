@@ -47,7 +47,7 @@ print(f"Running with {args}")
 
 python_experiments = [
     "target",
-    "n_osc",
+    # "n_osc",
     # "z_ops",
     # "samples",
     "frequency",
@@ -59,10 +59,10 @@ python_experiments = [
 
 hybrid_experiments = [
     "target",
-    "n_osc",
+    # "n_osc",
     # "z_ops",
     "duration",
-    "resistor",
+    # "resistor",
     # "weight",
     # "offset",
     # "phase",
@@ -112,8 +112,7 @@ def build_job_commands(time: str, memory: str, partition: str, mail: str) -> Lis
 def ask_for_confirmation(jobs: List[Job], time: str, memory: str, partition: str):
     print("The following commands will be executed:")
     for job in jobs:
-        print(job.command, job.time, job.memory)
-    print(f"Running with partition {partition}, memory {memory}, time {time}.")
+        print(job.command, job.time, job.memory, job.partition)
     proceed = input("Continue? (y/n)")
     if proceed != "y":
         print("Aborting.")
@@ -157,6 +156,16 @@ def launch_qualitative():
         spipy_extension = ["--signal_generator", "spipy", "--target", "damp_chirp"]
         spipy_args = base_call + spipy_extension
         return [python_args, spipy_args]
+
+    def ask_for_confirmation(commands: List[List[str]], time: str, memory: str, partition: str):
+        print("The following commands will be executed:")
+        for command in commands:
+            print(command, time, memory, partition)
+        proceed = input("Continue? (y/n)")
+        if proceed != "y":
+            print("Aborting.")
+            exit()
+        print("Proceeding...")
     
     partition = "regular" if args.production else "vulture"
     memory = "8GB" if args.production else "500MB"
@@ -172,4 +181,4 @@ def launch_qualitative():
 
 if __name__ == "__main__":
     launch_experiments()
-    launch_qualitative()
+    # launch_qualitative()
