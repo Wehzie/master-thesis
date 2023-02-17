@@ -4,6 +4,7 @@ src/test.py
 results
 cache
 ansible_hosts.ini
+job.sh
 
 # data directories
 circuit_lib/temp.cir
