@@ -197,10 +197,14 @@ def launch_qualitative():
     srun_commands = build_qual_job_commands()
     names = ["python-qualitative", "spipy-qualitative"]
 
+    # run spipy only
+    srun_commands = [srun_commands[1]]
+    names = [names[1]]
+
     ask_for_confirmation(srun_commands, time, memory, partition)
 
     run_jobs(srun_commands, names, time, memory, partition, mail)
 
 if __name__ == "__main__":
     launch_experiments()
-    # launch_qualitative()
+    launch_qualitative()
