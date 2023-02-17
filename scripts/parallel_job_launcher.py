@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import subprocess
 from typing import List
 
@@ -47,49 +48,69 @@ print(f"Running with {args}")
 python_experiments = [
     "target",
     "n_osc",
-    "z_ops",
-    "samples",
+    # "z_ops",
+    # "samples",
     "frequency",
-    "weight",
-    "offset",
-    "phase",
-    "amplitude",
+    # "weight",
+    # "offset",
+    # "phase",
+    # "amplitude",
 ]
 
 hybrid_experiments = [
     "target",
     "n_osc",
-    "z_ops",
+    # "z_ops",
     "duration",
     "resistor",
-    "weight",
-    "offset",
-    "phase",
+    # "weight",
+    # "offset",
+    # "phase",
 ]
 
-def build_job_commands():
+@dataclass
+class Job:
+    name: str
+    command: str
+    time: str
+    memory: str
+    partition: str
+    mail: str
+
+    def assign_special_time(self):
+        if "duration" in self.name:
+            self.time = "06:00:00"
+        if "target" in self.name:
+            self.time = "06:00:00"
+        if "n_osc" in self.name:
+            self.time = "06:00:00"
+        if "resistor" in self.name or "frequency" in self.name:
+            self.time = "06:00:00"
+
+def build_job_commands(time: str, memory: str, partition: str, mail: str) -> List[Job]:
     base_call = ["srun", "python3", "src/main.py"]
     if args.production:
         base_call.append("--production")
 
-    invocations = []
-    names = []
+    jobs = []
     for e in python_experiments:
         extension_args = ["--signal_generator", "python", f"--experiment {e}", "--target", "magpie"]
-        invocations.append(base_call + extension_args)
-        names.append(f"python-{e}")
+        job = Job(f"python-{e}", " ".join(base_call + extension_args), time, memory, partition, mail)
+        job.assign_special_time()
+        jobs.append(job)
 
     for e in hybrid_experiments:
         extension_args = ["--signal_generator", "spipy", f"--experiment {e}", "--target", "sine"]
-        invocations.append(base_call + extension_args)
-        names.append(f"spipy-{e}")
+        job = Job(f"spipy-{e}", " ".join(base_call + extension_args), time, memory, partition, mail)
+        job.assign_special_time()
+        jobs.append(job)
 
-    return invocations, names
+    return jobs
 
-def ask_for_confirmation(srun_commands: List[str], time: str, memory: str, partition: str):
+def ask_for_confirmation(jobs: List[Job], time: str, memory: str, partition: str):
     print("The following commands will be executed:")
-    for command in srun_commands:
-        print(command)
+    for job in jobs:
+        print(job.command)
     print(f"Running with partition {partition}, memory {memory}, time {time}.")
     proceed = input("Continue? (y/n)")
     if proceed != "y":
@@ -97,11 +118,10 @@ def ask_for_confirmation(srun_commands: List[str], time: str, memory: str, parti
         exit()
     print("Proceeding...")
 
-def run_jobs(srun_commands: List[List[str]], names: List[str], time: str, memory: str, partition: str, mail: str):
+def run_jobs(jobs: List[Job], time: str, memory: str, partition: str, mail: str):
     counter = 0
-    for command, name in zip(srun_commands, names):
-        joined_command = " ".join(command)
-        script = build_job_script(joined_command, time, memory, partition, name, mail)
+    for job in jobs:
+        script = build_job_script(job.command, time, memory, partition, job.name, mail)
         with open("job.sh", "w") as f:
             f.write(script)
         subprocess.run(["sbatch", "job.sh"])
@@ -112,19 +132,19 @@ def run_jobs(srun_commands: List[List[str]], names: List[str], time: str, memory
 def launch_experiments():
     partition = "regular" if args.production else "vulture"
     memory = "2GB" if args.production else "300MB"
-    time = "03:00:00" if args.production else "00:01:00"
+    time = "05:00:00" if args.production else "00:01:00"
     mail = send_mail_config if args.production else ""
 
-    srun_commands, names = build_job_commands()
+    jobs = build_job_commands(time, memory, partition, mail)
 
-    ask_for_confirmation(srun_commands, time, memory, partition)
+    ask_for_confirmation(jobs, time, memory, partition)
 
-    run_jobs(srun_commands, names, time, memory, partition, mail)
+    run_jobs(jobs, time, memory, partition, mail)
 
 
-def launch_quantitative():
+def launch_qualitative():
 
-    def build_job_commands():
+    def build_qual_job_commands():
         base_call = ["srun", "python3", "src/main.py", "--experiment", "none", "--qualitative"]
         if args.production:
                 base_call.append("--production")
@@ -138,10 +158,10 @@ def launch_quantitative():
     
     partition = "regular" if args.production else "vulture"
     memory = "8GB" if args.production else "500MB"
-    time = "00:30:00" if args.production else "00:01:00"
+    time = "00:15:00" if args.production else "00:01:00"
     mail = send_mail_config if args.production else ""
 
-    srun_commands = build_job_commands()
+    srun_commands = build_qual_job_commands()
     names = ["python-qualitative", "spipy-qualitative"]
 
     ask_for_confirmation(srun_commands, time, memory, partition)
@@ -150,4 +170,4 @@ def launch_quantitative():
 
 if __name__ == "__main__":
     launch_experiments()
-    launch_quantitative()
+    launch_qualitative()
