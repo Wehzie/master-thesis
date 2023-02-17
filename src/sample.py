@@ -150,12 +150,12 @@ class Sample():
         return Sample(signal_matrix, weights, weighted_sum, offset, rmse, sample.signal_args)
 
 def evaluate_prediction(best_sample: Sample, m_target: meta_target.MetaTarget,
-    z_ops: int, alg_name: str,
+    z_ops: int, alg_name: str, generator_name: str,
     plot_time: bool = True, plot_freq: bool = True, decompose_sample: bool = True, interpolate: bool = True,
     write_dir: Path = const.WRITE_DIR) -> None:
     """evaluate a generated signal (sample) against the target by qualitative (plots) and quantitative (RMSE) means"""
     m_target = copy.deepcopy(m_target) # local copy to avoid side effects when running multiple times
-    save_path = data_io.find_dir_name(write_dir, f"qualitative_{m_target.__class__.__name__}_{alg_name}")
+    save_path = data_io.find_dir_name(write_dir, f"qualitative_{generator_name}_{m_target.__class__.__name__}_{alg_name}")
 
     n_osc = best_sample.signal_matrix.shape[0]
 

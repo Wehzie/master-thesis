@@ -54,17 +54,18 @@ class Experimenteur:
         self.show_plots = show_plots
     
     @staticmethod
-    def run_qualitative_algo_sweep(algo_sweep: sweety.AlgoSweep, m_target: meta_target.MetaTarget) -> None:
+    def run_qualitative_algo_sweep(sweep_bundle: sweety.SweepBundle, m_target: meta_target.MetaTarget) -> None:
         """
         Perform an experiment to compare multiple algorithms but don't collect results over multiple runs or average.
         Plots the best sample for each algorithm against the target.
         """
         local_target = copy.deepcopy(m_target)
-        for awa in algo_sweep.algo_with_args:
+        write_dir = data_io.find_dir_name(const.WRITE_DIR, f"qualitative_{sweep_bundle.signal_generator.__class__.__name__}")
+        for awa in sweep_bundle.algo_sweep.algo_with_args:
             awa: algo_args_bundle.AlgoWithArgs
             search_alg = awa.Algo(awa.algo_args)
             best_sample, z_ops = search_alg.search()
-            sample.evaluate_prediction(best_sample, local_target, z_ops, search_alg.__class__.__name__)
+            sample.evaluate_prediction(best_sample, local_target, z_ops, search_alg.__class__.__name__, sweep_bundle.signal_generator.__class__.__name__, write_dir=write_dir)
 
     def set_sweep_name_and_dir(self, sweep_name: str) -> None:
         """set the name and directory of the sweep for the next experiment"""

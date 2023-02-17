@@ -9,7 +9,6 @@ f"""#SBATCH --mail-type=ALL
 #SBATCH --mail-user=r.tappe.maestro@student.rug.nl"""
 )
 
-
 def build_job_script(command: str, time: str, mem: str, partition: str, name: str, mail: str) -> str:
     return (
 f"""#!/bin/bash
@@ -60,12 +59,12 @@ python_experiments = [
 hybrid_experiments = [
     "target",
     "n_osc",
-    "z_ops",
+    #"z_ops",
     "duration",
     "resistor",
-    "weight",
-    "offset",
-    "phase",
+    #"weight",
+    #"offset",
+    #"phase",
 ]
 
 @dataclass
@@ -131,7 +130,7 @@ def build_job_commands(time: str, memory: str, partition: str, mail: str) -> Lis
 
     return jobs
 
-def ask_for_confirmation(jobs: List[Job], time: str, memory: str, partition: str):
+def ask_for_confirmation(jobs: List[Job]):
     print("The following commands will be executed:")
     for job in jobs:
         print(job.command, job.time, job.memory, job.partition)
@@ -141,10 +140,10 @@ def ask_for_confirmation(jobs: List[Job], time: str, memory: str, partition: str
         exit()
     print("Proceeding...")
 
-def run_jobs(jobs: List[Job], time: str, memory: str, partition: str, mail: str):
+def run_jobs(jobs: List[Job]):
     counter = 0
     for job in jobs:
-        script = build_job_script(job.command, time, memory, partition, job.name, mail)
+        script = build_job_script(job.command, job.time, job.memory, job.partition, job.name, job.mail)
         with open("job.sh", "w") as f:
             f.write(script)
         subprocess.run(["sbatch", "job.sh"])
@@ -160,9 +159,9 @@ def launch_experiments():
 
     jobs = build_job_commands(time, memory, partition, mail)
 
-    ask_for_confirmation(jobs, time, memory, partition)
+    ask_for_confirmation(jobs)
 
-    run_jobs(jobs, time, memory, partition, mail)
+    run_jobs(jobs)
 
 
 def launch_qualitative():
@@ -192,7 +191,8 @@ def launch_qualitative():
     def run_jobs(commands: List[List[str]], names: List[str], time: str, memory: str, partition: str, mail: str):
         counter = 0
         for command, name in zip(commands, names):
-            script = build_job_script(command, time, memory, partition, name, mail)
+            joined_command = " ".join(command)
+            script = build_job_script(joined_command, time, memory, partition, name, mail)
             with open("job.sh", "w") as f:
                 f.write(script)
             subprocess.run(["sbatch", "job.sh"])
@@ -209,13 +209,14 @@ def launch_qualitative():
     names = ["python-qualitative", "spipy-qualitative"]
 
     # run spipy only
-    srun_commands = [srun_commands[1]]
-    names = [names[1]]
+    if False:
+        srun_commands = [srun_commands[1]]
+        names = [names[1]]
 
     ask_for_confirmation(srun_commands, time, memory, partition)
 
     run_jobs(srun_commands, names, time, memory, partition, mail)
 
 if __name__ == "__main__":
-    #launch_experiments()
+    launch_experiments()
     launch_qualitative()

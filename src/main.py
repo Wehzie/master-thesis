@@ -98,7 +98,7 @@ def main():
         sweep_bundle = sweep_builder.bundle_python_sweep(sig_gen, generator_args, m_target, algo_selector="all")
         
         if args.qualitative:
-            exp.run_qualitative_algo_sweep(sweep_bundle.algo_sweep, m_target)
+            exp.run_qualitative_algo_sweep(sweep_bundle, m_target)
         
         if args.experiment != "none":
             exp.run_all_experiments(sweep_bundle, m_target.samples, generator_args, args.experiment)
@@ -112,7 +112,7 @@ def main():
         sweep_bundle = sweep_builder.bundle_hybrid_sweep(sig_gen, generator_args, m_target, algo_selector="all")
 
         if args.qualitative:
-            exp.run_qualitative_algo_sweep(sweep_bundle.algo_sweep, m_target)
+            exp.run_qualitative_algo_sweep(sweep_bundle, m_target)
 
         if args.experiment != "none":
             exp.run_all_experiments(sweep_bundle, m_target.samples, generator_args, args.experiment, args.target)
