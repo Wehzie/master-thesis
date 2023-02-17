@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 import subprocess
 from typing import List
+from pathlib import Path
 
 import argparse
 
@@ -217,6 +218,10 @@ def launch_qualitative():
 
     run_jobs(srun_commands, names, time, memory, partition, mail)
 
+def clean():
+    Path("job.sh").unlink(missing_ok=True)
+
 if __name__ == "__main__":
     launch_experiments()
     launch_qualitative()
+    clean()
