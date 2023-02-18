@@ -50,7 +50,7 @@ python_experiments = [
     # "n_osc",
     # "z_ops",
     # "samples",
-    "frequency",
+    # "frequency",
     # "weight",
     # "offset",
     # "phase",
@@ -59,10 +59,10 @@ python_experiments = [
 
 hybrid_experiments = [
     "target",
-    "n_osc",
+    # "n_osc",
     #"z_ops",
     "duration",
-    "resistor",
+    # "resistor",
     #"weight",
     #"offset",
     #"phase",
@@ -81,10 +81,10 @@ class Job:
         """durations are given for m=10 and z=20000 and n=100"""
         if "duration" in self.name:
             self.time = "12:00:00"
-        if "target" in self.name:
+        if "target" in self.name: # set m to 5
             self.time = "12:00:00"
         if "frequency" in self.name:
-            self.time = "08:00:00"
+            self.time = "05:00:00"
         if "n_osc" in self.name:
             self.time = "05:00:00"
         if "resistor" in self.name:
@@ -103,9 +103,11 @@ class Job:
             self.time = "02:00:00"
         
     def assign_special_memory(self):
+        if "spipy-duration" in self.name:
+            self.memory = "8GB"
         if "n_osc" in self.name:
             self.memory = "3GB"
-        if "duration" in self.name:
+        if "python-duration" in self.name:
             self.memory = "2GB"
         
 
