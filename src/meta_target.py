@@ -317,7 +317,7 @@ class DampChirpTarget(SyntheticTarget):
                        when None the stop frequency is derived from the sampling rate   
         """
         super().__init__(duration, sampling_rate, samples, stop_freq)
-        self.name = "damped chirp"
+        self.name = name
         if stop_freq is None:
             stop_freq = self.sampling_rate/20
         self.signal = signal.chirp(self.time, start_freq, self.duration, stop_freq) * amplitude + offset

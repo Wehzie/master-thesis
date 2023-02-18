@@ -221,6 +221,7 @@ class Experimenteur:
         """
 
         def invoke_target_sweep():
+            """run an experiment with varying target functions"""
             self.set_sweep_name_and_dir("targets_vs_rmse")
             results = self.run_target_sweep(sweep_bundle.target_sweep)
             df = expan.conv_results_to_pd(results)
@@ -228,6 +229,7 @@ class Experimenteur:
             data_io.hoard_experiment_results(self.sweep_name, results, df, self.sweep_dir)
 
         def invoke_target_freq_sweep():
+            """run an experiment with the same target function at different frequencies"""
             self.set_sweep_name_and_dir("target_freq_vs_rmse")
             results = self.run_target_sweep(sweep_bundle.target_freq_sweep)
             df = expan.conv_results_to_pd(results)
@@ -344,6 +346,7 @@ class Experimenteur:
         def invoke_hybrid_generator_sweeps():
             if selector in ["all", "target"]:
                 invoke_target_sweep()
+            if selector in ["all", "target_freq"]:
                 invoke_target_freq_sweep()
             if selector in ["all", "n_osc"]:
                 invoke_n_osc_sweep()

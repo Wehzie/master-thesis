@@ -59,6 +59,7 @@ python_experiments = [
 
 hybrid_experiments = [
     "target",
+    "target_freq",
     # "n_osc",
     #"z_ops",
     "duration",
@@ -81,9 +82,11 @@ class Job:
         """durations are given for m=10 and z=20000 and n=100"""
         if not args.production:
             return
-        if "duration" in self.name:
+        if "duration" in self.name: # set m to 3
             self.time = "12:00:00"
-        if "target" in self.name: # set m to 5
+        if "target" in self.name: # set m to 3
+            self.time = "12:00:00"
+        if "target_freq" in self.name: # set m to 3
             self.time = "12:00:00"
         if "frequency" in self.name:
             self.time = "05:00:00"

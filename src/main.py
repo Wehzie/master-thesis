@@ -12,7 +12,7 @@ parser.add_argument("--qualitative", action="store_true", help="Run optimization
 parser.add_argument("--experiment", type=str, help="Select the quantitative experiments to run; not all experiments are compatible with each signal generator.",
 default="all", required=False, choices=[
     "none", "all",
-    "target",
+    "target", "target_freq",
     "n_osc", "z_ops", "samples", "duration",
     "frequency", "resistor", "weight", "offset", "phase", "amplitude"])
 parser.add_argument("--target", type=str, help="Select the default target to approximate.", default="sine", required=False, choices=[
@@ -66,6 +66,7 @@ legal_python_experiments = [
 
 legal_hybrid_experiments = [
     "target",
+    "target_freq",
     "n_osc",
     "z_ops",
     "duration",
