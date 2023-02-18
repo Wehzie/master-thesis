@@ -46,7 +46,7 @@ args = parser.parse_args()
 print(f"Running with {args}")
 
 python_experiments = [
-    "target",
+    # "target",
     # "n_osc",
     # "z_ops",
     # "samples",
@@ -79,6 +79,8 @@ class Job:
 
     def assign_special_time(self):
         """durations are given for m=10 and z=20000 and n=100"""
+        if not args.production:
+            return
         if "duration" in self.name:
             self.time = "12:00:00"
         if "target" in self.name: # set m to 5
@@ -103,6 +105,8 @@ class Job:
             self.time = "02:00:00"
         
     def assign_special_memory(self):
+        if not args.production:
+            return
         if "spipy-duration" in self.name:
             self.memory = "8GB"
         if "n_osc" in self.name:
