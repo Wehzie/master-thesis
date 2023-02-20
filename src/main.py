@@ -21,7 +21,7 @@ parser.add_argument("--target", type=str, help="Select the default target to app
     "smooth_gauss", "smooth_uniform", "gauss_noise", "uniform_noise",
     "magpie", "human_yes", "bellbird", "human_okay",
     ])
-parser.add_argument("--algo", type=str, help="Select the algorithms to run.", default="all", required=False,
+parser.add_argument("--algo", type=str, help="Select the algorithms to run.", default="best", required=False,
 choices=["all", "best", "test"])
 
 args = parser.parse_args()
