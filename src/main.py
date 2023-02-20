@@ -22,7 +22,7 @@ parser.add_argument("--target", type=str, help="Select the default target to app
     "magpie", "human_yes", "bellbird", "human_okay",
     ])
 parser.add_argument("--algo", type=str, help="Select the algorithms to run.", default="all", required=False,
-choices=["all", "best3", "test"])
+choices=["all", "best", "test"])
 
 args = parser.parse_args()
 

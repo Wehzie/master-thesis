@@ -5,7 +5,6 @@ Las vegas algorithms have non-deterministic runtime and draw from randomness to 
 
 import copy
 import gen_signal_python as gensi_python # TODO: remove once init_las_vegas is removed
-import algo
 import sample
 import const
 

@@ -11,7 +11,7 @@ import gen_signal_spipy
 
 RNG = const.RNG
 MAX_Z_OPS = 20000
-M_AVERAGES = 3
+M_AVERAGES = 5
 N_OSCILLATORS = 100
 SYNTH_FREQ = 5e5 # Hz
 

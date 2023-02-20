@@ -12,7 +12,7 @@ import shared_params_target
 
 RNG = const.RNG
 MAX_Z_OPS = 20000
-M_AVERAGES = 10
+M_AVERAGES = 5
 N_OSCILLATORS = 100
 SAMPLES = 300
 DURATION = 0.1 # s
