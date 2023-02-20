@@ -46,27 +46,27 @@ args = parser.parse_args()
 print(f"Running with {args}")
 
 python_experiments = [
-    # "target",
-    # "n_osc",
-    # "z_ops",
-    # "samples",
-    # "frequency",
-    # "weight",
-    # "offset",
-    # "phase",
-    # "amplitude",
+    "target",
+    "n_osc",
+    "z_ops",
+    "samples",
+    "frequency",
+    "weight",
+    "offset",
+    "phase",
+    "amplitude",
 ]
 
 hybrid_experiments = [
     "target",
     "target_freq",
-    # "n_osc",
-    #"z_ops",
+    "n_osc",
+    "z_ops",
     "duration",
-    # "resistor",
-    #"weight",
-    #"offset",
-    #"phase",
+    "resistor",
+    "weight",
+    "offset",
+    "phase",
 ]
 
 @dataclass
