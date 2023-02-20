@@ -171,5 +171,39 @@ m6 = mask_type.ExperimentMask(
     ],
 )
 
+m7 = mask_type.ExperimentMask(
+    "best3_exploit_weight",
+    "best three algorithms with mc exploit weight",
+    "comparison of best 3 algorithms",
+    [
+        [
+            "MCExploit",
+        ],
+        [
+            "LasVegas",
+        ],
+        [
+            "LinearRegression",
+        ]
+    ]
+)
 
-algo_masks = [m1, m2, m3, m4, m5, m6]
+m8 = mask_type.ExperimentMask(
+    "best3_exploit",
+    "best three algorithms with mc exploit",
+    "comparison of best 3 algorithms",
+    [
+        [
+            "MCExploitWeight",
+        ],
+        [
+            "LasVegas",
+        ],
+        [
+            "LinearRegression",
+        ]
+    ]
+)
+
+
+algo_masks = [m1, m2, m3, m4, m5, m6, m7, m8]

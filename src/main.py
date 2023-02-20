@@ -21,6 +21,8 @@ parser.add_argument("--target", type=str, help="Select the default target to app
     "smooth_gauss", "smooth_uniform", "gauss_noise", "uniform_noise",
     "magpie", "human_yes", "bellbird", "human_okay",
     ])
+parser.add_argument("--algo", type=str, help="Select the algorithms to run.", default="all", required=False,
+choices=["all", "best3", "test"])
 
 args = parser.parse_args()
 
@@ -96,13 +98,13 @@ def main():
         sig_gen = gen_signal_python.PythonSigGen()
         generator_args = python_parameters.py_rand_args_uniform
         m_target = shared_params_target.select_target_by_string(args.target, generator_args, python_parameters.SYNTH_FREQ, python_parameters.DURATION)
-        sweep_bundle = sweep_builder.bundle_python_sweep(sig_gen, generator_args, m_target, algo_selector="all")
+        sweep_bundle = sweep_builder.bundle_python_sweep(sig_gen, generator_args, m_target, args.algo)
         
         if args.qualitative:
             exp.run_qualitative_algo_sweep(sweep_bundle, m_target)
         
         if args.experiment != "none":
-            exp.run_all_experiments(sweep_bundle, m_target.samples, generator_args, args.experiment)
+            exp.run_all_experiments(sweep_bundle, m_target.samples, generator_args, args.experiment, args.target, args.algo)
 
     if args.signal_generator in ["spipy", "hybrid", "all"]:
         
@@ -110,13 +112,13 @@ def main():
         sig_gen = gen_signal_spipy.SpipySignalGenerator()
         generator_args = hybrid_parameters.spice_rand_args_uniform
         m_target = shared_params_target.select_target_by_string(args.target, generator_args, hybrid_parameters.SYNTH_FREQ)
-        sweep_bundle = sweep_builder.bundle_hybrid_sweep(sig_gen, generator_args, m_target, algo_selector="all")
+        sweep_bundle = sweep_builder.bundle_hybrid_sweep(sig_gen, generator_args, m_target, args.algo)
 
         if args.qualitative:
             exp.run_qualitative_algo_sweep(sweep_bundle, m_target)
 
         if args.experiment != "none":
-            exp.run_all_experiments(sweep_bundle, m_target.samples, generator_args, args.experiment, args.target)
+            exp.run_all_experiments(sweep_bundle, m_target.samples, generator_args, args.experiment, args.target, args.algo)
 
 if __name__ == "__main__":
     main()

@@ -16,7 +16,6 @@ import algo_mcmc as almcmc
 import gen_signal_args_types as party
 import meta_target
 import gen_signal
-import const
 
 def bundle_algos_with_args(
     sig_generator: gen_signal.SignalGenerator,
@@ -144,8 +143,8 @@ def bundle_algos_with_args(
             algarty.AlgoArgs(sig_generator, generator_args, meta_target, max_z_ops),
         ),
     ]
-    
-    if selector == "test" or const.TEST_PARAMS:
+
+    if selector == "test":
         out_algos = [
             algabun.AlgoWithArgs(
                 almoca.MCOneShotWeight,
@@ -154,8 +153,28 @@ def bundle_algos_with_args(
         ]
     elif selector == "all":
         out_algos = one_shot_algos + gradient_algos + exploit_algos + las_vegas_algos + population_algos + mcmc_algos + oscillator_anneal_algos + grow_shrink_algos
+    elif selector == "best":
+        out_algos = [
+            algabun.AlgoWithArgs(
+                almoca.MCExploitWeight,
+                algarty.AlgoArgs(sig_generator, generator_args, meta_target, max_z_ops, j_replace=1),
+            ),
+            algabun.AlgoWithArgs(
+                almoca.MCExploit,
+                algarty.AlgoArgs(sig_generator, generator_args, meta_target, max_z_ops, j_replace=1),
+            ),
+            algabun.AlgoWithArgs(
+                alave.LasVegas,
+                algarty.AlgoArgs(sig_generator, generator_args, meta_target, max_z_ops),
+            ),
+            algabun.AlgoWithArgs(
+                algra.LinearRegression,
+                algarty.AlgoArgs(sig_generator, generator_args, meta_target, max_z_ops),
+            ),
+        ]
     else:
         raise ValueError(f"Unknown selector: {selector}")
+
     return out_algos
 
 

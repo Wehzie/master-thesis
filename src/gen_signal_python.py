@@ -169,7 +169,14 @@ def skewed_triangle_wave(duration: float, sampling_rate: int, L: float, m: int, 
 def main():
     sig_generator = PythonSigGen()
 
-    plt.plot(skewed_triangle_wave(duration=10, sampling_rate=10000, L=2, m=1, a=1, p=0, b=0))
+    time = np.linspace(0, 1, 80000)
+    fig = plt.figure()
+    plt.plot(time, skewed_triangle_wave(duration=1, sampling_rate=10000, L=0.5, m=8, a=1, p=0, b=0))
+    #x label
+    fig.set_size_inches(10, 3)
+    plt.subplots_adjust(bottom=0.15)
+    plt.xlabel('Time [s]')
+    plt.savefig("skewed_triangle.png", dpi=300)
     plt.show()
     exit()
 

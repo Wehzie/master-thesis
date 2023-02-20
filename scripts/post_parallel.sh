@@ -6,12 +6,13 @@ rm job*.log
 mv aggregate_log.txt data/
 
 # aggregate results
-mkdir -p data/quantitative_experiment_hybrid
-mkdir -p data/quantitative_experiment_python
-mv data/quantitative_experiment_hybrid*/* data/quantitative_experiment_hybrid/
-mv data/quantitative_experiment_python*/* data/quantitative_experiment_python/
-rm -r data/quantitative_experiment_hybrid_sweep*
-rm -r data/quantitative_experiment_python_sweep*
+cd data
+mkdir -p quantitative_experiment_hybrid
+mkdir -p quantitative_experiment_python
+mv quantitative_experiment_hybrid*/* quantitative_experiment_hybrid/
+mv quantitative_experiment_python*/* quantitative_experiment_python/
+rm -r quantitative_experiment_hybrid_sweep*
+rm -r quantitative_experiment_python_sweep*
 
 # aggregate qualitative
 mkdir -p data/agg_qualitative_experiments

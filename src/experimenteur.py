@@ -148,7 +148,7 @@ class Experimenteur:
     #             f_algo_args: Final = copy.deepcopy(awa.algo_args)
     #             search_alg: algo.SearchAlgo = awa.Algo(f_algo_args)
     
-    def run_samples_sweep(self, sweep_bundle: sweety.SweepBundle, base_args: party.UnionRandArgs) -> resty.ResultSweep:
+    def run_samples_sweep(self, sweep_bundle: sweety.SweepBundle, base_args: party.UnionRandArgs, algo_selector: str) -> resty.ResultSweep:
         """run all algorithms with targets of varying lengths (number of samples)"""
         print("sweeping with", sweep_bundle.num_samples_sweep.__class__.__name__)
         results = list()
@@ -156,7 +156,7 @@ class Experimenteur:
             temp_args = copy.deepcopy(base_args)
             temp_args.samples = s # inject samples into rand_args
             m_target = meta_target.MetaTargetSample(temp_args, "magpie", shared_params_target.DevSet.MAGPIE.value)
-            algo_sweep = sweep_builder.build_algo_sweep(sweep_bundle.signal_generator, temp_args, m_target, sweep_bundle.max_z_ops, sweep_bundle.m_averages)
+            algo_sweep = sweep_builder.build_algo_sweep(sweep_bundle.signal_generator, temp_args, m_target, sweep_bundle.max_z_ops, sweep_bundle.m_averages, algo_selector)
             results += self.run_algo_sweep(algo_sweep)
         return results
 
@@ -185,24 +185,24 @@ class Experimenteur:
             results += self.run_algo_sweep(algo_sweep)
         return results
 
-    def run_z_ops_sweep(self, sweep_bundle: sweety.UnionSweepBundle, base_args: party.UnionRandArgs) -> resty.ResultSweep:
+    def run_z_ops_sweep(self, sweep_bundle: sweety.UnionSweepBundle, base_args: party.UnionRandArgs, algo_selector: str) -> resty.ResultSweep:
         """run all algorithms with different numbers of z-operations, corresponding to more extensive search"""
         print("sweeping with", sweep_bundle.z_ops_sweep.__class__.__name__)
         local_args = copy.deepcopy(base_args)
         meta_target = sweep_bundle.algo_sweep.algo_with_args[0].algo_args.meta_target
         results = list()
         for z_ops in sweep_bundle.z_ops_sweep.max_z_ops:
-            algo_sweep = sweep_builder.build_algo_sweep(sweep_bundle.signal_generator, local_args, meta_target, z_ops, sweep_bundle.m_averages)
+            algo_sweep = sweep_builder.build_algo_sweep(sweep_bundle.signal_generator, local_args, meta_target, z_ops, sweep_bundle.m_averages, algo_selector)
             results += self.run_algo_sweep(algo_sweep)
         return results
 
-    def run_target_sweep(self, target_sweep: sweety.TargetSweep,
+    def run_target_sweep(self, target_sweep: sweety.TargetSweep, algo_selector: str,
     ) -> List[resty.ResultSweep]:
         """run an experiment comparing multiple targets on their rmse and operations"""
         print("sweeping with", target_sweep.__class__.__name__)
         results = list()
         for target in target_sweep.targets:
-            algo_sweep = sweep_builder.build_algo_sweep(target_sweep.signal_generator, target_sweep.rand_args, target, target_sweep.max_z_ops, target_sweep.m_averages)
+            algo_sweep = sweep_builder.build_algo_sweep(target_sweep.signal_generator, target_sweep.rand_args, target, target_sweep.max_z_ops, target_sweep.m_averages, algo_selector)
             results += self.run_algo_sweep(algo_sweep)
         return results
 
@@ -212,6 +212,7 @@ class Experimenteur:
     base_rand_args: party.UnionRandArgs,
     selector: str,
     target_selector: str = None,
+    algo_selector: str = None,
     ) -> None:
         """run all experiments and plot results
         
@@ -223,7 +224,7 @@ class Experimenteur:
         def invoke_target_sweep():
             """run an experiment with varying target functions"""
             self.set_sweep_name_and_dir("targets_vs_rmse")
-            results = self.run_target_sweep(sweep_bundle.target_sweep)
+            results = self.run_target_sweep(sweep_bundle.target_sweep, algo_selector)
             df = expan.conv_results_to_pd(results)
             expan.analyze_targets_vs_rmse(df, self.sweep_name, self.sweep_dir, show=self.show_plots)
             data_io.hoard_experiment_results(self.sweep_name, results, df, self.sweep_dir)
@@ -231,7 +232,7 @@ class Experimenteur:
         def invoke_target_freq_sweep():
             """run an experiment with the same target function at different frequencies"""
             self.set_sweep_name_and_dir("target_freq_vs_rmse")
-            results = self.run_target_sweep(sweep_bundle.target_freq_sweep)
+            results = self.run_target_sweep(sweep_bundle.target_freq_sweep, algo_selector)
             df = expan.conv_results_to_pd(results)
             expan.analyze_targets_vs_rmse(df, self.sweep_name, self.sweep_dir, show=self.show_plots)
             data_io.hoard_experiment_results(self.sweep_name, results, df, self.sweep_dir)
@@ -246,7 +247,7 @@ class Experimenteur:
 
         def invoke_z_ops_sweep():
             self.set_sweep_name_and_dir("z_ops_vs_rmse")
-            results = self.run_z_ops_sweep(sweep_bundle, base_rand_args)
+            results = self.run_z_ops_sweep(sweep_bundle, base_rand_args, algo_selector)
             df = expan.conv_results_to_pd(results)
             expan.plot_z_vs_rmse(df, target_samples, self.sweep_name, self.sweep_dir, show=self.show_plots)
             expan.plot_masks(sweep_bundle.algo_sweep.algo_masks, expan.plot_z_vs_rmse, df, target_samples, self.sweep_name, self.sweep_dir, show=self.show_plots)
@@ -254,7 +255,7 @@ class Experimenteur:
 
         def invoke_samples_sweep():
             self.set_sweep_name_and_dir("samples_vs_rmse")
-            results = self.run_samples_sweep(sweep_bundle, base_rand_args)
+            results = self.run_samples_sweep(sweep_bundle, base_rand_args, algo_selector)
             df = expan.conv_results_to_pd(results)
             expan.plot_samples_vs_rmse(df, self.sweep_name, self.sweep_dir, show=self.show_plots)
             expan.plot_masks(sweep_bundle.algo_sweep.algo_masks, expan.plot_samples_vs_rmse, df, self.sweep_name, self.sweep_dir, show=self.show_plots)

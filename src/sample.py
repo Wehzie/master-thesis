@@ -180,6 +180,8 @@ def evaluate_prediction(best_sample: Sample, m_target: meta_target.MetaTarget,
     if plot_time: # time-domain
         time_dir = save_path / "time_domain"
         time_dir.mkdir(parents=True, exist_ok=True)
+        data_analysis.plot_signal(m_target.signal, m_target.time, title=f"{alg_name}, n={n_osc}, z={z_ops}", save_path=time_dir / "target_alone")
+        data_analysis.plot_signal(best_sample.weighted_sum, m_target.time, title=f"{alg_name}, n={n_osc}, z={z_ops}", save_path=time_dir / "base_algorithm_without_target")
         data_analysis.plot_pred_target(best_sample.weighted_sum, m_target.signal, time=m_target.time, title=f"{alg_name}, n={n_osc}, z={z_ops}", save_path=time_dir / "base_algorithm")
         data_analysis.plot_pred_target(reg_sample.weighted_sum, m_target.signal, time=m_target.time, title=f"regression after {alg_name}, n={n_osc}, z={z_ops}", save_path=time_dir / "regression")
         data_analysis.plot_pred_target(norm_sample.weighted_sum, target_norm, time=m_target.time, title=f"{alg_name}, normalized, n={n_osc}, z={z_ops}", save_path=time_dir / "normalized_base_algorithm")
