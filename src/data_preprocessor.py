@@ -232,10 +232,10 @@ phase_shift: Union[float, None] = None) -> np.ndarray:
         single_period_signal: the signal of a single period
         sampling_rate: the sampling rate of the signal
         new_duration: the new duration of the signal in seconds
-        phase_shift: the phase shift in periods, e.g. multiples of 2 yield the original signal
+        phase_shift: the phase shift in radians, e.g. multiples of 2 yield the original signal
     """
     if phase_shift is not None:
-        single_period_signal = np.roll(single_period_signal, int(phase_shift*len(single_period_signal)))
+        single_period_signal = np.roll(single_period_signal, int(phase_shift*len(single_period_signal)/2))
 
     period_duration = len(single_period_signal)/sampling_rate
     if new_duration < period_duration:
