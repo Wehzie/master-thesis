@@ -7,21 +7,22 @@ import argparse
 parser = argparse.ArgumentParser(description="Run a simulation.")
 parser.add_argument("--production", action="store_true", help="Run a simulation with production parameters.", default=False, required=False)
 parser.add_argument("--clean", action="store_true", help="Clean the write directory before running the simulation.", default=False, required=False)
-parser.add_argument("--signal_generator", type=str, help="Select the signal generator to use.", choices=["python", "spipy", "hybrid", "all"], default="all", required=False)
+parser.add_argument("--signal_generator", type=str, help="Select the signal generator to use. Default: all.", choices=["python", "spipy", "hybrid", "all"], default="all", required=False)
 parser.add_argument("--qualitative", action="store_true", help="Run optimization without statistical analysis.", default=False, required=False)
-parser.add_argument("--experiment", type=str, help="Select the quantitative experiments to run; not all experiments are compatible with each signal generator.",
+parser.add_argument("--experiment", type=str, help="Select the quantitative experiments to run; not all experiments are compatible with each signal generator. Default: all",
 default="all", required=False, choices=[
     "none", "all",
     "target", "target_freq",
     "n_osc", "z_ops", "samples", "duration",
-    "frequency", "resistor", "weight", "offset", "phase", "amplitude"])
-parser.add_argument("--target", type=str, help="Select the default target to approximate.", default="sine", required=False, choices=[
+    "frequency", "resistor", "weight", "offset", "phase", "amplitude",
+    "gain_dist",])
+parser.add_argument("--target", type=str, help="Select the default target to approximate. Default: sine", default="sine", required=False, choices=[
     "sine", "triangle", "square", "sawtooth", "inverse_sawtooth",
     "chirp", "beat", "damp_chirp",
     "smooth_gauss", "smooth_uniform", "gauss_noise", "uniform_noise",
     "magpie", "human_yes", "bellbird", "human_okay",
     ])
-parser.add_argument("--algo", type=str, help="Select the algorithms to run.", default="best", required=False,
+parser.add_argument("--algo", type=str, help="Select the algorithms to run. Default: best", default="best", required=False,
 choices=["all", "best", "test"])
 
 args = parser.parse_args()
@@ -62,6 +63,7 @@ legal_python_experiments = [
     "offset",
     "phase",
     "amplitude",
+    "gain_dist",
     "all",
     "none"
 ]
@@ -76,6 +78,7 @@ legal_hybrid_experiments = [
     "weight",
     "offset",
     "phase",
+    "gain_dist",
     "all",
     "none"
 ]

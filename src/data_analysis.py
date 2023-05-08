@@ -130,14 +130,36 @@ def plot_f0_hist(signal_matrix: np.ndarray, sample_spacing: float, title: str = 
     for i in range(signal_matrix.shape[0]):
         f0_li.append(get_freq_from_fft_v2(signal_matrix[i, :], sample_spacing))
 
-    n_bins = int(max(len(f0_li), 10+2*np.log(len(f0_li))))
     plt.figure()
-    plt.hist(f0_li, bins=n_bins)
+    plt.hist(f0_li, bins="auto")
     plt.gca().set_xlabel("f0 [Hz]")
     plt.gca().set_ylabel("count")
 
     if title:
         plt.title(title)
+    if show:
+        plt.show()
+    if save_path:
+        plt.savefig(save_path, dpi=300)
+
+def plot_weight_hist(weights: np.ndarray, show: bool = False, save_path: Path = None, title: str = None) -> None:
+    """plot a histogram to visualize the distribution of weights in an oscillator ensemble
+    
+    args:
+        weights: a vector of weights
+        show: show the plot
+        save_path: save the plot to the provided path
+        title: title of the plot
+    """
+    plt.figure()
+    print("weigths", weights)
+    print("mean weight", np.mean(weights))
+    print("sum of weights", np.sum(weights))
+    plt.hist(weights, bins="auto")
+    plt.gca().set_xlabel("weight")
+    plt.gca().set_ylabel("count")
+    if title: plt.title(title)
+
     if show:
         plt.show()
     if save_path:

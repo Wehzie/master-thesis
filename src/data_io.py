@@ -143,7 +143,7 @@ def hoard_experiment_results(experiment_description: str, results: List, df: pd.
     plt.close("all")
     if not const.HOARD_DATA: return
     pickle_object(results, directory / (experiment_description + "_results.pickle"))
-    df.to_csv(directory / (experiment_description + "_dataframe.csv"), index=False)
+    if df is not None: df.to_csv(directory / (experiment_description + "_dataframe.csv"), index=False)
     print(f"saved {experiment_description} results to {directory}")
 
 def clean_dir(path: Path) -> None:

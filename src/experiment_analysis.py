@@ -347,24 +347,6 @@ mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
     fig.gca().set_xlabel("time [a.u.]")
     save_fig_n_legend(fig, legend_as_fig, sweep_name, save_dir, mask, show)
 
-def plot_duration_vs_rmse(df: pd.DataFrame, sweep_name: str, save_dir: Path,
-mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
-    """exp12: plot duration against rmse for multiple algorithms with rand_args (signal generator args) and target fixed"""
-    # before filtering df
-    m_averages = int(df["m_averages"].iloc[[0]])
-    n_osc = df["n_osc"].values[0]
-    max_z_ops = int(df["max_z_ops"].values[0])
-    sampling_rate = int(df["sampling_rate"].values[0])
-    target_name = df["target_name"].values[0]
-    title = f"m={m_averages}, n={n_osc}, z={max_z_ops}, fs={sampling_rate} Hz, {target_name}"
-
-    df = df.filter(items=["algo_name", "duration", "mean_rmse", "std_rmse"])
-    df = apply_mask(df, mask)
-    fig, legend_as_fig = plot_rmse_by_algo(df, "duration", mask=mask)
-    fig.gca().set_title(title)
-    fig.gca().set_xlabel("duration [s]")
-    fig.gca().set_xscale("log")
-    save_fig_n_legend(fig, legend_as_fig, sweep_name, save_dir, mask, show)
 
 def plot_targets_w_all_algos(df: pd.DataFrame, title: str) -> plt.Figure:
     """exp4: plot where each target forms a group of bars, each bar is an algorithm"""
@@ -589,19 +571,6 @@ mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
         save_fig_n_legend(fig, legend_as_fig, sweep_name_with_dist, save_dir, mask, show)
     if show: plt.show()
 
-def plot_resistor_range_vs_rmse(df: pd.DataFrame, target_samples: int, save_dir: Path,
-mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
-    """exp11: plot offset range against rmse for multiple algorithms with rand_args and target fixed"""
-
-    def define_plot(dist_name: str) -> None:
-        fig, legend_as_fig = plot_range_vs_rmse(df, target_samples, "freq", dist_name, mask)
-        fig.gca().set_xlabel(r"resistor diversity $\Omega$") # width of offset distribution
-        save_fig_n_legend(fig, legend_as_fig, f"resistor_range_{dist_name}_vs_rmse", save_dir, mask, show)
-    
-    dist_names = find_dists_in_df(df)
-    [define_plot(dist_name) for dist_name in dist_names]
-    
-    if show: plt.show()
 
 def select_generator_inverse_amplitude(df: pd.DataFrame) -> float:
     """select the inverse amplitude of the generator used in the experiment"""
@@ -659,3 +628,61 @@ mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
     fig.gca().set_ylabel("RMSE")
     fig.gca().set_xlabel("unweighted amplitude")
     save_fig_n_legend(fig, legend_as_fig, sweep_name, save_dir, mask, show)
+
+
+def plot_resistor_range_vs_rmse(df: pd.DataFrame, target_samples: int, save_dir: Path,
+mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
+    """exp11: plot offset range against rmse for multiple algorithms with rand_args and target fixed"""
+
+    def define_plot(dist_name: str) -> None:
+        fig, legend_as_fig = plot_range_vs_rmse(df, target_samples, "freq", dist_name, mask)
+        fig.gca().set_xlabel(r"resistor diversity $\Omega$") # width of offset distribution
+        save_fig_n_legend(fig, legend_as_fig, f"resistor_range_{dist_name}_vs_rmse", save_dir, mask, show)
+    
+    dist_names = find_dists_in_df(df)
+    [define_plot(dist_name) for dist_name in dist_names]
+    
+    if show: plt.show()
+
+
+
+def plot_duration_vs_rmse(df: pd.DataFrame, sweep_name: str, save_dir: Path,
+mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
+    """exp12: plot duration against rmse for multiple algorithms with rand_args (signal generator args) and target fixed"""
+    # before filtering df
+    m_averages = int(df["m_averages"].iloc[[0]])
+    n_osc = df["n_osc"].values[0]
+    max_z_ops = int(df["max_z_ops"].values[0])
+    sampling_rate = int(df["sampling_rate"].values[0])
+    target_name = df["target_name"].values[0]
+    title = f"m={m_averages}, n={n_osc}, z={max_z_ops}, fs={sampling_rate} Hz, {target_name}"
+
+    df = df.filter(items=["algo_name", "duration", "mean_rmse", "std_rmse"])
+    df = apply_mask(df, mask)
+    fig, legend_as_fig = plot_rmse_by_algo(df, "duration", mask=mask)
+    fig.gca().set_title(title)
+    fig.gca().set_xlabel("duration [s]")
+    fig.gca().set_xscale("log")
+    save_fig_n_legend(fig, legend_as_fig, sweep_name, save_dir, mask, show)
+
+
+def plot_multi_weight_hist(results: dict, save_path: Path, show: bool = False) -> None:
+    """exp13: plot a histogram to visualize the distribution of weights in an oscillator ensemble over multiple runs for multiple algorithms
+    """
+    for key, val in results.items():
+        plt.figure()
+        plt.hist(val["data"]["weights"], bins="auto", density=True)
+        plt.gca().set_xlabel("gain")
+        plt.gca().set_ylabel("probability density")
+        # TODO: normalize by number of runs
+
+        n_osc = val["meta"]["n_osc"]
+        z_ops = val["meta"]["max_z_ops"]
+        sampling_rate = val["meta"]["sampling_rate"]
+        target_name = val["meta"]["target_name"]
+        plt.title(f"n={n_osc}, z={z_ops}, t={target_name}, fs={sampling_rate: .2e}, {key}")
+
+        temp_path = save_path / f"multi_weight_hist_{key}.png"
+        plt.savefig(temp_path, dpi=300)
+
+        if show: plt.show()

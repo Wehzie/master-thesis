@@ -195,6 +195,7 @@ def evaluate_prediction(best_sample: Sample, m_target: meta_target.MetaTarget,
     if decompose_sample: # show individual signals in best sample
         data_analysis.plot_individual_oscillators(best_sample.signal_matrix, m_target.time, save_path=time_dir / "individual_signals")
         data_analysis.plot_f0_hist(best_sample.signal_matrix, 1/m_target.sampling_rate, title=f"fundamental frequency distribution, n={n_osc}, z={z_ops}", save_path=time_dir / "frequency_distribution")
+        data_analysis.plot_weight_hist(best_sample.weights, title=f"weight distribution, n={n_osc}, z={z_ops}", save_path=time_dir / "weight_distribution")
     
     out = f"""
 {alg_name}

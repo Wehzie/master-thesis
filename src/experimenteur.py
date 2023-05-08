@@ -5,7 +5,7 @@ The Experimenteur class runs experiments.
 
 import copy
 from dataclasses import fields
-from typing import Final, Iterable, List, Union
+from typing import Final, Iterable, List, Tuple, Union
 from multiprocessing import Pool, cpu_count
 from functools import partial
 
@@ -25,6 +25,7 @@ import gen_signal_python
 import gen_signal_spipy
 import sweep_builder
 import algo_args_bundle
+import algo_args_type
 if const.TEST_PARAMS:
     print("Import test parameters.")
     import params_python_test as python_parameters
@@ -66,6 +67,41 @@ class Experimenteur:
             search_alg = awa.Algo(awa.algo_args)
             best_sample, z_ops = search_alg.search()
             sample.evaluate_prediction(best_sample, local_target, z_ops, search_alg.__class__.__name__, sweep_bundle.signal_generator.__class__.__name__, write_dir=write_dir)
+
+    def extract_weights(self, samples: Iterable) -> Tuple[np.ndarray, np.ndarray]:
+        """extract and concatenate the weights of the samples in the iterable to a single array"""
+        weights = [s.weights for s in samples]
+        weights = np.array(weights)
+        flat_weights = weights.flatten()
+        n_oscillators = len(samples[0].weights)
+        assert flat_weights.shape == (len(samples) * n_oscillators, )
+        return flat_weights
+
+    def extract_meta_data(self, algo_args: algo_args_type.AlgoArgs) -> dict:
+        """convert an algorithm's meta data to a dictionary"""
+        meta_dict = dict()
+        meta_dict["target_name"] = algo_args.meta_target.name
+        meta_dict["max_z_ops"] = algo_args.max_z_ops
+        meta_dict["n_osc"] = algo_args.rand_args.n_osc
+        meta_dict["sampling_rate"] = algo_args.meta_target.sampling_rate
+        return meta_dict
+
+    def init_dict(self):
+        return {"data": dict(), "meta": dict()}
+    
+    def run_weight_dist_sweep(self, sweep_bundle: sweety.SweepBundle) -> List[Tuple[np.ndarray, np.ndarray]]:
+        """Run an experiment with the same parameters but varying algorithms to collect the distribution of weights across multiple runs"""
+        results = dict()
+        for awa in sweep_bundle.algo_sweep.algo_with_args:
+            awa: algo_args_bundle.AlgoWithArgs
+            search_alg = awa.Algo(awa.algo_args)
+            m_ensembles, z_ops = self.invoke_search(search_alg, sweep_bundle.algo_sweep) # m corresponds to number of runs
+
+            algo_name = search_alg.__class__.__name__
+            results[algo_name] = self.init_dict()
+            results[algo_name]["data"]["weights"] = self.extract_weights(m_ensembles)
+            results[algo_name]["meta"] = self.extract_meta_data(awa.algo_args)
+        return results
 
     def set_sweep_name_and_dir(self, sweep_name: str) -> None:
         """set the name and directory of the sweep for the next experiment"""
@@ -238,6 +274,7 @@ class Experimenteur:
             data_io.hoard_experiment_results(self.sweep_name, results, df, self.sweep_dir)
 
         def invoke_n_osc_sweep():
+            """run an experiment with different numbers of oscillators"""
             self.set_sweep_name_and_dir("n_osc_vs_rmse")
             results = self.run_rand_args_sweep(sweep_bundle.algo_sweep, sweep_bundle.n_osc_sweep, base_rand_args)
             df = expan.conv_results_to_pd(results)
@@ -246,6 +283,7 @@ class Experimenteur:
             data_io.hoard_experiment_results(self.sweep_name, results, df, self.sweep_dir)
 
         def invoke_z_ops_sweep():
+            """run an experiment where the number of perturbations (Z) to an oscillator ensemble is varied"""
             self.set_sweep_name_and_dir("z_ops_vs_rmse")
             results = self.run_z_ops_sweep(sweep_bundle, base_rand_args, algo_selector)
             df = expan.conv_results_to_pd(results)
@@ -254,6 +292,7 @@ class Experimenteur:
             data_io.hoard_experiment_results(self.sweep_name, results, df, self.sweep_dir)
 
         def invoke_samples_sweep():
+            """run an experiment where the number of the samples in the target is varied"""
             self.set_sweep_name_and_dir("samples_vs_rmse")
             results = self.run_samples_sweep(sweep_bundle, base_rand_args, algo_selector)
             df = expan.conv_results_to_pd(results)
@@ -262,6 +301,7 @@ class Experimenteur:
             data_io.hoard_experiment_results(self.sweep_name, results, df, self.sweep_dir)
         
         def invoke_duration_sweep():
+            """run an experiment where the duration of the target is varied"""
             self.set_sweep_name_and_dir("duration_vs_rmse")
             results = self.run_duration_sweep(sweep_bundle, base_rand_args, target_selector)
             df = expan.conv_results_to_pd(results)
@@ -270,6 +310,7 @@ class Experimenteur:
             data_io.hoard_experiment_results(self.sweep_name, results, df, self.sweep_dir)
 
         def invoke_freqs_sweep():
+            """run an experiment where the frequency diversity of oscillators is varied"""
             freq_sweeps = [sweep_bundle.freq_sweep_from_zero, sweep_bundle.freq_sweep_around_vo2]
             freq_sweep_names = ["freq_range_from_zero", "freq_range_around_vo2"]
             for freq_sweep, freq_sweep_name in zip(freq_sweeps, freq_sweep_names):
@@ -281,6 +322,7 @@ class Experimenteur:
                 data_io.hoard_experiment_results(self.sweep_name, results, df, self.sweep_dir)
 
         def invoke_weight_sweep():
+            """run an experiment where the weight (gain) diversity of the oscillators is varied, also known as dynamic range"""
             self.set_sweep_name_and_dir("weight_range_vs_rmse")
             results = self.run_rand_args_sweep(sweep_bundle.algo_sweep, sweep_bundle.weight_sweep, base_rand_args)
             df = expan.conv_results_to_pd(results)
@@ -289,6 +331,7 @@ class Experimenteur:
             data_io.hoard_experiment_results(self.sweep_name, results, df, self.sweep_dir)
 
         def invoke_phase_sweep():
+            """run an experiment where the phase diversity of the oscillators is varied"""
             self.set_sweep_name_and_dir("phase_range_vs_rmse")
             results = self.run_rand_args_sweep(sweep_bundle.algo_sweep, sweep_bundle.phase_sweep, base_rand_args)
             df = expan.conv_results_to_pd(results)
@@ -297,6 +340,7 @@ class Experimenteur:
             data_io.hoard_experiment_results(self.sweep_name, results, df, self.sweep_dir)
 
         def invoke_offset_sweep():
+            """run an experiment where the offset diversity of the oscillator ensemble is varied"""
             self.set_sweep_name_and_dir("offset_range_vs_rmse")
             results = self.run_rand_args_sweep(sweep_bundle.algo_sweep, sweep_bundle.offset_sweep, base_rand_args)
             df = expan.conv_results_to_pd(results)
@@ -305,6 +349,7 @@ class Experimenteur:
             data_io.hoard_experiment_results(self.sweep_name, results, df, self.sweep_dir)
 
         def invoke_amplitude_sweep():
+            """run an experiment where the amplitude diversity of oscillators is varied"""
             self.set_sweep_name_and_dir("amplitude_vs_rmse")
             results = self.run_rand_args_sweep(sweep_bundle.algo_sweep, sweep_bundle.amplitude_sweep, base_rand_args)
             df = expan.conv_results_to_pd(results)
@@ -313,12 +358,20 @@ class Experimenteur:
             data_io.hoard_experiment_results(self.sweep_name, results, df, self.sweep_dir)
 
         def invoke_resistor_sweep():
+            """run an experiment where the resistor diversity of oscillators is varied"""
             self.set_sweep_name_and_dir("resistor_vs_rmse")
             results = self.run_rand_args_sweep(sweep_bundle.algo_sweep, sweep_bundle.resistor_sweep, base_rand_args)
             df = expan.conv_results_to_pd(results)
             expan.plot_resistor_range_vs_rmse(df, target_samples, self.sweep_dir, show=self.show_plots)
             expan.plot_masks(sweep_bundle.algo_sweep.algo_masks, expan.plot_resistor_range_vs_rmse, df, target_samples, self.sweep_dir, show=self.show_plots)
             data_io.hoard_experiment_results(self.sweep_name, results, df, self.sweep_dir)
+        
+        def invoke_gain_dist_sweep():
+            """run an experiment where the distribution of gains (weights) of oscillators in an ensemble is plotted across multiple algorithms"""
+            self.set_sweep_name_and_dir("gain_dist")
+            results = self.run_weight_dist_sweep(sweep_bundle)
+            expan.plot_multi_weight_hist(results, self.sweep_dir, show=self.show_plots)
+            data_io.hoard_experiment_results(self.sweep_name, results, None, self.sweep_dir)
 
         @data_analysis.print_time
         def invoke_python_generator_sweeps():
@@ -340,6 +393,8 @@ class Experimenteur:
                 invoke_offset_sweep()
             if selector in ["all", "amplitude"]:
                 invoke_amplitude_sweep()
+            if selector in ["all", "gain_dist"]:
+                invoke_gain_dist_sweep()
             # TODO
             # invoke_duration_sweep()
         
@@ -363,6 +418,8 @@ class Experimenteur:
                 invoke_phase_sweep()
             if selector in ["all", "offset"]:
                 invoke_offset_sweep()
+            if selector in ["all", "gain_dist"]:
+                invoke_gain_dist_sweep()
         
         if isinstance(sweep_bundle.signal_generator, gen_signal_python.PythonSigGen):
             print("Start experiment with Python signal generator")
