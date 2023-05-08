@@ -214,7 +214,7 @@ def launch_qualitative():
             if counter == 2 and not args.production:
                 break
     
-    partition = "regular" if args.production else "vulture"
+    partition = "regular" if args.production else "regular"
     memory = "8GB" if args.production else "500MB"
     time = "00:15:00" if args.production else "00:01:00"
     mail = send_mail_config if args.production else ""
