@@ -46,27 +46,29 @@ args = parser.parse_args()
 print(f"Running with {args}")
 
 python_experiments = [
-    "target",
-    "n_osc",
-    "z_ops",
-    "samples",
-    "frequency",
-    "weight",
-    "offset",
-    "phase",
-    "amplitude",
+    # "target",
+    # "n_osc",
+    # "z_ops",
+    # "samples",
+    # "frequency",
+    # "weight",
+    # "offset",
+    # "phase",
+    # "amplitude",
+    "gain_dist",
 ]
 
 hybrid_experiments = [
-    "target",
-    "target_freq",
-    "n_osc",
-    "z_ops",
-    "duration",
-    "resistor",
-    "weight",
-    "offset",
-    "phase",
+    # "target",
+    # "target_freq",
+    # "n_osc",
+    # "z_ops",
+    # "duration",
+    # "resistor",
+    # "weight",
+    # "offset",
+    # "phase",
+    "gain_dist",
 ]
 
 @dataclass
@@ -105,6 +107,8 @@ class Job:
         if "amplitude" in self.name:
             self.time = "02:30:00"
         if "samples" in self.name:
+            self.time = "02:00:00"
+        if "gain_dist" in self.name:
             self.time = "02:00:00"
         
     def assign_special_memory(self):
@@ -232,5 +236,5 @@ def clean():
 
 if __name__ == "__main__":
     launch_experiments()
-    launch_qualitative()
+    #launch_qualitative()
     clean()
