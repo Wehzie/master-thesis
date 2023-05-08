@@ -166,7 +166,7 @@ def run_jobs(jobs: List[Job]):
             break
 
 def launch_experiments():
-    partition = "regular" if args.production else "vulture"
+    partition = "regular" if args.production else "regular"
     memory = "1GB" if args.production else "300MB"
     time = "03:00:00" if args.production else "00:01:00"
     mail = send_mail_config if args.production else ""
