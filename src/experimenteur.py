@@ -77,13 +77,14 @@ class Experimenteur:
         assert flat_weights.shape == (len(samples) * n_oscillators, )
         return flat_weights
 
-    def extract_meta_data(self, algo_args: algo_args_type.AlgoArgs) -> dict:
+    def extract_meta_data(self, algo_args: algo_args_type.AlgoArgs, m_averages: int) -> dict:
         """convert an algorithm's meta data to a dictionary"""
         meta_dict = dict()
         meta_dict["target_name"] = algo_args.meta_target.name
         meta_dict["max_z_ops"] = algo_args.max_z_ops
         meta_dict["n_osc"] = algo_args.rand_args.n_osc
         meta_dict["sampling_rate"] = algo_args.meta_target.sampling_rate
+        meta_dict["m_averages"] = m_averages
         return meta_dict
 
     def init_dict(self):
@@ -100,7 +101,7 @@ class Experimenteur:
             algo_name = search_alg.__class__.__name__
             results[algo_name] = self.init_dict()
             results[algo_name]["data"]["weights"] = self.extract_weights(m_ensembles)
-            results[algo_name]["meta"] = self.extract_meta_data(awa.algo_args)
+            results[algo_name]["meta"] = self.extract_meta_data(awa.algo_args, sweep_bundle.algo_sweep.m_averages)
         return results
 
     def set_sweep_name_and_dir(self, sweep_name: str) -> None:

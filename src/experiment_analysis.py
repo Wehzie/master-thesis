@@ -671,7 +671,10 @@ def plot_multi_weight_hist(results: dict, save_path: Path, show: bool = False) -
     """
     for key, val in results.items():
         plt.figure()
-        plt.hist(val["data"]["weights"], bins="auto", density=True)
+        log = False
+        if key == "LinearRegression":
+            log = True
+        plt.hist(val["data"]["weights"], bins="auto", density=True, log=log)
         plt.gca().set_xlabel("gain")
         plt.gca().set_ylabel("probability density")
         # TODO: normalize by number of runs
@@ -680,7 +683,8 @@ def plot_multi_weight_hist(results: dict, save_path: Path, show: bool = False) -
         z_ops = val["meta"]["max_z_ops"]
         sampling_rate = val["meta"]["sampling_rate"]
         target_name = val["meta"]["target_name"]
-        plt.title(f"n={n_osc}, z={z_ops}, t={target_name}, fs={sampling_rate: .2e}, {key}")
+        m_averages = val["meta"]["m_averages"]
+        plt.title(f"m={m_averages}, n={n_osc}, z={z_ops}, t={target_name}, fs={sampling_rate: .2e}, {key}")
 
         temp_path = save_path / f"multi_weight_hist_{key}.png"
         plt.savefig(temp_path, dpi=300)

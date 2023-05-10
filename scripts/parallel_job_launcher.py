@@ -106,9 +106,9 @@ class Job:
             self.time = "03:00:00"
         if "amplitude" in self.name:
             self.time = "02:30:00"
-        if "samples" in self.name:
-            self.time = "02:00:00"
         if "gain_dist" in self.name:
+            self.time = "02:30:00"
+        if "samples" in self.name:
             self.time = "02:00:00"
         
     def assign_special_memory(self):
@@ -126,6 +126,7 @@ def build_job_commands(time: str, memory: str, partition: str, mail: str) -> Lis
     base_call = ["srun", "python3", "src/main.py"]
     if args.production:
         base_call.append("--production")
+        base_call.append("--algo all")
 
     jobs = []
     for e in python_experiments:
