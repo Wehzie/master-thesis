@@ -23,7 +23,6 @@
 #SBATCH --mem-per-cpu=2GB
 
 module purge
-module load matplotlib
 # yields python-3.9
 # and packages
 # numpy, scipy, pandas, matplotlib
@@ -32,5 +31,6 @@ module load scikit-learn
 module load tqdm
 module load GCC
 module load ngspice
+module load matplotlib
 
 srun python3 src/main.py --production

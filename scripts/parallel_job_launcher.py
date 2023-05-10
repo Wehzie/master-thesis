@@ -25,7 +25,6 @@ f"""#!/bin/bash
 #SBATCH --mem-per-cpu={mem}
 
 module purge
-module load matplotlib
 # yields python-3.9
 # and packages
 # numpy, scipy, pandas, matplotlib
@@ -34,6 +33,7 @@ module load scikit-learn
 module load tqdm
 module load GCC
 module load ngspice
+module load matplotlib
 
 {command}
 """)
