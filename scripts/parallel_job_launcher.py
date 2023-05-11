@@ -116,11 +116,11 @@ class Job:
             return
         if "spipy-duration" in self.name:
             self.memory = "8GB"
+        if "spipy-gain_dist" in self.name:
+            self.memory = "8GB"
         if "n_osc" in self.name:
             self.memory = "3GB"
         if "python-duration" in self.name:
-            self.memory = "2GB"
-        if "spipy-gain_dist" in self.name:
             self.memory = "2GB"
 
 def build_job_commands(time: str, memory: str, partition: str, mail: str) -> List[Job]:
