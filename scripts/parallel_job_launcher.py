@@ -129,7 +129,7 @@ def build_job_commands(time: str, memory: str, partition: str, mail: str) -> Lis
         base_call.append("--production")
         base_call.append("--algo all")
 
-    # jobs = []
+    jobs = []
     # for e in python_experiments:
     #     extension_args = ["--signal_generator", "python", f"--experiment {e}", "--target", "magpie"]
     #     job = Job(f"python-{e}", " ".join(base_call + extension_args), time, memory, partition, mail)
