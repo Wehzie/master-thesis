@@ -120,7 +120,8 @@ class Job:
             self.memory = "3GB"
         if "python-duration" in self.name:
             self.memory = "2GB"
-        
+        if "spipy-gain_dist" in self.name:
+            self.memory = "2GB"
 
 def build_job_commands(time: str, memory: str, partition: str, mail: str) -> List[Job]:
     base_call = ["srun", "python3", "src/main.py"]
@@ -128,13 +129,13 @@ def build_job_commands(time: str, memory: str, partition: str, mail: str) -> Lis
         base_call.append("--production")
         base_call.append("--algo all")
 
-    jobs = []
-    for e in python_experiments:
-        extension_args = ["--signal_generator", "python", f"--experiment {e}", "--target", "magpie"]
-        job = Job(f"python-{e}", " ".join(base_call + extension_args), time, memory, partition, mail)
-        job.assign_special_time()
-        job.assign_special_memory()
-        jobs.append(job)
+    # jobs = []
+    # for e in python_experiments:
+    #     extension_args = ["--signal_generator", "python", f"--experiment {e}", "--target", "magpie"]
+    #     job = Job(f"python-{e}", " ".join(base_call + extension_args), time, memory, partition, mail)
+    #     job.assign_special_time()
+    #     job.assign_special_memory()
+    #     jobs.append(job)
 
     for e in hybrid_experiments:
         extension_args = ["--signal_generator", "spipy", f"--experiment {e}", "--target", "sine"]
