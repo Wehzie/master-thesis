@@ -55,20 +55,20 @@ python_experiments = [
     # "offset",
     # "phase",
     # "amplitude",
-    "gain_dist",
+    # "gain_dist",
 ]
 
 hybrid_experiments = [
     # "target",
     # "target_freq",
     # "n_osc",
-    # "z_ops",
+    "z_ops",
     # "duration",
     # "resistor",
     # "weight",
     # "offset",
     # "phase",
-    "gain_dist",
+    # "gain_dist",
 ]
 
 @dataclass
@@ -256,6 +256,6 @@ def clean():
     Path("job.sh").unlink(missing_ok=True)
 
 if __name__ == "__main__":
-    #launch_experiments()
-    launch_qualitative()
+    launch_experiments()
+    #launch_qualitative()
     clean()

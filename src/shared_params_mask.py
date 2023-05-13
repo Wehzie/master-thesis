@@ -73,7 +73,7 @@ m3 = mask_type.ExperimentMask(
             "MCExploit", # best monte carlo in oscillator replacement
         ],
         [
-            "MCExploitNeighborWeight", # uses local information
+            "MCExploitWeight", # like above but weight only
         ],
         [
             "MCOneShot", # best brute force search
@@ -172,23 +172,6 @@ m6 = mask_type.ExperimentMask(
 )
 
 m7 = mask_type.ExperimentMask(
-    "best3_exploit_weight",
-    "best three algorithms with mc exploit weight",
-    "comparison of best 3 algorithms",
-    [
-        [
-            "MCExploit",
-        ],
-        [
-            "LasVegas",
-        ],
-        [
-            "LinearRegression",
-        ]
-    ]
-)
-
-m8 = mask_type.ExperimentMask(
     "best3_exploit",
     "best three algorithms with mc exploit",
     "comparison of best 3 algorithms",
@@ -205,5 +188,32 @@ m8 = mask_type.ExperimentMask(
     ]
 )
 
+m8 = mask_type.ExperimentMask(
+    "algo_by_j_replaced_oscillators",
+    "simultaneously replaced oscillators",
+    "comparison of similar algorithms with varying numbers of simultaneously replaced oscillators",
+    [
+        [
+            "Linear Regression",
+        ],
+        [
+            "MCOneShot",
+        ],
+        [
+            "MCExploit",
+        ],
+        [
+            "MCExploitJ10",
+        ],
+        [
+            "MCOscillatorAnneal",
+        ],
+        [
+            "MCOscillatorAnnealLog",
+        ]
+    ]
+)
+
+# Linear Regression + OneShot + Exploit + Exploit J=10 + Oscillator Annealing in z-ops 0, 1e3, 1e4
 
 algo_masks = [m1, m2, m3, m4, m5, m6, m7, m8]

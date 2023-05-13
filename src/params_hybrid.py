@@ -93,9 +93,15 @@ n_osc_sweep = sweety.NOscSweep(
     n_osc=[50, 100, 200, 500, 1000],
 )
 
+# regular z_ops sweep
+# z_ops_sweep = sweety.ZOpsSweep(
+#     max_z_ops=[0, 5e2, 1e3, 5e3, 1e4, 5e4],
+# )
+# z ops sweep for direct algorithm comparison in terms of the simultaneous number of perturbations
 z_ops_sweep = sweety.ZOpsSweep(
-    max_z_ops=[0, 5e2, 1e3, 5e3, 1e4, 5e4],
+    max_z_ops=[0, 1e3, 1e4],
 )
+
 
 duration_sweep = sweety.DurationSweep([1e-4, 1e-3, 1e-2])
 
