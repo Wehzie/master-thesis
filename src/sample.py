@@ -202,7 +202,7 @@ def evaluate_prediction(best_sample: Sample, m_target: meta_target.MetaTarget,
     
     max_freq = ""
     if isinstance(m_target, meta_target.ChirpTarget) or isinstance(m_target, meta_target.DampChirpTarget):
-        max_freq = f"target start freq: {m_target.star_freq}\ntarget stop freq: {m_target.stop_freq}"
+        max_freq = f"target start freq: {m_target.start_freq}\ntarget stop freq: {m_target.stop_freq}"
     elif isinstance(m_target, meta_target.SyntheticTarget):
         max_freq = f"target max freq: {m_target.max_freq}"
     

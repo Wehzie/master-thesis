@@ -282,6 +282,8 @@ class ChirpTarget(SyntheticTarget):
         if stop_freq is None:
             stop_freq = self.sampling_rate/20
         self.signal = signal.chirp(self.time, start_freq, self.duration, stop_freq) * amplitude + offset
+        self.start_freq = start_freq
+        self.stop_freq = stop_freq
 
 class BeatTarget(SyntheticTarget):
 
@@ -322,6 +324,8 @@ class DampChirpTarget(SyntheticTarget):
             stop_freq = self.sampling_rate/20
         self.signal = signal.chirp(self.time, start_freq, self.duration, stop_freq) * amplitude + offset
         self.signal = self.signal * np.exp(-self.time) ** (1/self.duration)
+        self.start_freq = start_freq
+        self.stop_freq = stop_freq
 
 class SmoothGaussianNoiseTarget(SyntheticTarget):
 
