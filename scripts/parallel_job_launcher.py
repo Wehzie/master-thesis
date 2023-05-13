@@ -219,7 +219,7 @@ def launch_qualitative():
                 break
 
     def build_qual_various_targets():
-        names = ["sine, 1Hz", "sine, 100kHz", "sine, 500kHz", "sine, 1MHz", "damp_chirp, 1Hz to 1MHz"]
+        names = ["sine-1Hz", "sine-100kHz", "sine-500kHz", "sine-1MHz", "damp_chirp-1Hz-to-1MHz"]
         targets = [
                     ["--target", "sine", "--target_freq", "1",],
                     ["--target", "sine", "--target_freq", "100000",],
