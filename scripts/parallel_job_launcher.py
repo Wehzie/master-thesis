@@ -221,11 +221,11 @@ def launch_qualitative():
     def build_qual_various_targets():
         names = ["sine, 1Hz", "sine, 100kHz", "sine, 500kHz", "sine, 1MHz", "damp_chirp, 1Hz to 1MHz"]
         targets = [
-                    ["--target sine", "--target_freq 1",]
-                    ["--target sine", "--target_freq 100000",]
-                    ["--target sine", "--target_freq 500000",]
-                    ["--target sine", "--target_freq 1000000",]
-                    ["--target damp_chirp", "--target_freq 1000000",]
+                    ["--target", "sine", "--target_freq", "1",],
+                    ["--target", "sine", "--target_freq", "100000",],
+                    ["--target", "sine", "--target_freq", "500000",],
+                    ["--target", "sine", "--target_freq", "1000000",],
+                    ["--target", "damp_chirp", "--target_freq", "1000000",],
                 ]
 
         base_call = ["srun", "python3", "src/main.py", "--experiment", "none", "--qualitative", "--algo", "best"]
