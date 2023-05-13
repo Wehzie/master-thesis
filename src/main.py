@@ -22,6 +22,7 @@ parser.add_argument("--target", type=str, help="Select the default target to app
     "smooth_gauss", "smooth_uniform", "gauss_noise", "uniform_noise",
     "magpie", "human_yes", "bellbird", "human_okay",
     ])
+parser.add_argument("--target_freq", type=float, help="Select the default target frequency. Default: from config file", default=-1, required=False)
 parser.add_argument("--algo", type=str, help="Select the algorithms to run. Default: best", default="best", required=False,
 choices=["all", "best", "test"])
 
@@ -88,6 +89,10 @@ if "python" in args.signal_generator:
 
 if "spipy" in args.signal_generator:
     assert args.experiment in legal_hybrid_experiments, f"Experiment {args.experiment} is not legal for SpiPy signal generator."
+
+if args.target_freq > 0:
+    python_parameters.SYNTH_FREQ = args.target_freq
+    hybrid_parameters.SYNTH_FREQ = args.target_freq
 
 @data_analysis.print_time
 def main():

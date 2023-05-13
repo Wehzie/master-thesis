@@ -152,9 +152,6 @@ def plot_weight_hist(weights: np.ndarray, show: bool = False, save_path: Path = 
         title: title of the plot
     """
     plt.figure()
-    print("weigths", weights)
-    print("mean weight", np.mean(weights))
-    print("sum of weights", np.sum(weights))
     plt.hist(weights, bins="auto")
     plt.gca().set_xlabel("weight")
     plt.gca().set_ylabel("count")

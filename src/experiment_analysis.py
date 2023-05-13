@@ -684,7 +684,7 @@ def plot_multi_weight_hist(results: dict, save_path: Path, show: bool = False) -
         sampling_rate = val["meta"]["sampling_rate"]
         target_name = val["meta"]["target_name"]
         m_averages = val["meta"]["m_averages"]
-        plt.title(f"m={m_averages}, n={n_osc}, z={z_ops}, t={target_name}, fs={sampling_rate: .2e}, {key}")
+        plt.title(f"m={m_averages}, n={n_osc}, z={z_ops}, t={target_name}, fs={sampling_rate:.2e}, {key}")
 
         temp_path = save_path / f"multi_weight_hist_{key}.png"
         plt.savefig(temp_path, dpi=300)

@@ -186,16 +186,25 @@ def evaluate_prediction(best_sample: Sample, m_target: meta_target.MetaTarget,
         data_analysis.plot_pred_target(reg_sample.weighted_sum, m_target.signal, time=m_target.time, title=f"regression after {alg_name}, n={n_osc}, z={z_ops}", save_path=time_dir / "regression")
         data_analysis.plot_pred_target(norm_sample.weighted_sum, target_norm, time=m_target.time, title=f"{alg_name}, normalized, n={n_osc}, z={z_ops}", save_path=time_dir / "normalized_base_algorithm")
         data_analysis.plot_pred_target(norm_reg_sample.weighted_sum, target_norm, time=m_target.time, title=f"normalized after regression, n={n_osc}, z={z_ops}", save_path=time_dir / "normalized_regression")
+        plt.close("all")
     if plot_freq: # frequency-domain
         freq_dir = save_path / "frequency_domain"
         freq_dir.mkdir(parents=True, exist_ok=True)
         data_analysis.plot_fourier(m_target.signal, title=f"{alg_name}, target, n={n_osc}, z={z_ops}", save_path=freq_dir / "target")
         data_analysis.plot_fourier(best_sample.weighted_sum, title=f"{alg_name}, sum, n={n_osc}, z={z_ops}", save_path=freq_dir / "sum")
         data_analysis.plot_fourier(reg_sample.weighted_sum, title=f"{alg_name}, regression, n={n_osc}, z={z_ops}", save_path=freq_dir / "regression")
+        plt.close("all")
     if decompose_sample: # show individual signals in best sample
         data_analysis.plot_individual_oscillators(best_sample.signal_matrix, m_target.time, save_path=time_dir / "individual_signals")
         data_analysis.plot_f0_hist(best_sample.signal_matrix, 1/m_target.sampling_rate, title=f"fundamental frequency distribution, n={n_osc}, z={z_ops}", save_path=time_dir / "frequency_distribution")
         data_analysis.plot_weight_hist(best_sample.weights, title=f"weight distribution, n={n_osc}, z={z_ops}", save_path=time_dir / "weight_distribution")
+        plt.close("all")
+    
+    max_freq = ""
+    if isinstance(m_target, meta_target.ChirpTarget) or isinstance(m_target, meta_target.DampChirpTarget):
+        max_freq = f"target start freq: {m_target.star_freq}\ntarget stop freq: {m_target.stop_freq}"
+    elif isinstance(m_target, meta_target.SyntheticTarget):
+        max_freq = f"target max freq: {m_target.max_freq}"
     
     out = f"""
 {alg_name}
@@ -206,6 +215,10 @@ duration: {m_target.duration}
 {alg_name} normalized RMSE: {norm_sample.rmse}
 regression after {alg_name} RMSE: {reg_sample.rmse}
 regression after {alg_name} normalized RMSE: {norm_reg_sample.rmse}
+target name: {m_target.name}
+target duration: {m_target.duration}
+target sampling rate: {m_target.sampling_rate}
+{max_freq}
     """
     data_io.save_object_to_string(out, save_path / "results.txt")
     print(out)

@@ -106,10 +106,10 @@ class Job:
             self.time = "03:00:00"
         if "amplitude" in self.name:
             self.time = "02:30:00"
-        if "gain_dist" in self.name:
-            self.time = "02:30:00"
         if "samples" in self.name:
             self.time = "02:00:00"
+        if "gain_dist" in self.name:
+            self.time = "00:30:00"
         
     def assign_special_memory(self):
         if not args.production:
@@ -192,7 +192,9 @@ def launch_qualitative():
 
         spipy_extension = ["--signal_generator", "spipy", "--target", "damp_chirp"]
         spipy_args = base_call + spipy_extension
-        return [python_args, spipy_args]
+
+        names = ["python-qualitative", "spipy-qualitative"]
+        return names, [python_args, spipy_args]
 
     def ask_for_confirmation(commands: List[List[str]], time: str, memory: str, partition: str):
         print("The following commands will be executed:")
@@ -215,14 +217,28 @@ def launch_qualitative():
             counter += 1
             if counter == 2 and not args.production:
                 break
+
+    def build_qual_various_targets():
+        names = ["sine, 1Hz", "sine, 100kHz", "sine, 500kHz", "sine, 1MHz", "damp_chirp, 1Hz to 1MHz"]
+        targets = [
+                    ["--target sine", "--target_freq 1",]
+                    ["--target sine", "--target_freq 100000",]
+                    ["--target sine", "--target_freq 500000",]
+                    ["--target sine", "--target_freq 1000000",]
+                    ["--target damp_chirp", "--target_freq 1000000",]
+                ]
+
+        base_call = ["srun", "python3", "src/main.py", "--experiment", "none", "--qualitative", "--algo", "best"]
+        if args.production:
+                base_call.append("--production")
+        return names, [base_call + target for target in targets]
     
     partition = "regular" if args.production else "regular"
     memory = "8GB" if args.production else "500MB"
     time = "00:15:00" if args.production else "00:01:00"
     mail = send_mail_config if args.production else ""
 
-    srun_commands = build_qual_job_commands()
-    names = ["python-qualitative", "spipy-qualitative"]
+    srun_commands, names = build_qual_various_targets()
 
     # run spipy only
     if False:
@@ -237,6 +253,6 @@ def clean():
     Path("job.sh").unlink(missing_ok=True)
 
 if __name__ == "__main__":
-    launch_experiments()
-    #launch_qualitative()
+    #launch_experiments()
+    launch_qualitative()
     clean()
