@@ -231,7 +231,7 @@ def launch_qualitative():
         base_call = ["srun", "python3", "src/main.py", "--experiment", "none", "--qualitative", "--algo", "best"]
         if args.production:
                 base_call.append("--production")
-        return names, [base_call + target for target in targets]
+        return [base_call + target for target in targets], names
     
     partition = "regular" if args.production else "regular"
     memory = "8GB" if args.production else "500MB"
