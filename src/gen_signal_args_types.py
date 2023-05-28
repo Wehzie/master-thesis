@@ -39,7 +39,10 @@ class PythonSignalRandArgs:
             duration = self.samples / self.sampling_rate
             time = np.linspace(0, duration, self.samples, endpoint=False)
         return time
-
+    
+    def get_sample_spacing(self) -> float:
+        """get the sample spacing of the signal"""
+        return 1/self.sampling_rate
 
 @dataclass
 class PythonSignalDetArgs:
@@ -115,6 +118,14 @@ class SpiceSumRandArgs:
         spice_sampling_rate = 1/self.time_step
         sampling_rate = np.around(spice_sampling_rate * self.down_sample_factor).astype(int)
         return sampling_rate
+    
+    def get_sample_spacing(self) -> float:
+        """get the sample spacing of the signal"""
+        if self.down_sample_factor is None:
+            return self.time_step
+
+        sample_spacing = self.time_step / self.down_sample_factor
+        return sample_spacing
 
     def get_duration(self) -> float:
         """get the duration of the signal"""

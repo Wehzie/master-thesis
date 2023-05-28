@@ -15,7 +15,7 @@ default="all", required=False, choices=[
     "target", "target_freq",
     "n_osc", "z_ops", "samples", "duration",
     "frequency", "resistor", "weight", "offset", "phase", "amplitude",
-    "gain_dist",])
+    "gain_dist", "freq_dist",])
 parser.add_argument("--target", type=str, help="Select the default target to approximate. Default: sine", default="sine", required=False, choices=[
     "sine", "triangle", "square", "sawtooth", "inverse_sawtooth",
     "chirp", "beat", "damp_chirp",
@@ -65,6 +65,7 @@ legal_python_experiments = [
     "phase",
     "amplitude",
     "gain_dist",
+    "freq_dist",
     "all",
     "none"
 ]
@@ -80,6 +81,7 @@ legal_hybrid_experiments = [
     "offset",
     "phase",
     "gain_dist",
+    "freq_dist",
     "all",
     "none"
 ]

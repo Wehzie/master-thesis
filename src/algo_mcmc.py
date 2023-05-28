@@ -144,6 +144,10 @@ class BasinHopping(algo.SearchAlgo):
         return best_sample, self.z_ops
 
 class ScipyAnneal(algo.SearchAlgo):
+    """Generalized Simulated Annealing combines Classical Simulated Annealing (CSA) with Fast Simulated Annealing (FSA).
+    
+    https://journal.r-project.org/archive/2013/RJ-2013-002/RJ-2013-002.pdf
+    """
 
     def __init__(self, algo_args: algarty.AlgoArgs):
         super().__init__(algo_args)
@@ -174,7 +178,9 @@ class ScipyAnneal(algo.SearchAlgo):
 
         maxfun = int(self.max_z_ops // self.rand_args.n_osc)
 
-        result = dual_annealing(eval_func_weight, bounds=weight_bounds, no_local_search=self.no_local_search, maxfun=maxfun, seed=const.GLOBAL_SEED)
+        result = dual_annealing(eval_func_weight, bounds=weight_bounds, no_local_search=self.no_local_search, maxfun=maxfun, seed=const.GLOBAL_SEED, minimizer_kwargs={"method": "L-BFGS-B"})
+        # NOTE: COBYLA preferred as gradient-less method
+        # L-BFGS-B kept for integrity of the experiments
         best_sample.weights = result.x
 
         best_sample.update(self.target)
@@ -183,6 +189,7 @@ class ScipyAnneal(algo.SearchAlgo):
         return best_sample, self.z_ops
 
 class ScipyDualAnneal(ScipyAnneal):
+    """Generalized Simulated Annealing (GSA) plus a local search after each iteration."""
 
     def __init__(self, algo_args: algarty.AlgoArgs):
         super().__init__(algo_args)

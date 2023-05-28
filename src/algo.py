@@ -88,7 +88,7 @@ class SearchAlgo(ABC):
             np.zeros(self.rand_args.n_osc),
             np.zeros(samples),
             0,
-            data_analysis.compute_rmse(np.zeros(samples), self.target),
+            data_analysis.compute_rmse(np.zeros(samples), self.target), # NOTE: np.inf makes more sense but; old solution kept for integrity of the experiment
             list(),
         )
 

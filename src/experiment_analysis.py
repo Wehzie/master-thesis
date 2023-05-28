@@ -669,7 +669,7 @@ mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
 def plot_multi_weight_hist(results: dict, save_path: Path, show: bool = False) -> None:
     """exp13: plot a histogram to visualize the distribution of weights in an oscillator ensemble over multiple runs for multiple algorithms
     """
-    for key, val in results.items():
+    for key, val in results.items(): # for each algorithm
         plt.figure()
         log = False
         if key == "LinearRegression":
@@ -677,7 +677,6 @@ def plot_multi_weight_hist(results: dict, save_path: Path, show: bool = False) -
         plt.hist(val["data"]["weights"], bins="auto", density=True, log=log)
         plt.gca().set_xlabel("gain")
         plt.gca().set_ylabel("probability density")
-        # TODO: normalize by number of runs
 
         n_osc = val["meta"]["n_osc"]
         z_ops = val["meta"]["max_z_ops"]
@@ -687,6 +686,27 @@ def plot_multi_weight_hist(results: dict, save_path: Path, show: bool = False) -
         plt.title(f"m={m_averages}, n={n_osc}, z={z_ops}, t={target_name}, fs={sampling_rate:.2e}, {key}")
 
         temp_path = save_path / f"multi_weight_hist_{key}.png"
+        plt.savefig(temp_path, dpi=300)
+
+        if show: plt.show()
+
+def plot_multi_freq_hist(results: dict, save_path: Path, show: bool = False) -> None:
+    """exp14: plot a histogram to visualize the distribution of frequencies in an oscillator ensemble over multiple runs for multiple algorithms
+    """
+    for key, val in results.items(): # for each algorithm
+        plt.figure()
+        plt.hist(val["data"]["freq"], bins="auto", density=True, log=False)
+        plt.gca().set_xlabel("fundamental frequency [Hz]")
+        plt.gca().set_ylabel("probability density")
+
+        n_osc = val["meta"]["n_osc"]
+        z_ops = val["meta"]["max_z_ops"]
+        sampling_rate = val["meta"]["sampling_rate"]
+        target_name = val["meta"]["target_name"]
+        m_averages = val["meta"]["m_averages"]
+        plt.title(f"m={m_averages}, n={n_osc}, z={z_ops}, t={target_name}, fs={sampling_rate:.2e}, {key}")
+
+        temp_path = save_path / f"multi_frequency_hist_{key}.png"
         plt.savefig(temp_path, dpi=300)
 
         if show: plt.show()

@@ -14,8 +14,10 @@ from typing import List, Tuple, Union
 import numpy as np
 
 class LasVegas(algo.SearchAlgo):
+    """Begins with an empty ensemble and only adds an oscillator to the ensemble if RMSE is reduced."""
 
     def init_las_vegas(self, weight_init: Union[None, str], store_det_args: bool) -> sample.Sample:
+        """initialize the best sample by different methods"""
         # TODO: remove this function
         # possibly reuse different initialization methods
         if weight_init is None: # in this mode, weights are not adapted
@@ -40,12 +42,15 @@ class LasVegas(algo.SearchAlgo):
         return sample.Sample(signal_matrix, weights, np.sum(signal_matrix, axis=0), 0, np.inf, signal_args)
     
     def infer_k_from_z(self) -> int:
+        """infer the number of iterations k from the number of allowed perturbations z"""
         return None
 
     def init_best_sample(self) -> sample.Sample:
+        """initialize the best sample"""
         return self.gen_zero_sample()
 
     def draw_temp_sample(self, base_sample: sample.Sample, osc_to_replace: List[int]) -> sample.Sample:
+        """draw a temporary sample from the base sample by replacing a subset of oscillators"""
         return self.draw_partial_sample(base_sample, osc_to_replace)
 
     def comp_samples(self, base_sample: sample.Sample, temp_sample: sample.Sample) -> Tuple[sample.Sample, bool]:
@@ -89,9 +94,12 @@ class LasVegas(algo.SearchAlgo):
         return best_sample, self.z_ops
 
 class LasVegasWeight(LasVegas):
+    """Begins with a random ensemble."""
 
     def init_best_sample(self) -> sample.Sample:
+        """initialize the best sample"""
         return self.draw_sample()
     
     def draw_temp_sample(self, base_sample: sample.Sample, osc_to_replace: List[int]) -> sample.Sample:
+        """draw a temporary sample from the base sample by replacing a subset of oscillators"""
         return self.draw_partial_sample_weights(base_sample, osc_to_replace)

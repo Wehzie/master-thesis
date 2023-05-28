@@ -68,7 +68,7 @@ class Experimenteur:
             best_sample, z_ops = search_alg.search()
             sample.evaluate_prediction(best_sample, local_target, z_ops, search_alg.__class__.__name__, sweep_bundle.signal_generator.__class__.__name__, write_dir=write_dir)
 
-    def extract_weights(self, samples: Iterable) -> Tuple[np.ndarray, np.ndarray]:
+    def extract_weights(self, samples: Iterable) -> np.ndarray:
         """extract and concatenate the weights of the samples in the iterable to a single array"""
         weights = [s.weights for s in samples]
         weights = np.array(weights)
@@ -76,6 +76,19 @@ class Experimenteur:
         n_oscillators = len(samples[0].weights)
         assert flat_weights.shape == (len(samples) * n_oscillators, )
         return flat_weights
+
+    def extract_frequencies(self, samples: Iterable, sample_spacing: float) -> np.ndarray:
+        """extract and concatenate the fundamental frequencies of the samples in the iterable to a single array"""
+        f0_li = []
+        for samp in samples:
+            sm = samp.signal_matrix
+            for osc in range(sm.shape[0]):
+                f0_li.append(data_analysis.get_freq_from_fft_v2(sm[osc, :], sample_spacing))
+
+        frequencies = np.array(f0_li)
+        n_oscillators = len(samples[0].weights)
+        assert frequencies.shape == (len(samples) * n_oscillators, )
+        return frequencies
 
     def extract_meta_data(self, algo_args: algo_args_type.AlgoArgs, m_averages: int) -> dict:
         """convert an algorithm's meta data to a dictionary"""
@@ -90,8 +103,14 @@ class Experimenteur:
     def init_dict(self):
         return {"data": dict(), "meta": dict()}
     
-    def run_weight_dist_sweep(self, sweep_bundle: sweety.SweepBundle) -> List[Tuple[np.ndarray, np.ndarray]]:
-        """Run an experiment with the same parameters but varying algorithms to collect the distribution of weights across multiple runs"""
+    def run_osc_attribute_dist_sweep(self, sweep_bundle: sweety.SweepBundle, base_args: party.UnionRandArgs, attr_selector: str) -> List[Tuple[np.ndarray, np.ndarray]]:
+        """Run an experiment with the same parameters (base args) but varying algorithms to collect the distribution of an attribute across multiple runs
+        
+        args:
+            sweep_bundle: contains the signal generator and the algo sweep
+            base_args: the base arguments for the random signal generator
+            attr_selector: what attribute to track in [weights, freq]
+        """
         results = dict()
         for awa in sweep_bundle.algo_sweep.algo_with_args:
             awa: algo_args_bundle.AlgoWithArgs
@@ -100,8 +119,16 @@ class Experimenteur:
 
             algo_name = search_alg.__class__.__name__
             results[algo_name] = self.init_dict()
-            results[algo_name]["data"]["weights"] = self.extract_weights(m_ensembles)
             results[algo_name]["meta"] = self.extract_meta_data(awa.algo_args, sweep_bundle.algo_sweep.m_averages)
+            
+            # add distribution data to results dictionary
+            if attr_selector == "weights":
+                results[algo_name]["data"]["weights"] = self.extract_weights(m_ensembles)
+            elif attr_selector == "freq":
+                results[algo_name]["data"]["freq"] = self.extract_frequencies(m_ensembles, base_args.get_sample_spacing())
+            else:
+                raise ValueError(f"attr_selector must be in [weights, freq] but is {attr_selector}")
+            
         return results
 
     def set_sweep_name_and_dir(self, sweep_name: str) -> None:
@@ -370,8 +397,15 @@ class Experimenteur:
         def invoke_gain_dist_sweep():
             """run an experiment where the distribution of gains (weights) of oscillators in an ensemble is plotted across multiple algorithms"""
             self.set_sweep_name_and_dir("gain_dist")
-            results = self.run_weight_dist_sweep(sweep_bundle)
+            results = self.run_osc_attribute_dist_sweep(sweep_bundle, base_rand_args, "weights")
             expan.plot_multi_weight_hist(results, self.sweep_dir, show=self.show_plots)
+            data_io.hoard_experiment_results(self.sweep_name, results, None, self.sweep_dir)
+
+        def invoke_freq_dist_sweep():
+            """run an experiment where the distribution of frequencies of oscillators in an ensemble is plotted across multiple algorithms"""
+            self.set_sweep_name_and_dir("freq_dist")
+            results = self.run_osc_attribute_dist_sweep(sweep_bundle, base_rand_args, "freq")
+            expan.plot_multi_freq_hist(results, self.sweep_dir, show=self.show_plots)
             data_io.hoard_experiment_results(self.sweep_name, results, None, self.sweep_dir)
 
         @data_analysis.print_time
@@ -396,6 +430,8 @@ class Experimenteur:
                 invoke_amplitude_sweep()
             if selector in ["all", "gain_dist"]:
                 invoke_gain_dist_sweep()
+            if selector in ["all", "freq_dist"]:
+                invoke_freq_dist_sweep()
             # TODO
             # invoke_duration_sweep()
         
@@ -421,6 +457,8 @@ class Experimenteur:
                 invoke_offset_sweep()
             if selector in ["all", "gain_dist"]:
                 invoke_gain_dist_sweep()
+            if selector in ["all", "freq_dist"]:
+                invoke_freq_dist_sweep()
         
         if isinstance(sweep_bundle.signal_generator, gen_signal_python.PythonSigGen):
             print("Start experiment with Python signal generator")
