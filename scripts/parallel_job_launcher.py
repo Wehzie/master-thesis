@@ -56,19 +56,21 @@ python_experiments = [
     # "phase",
     # "amplitude",
     # "gain_dist",
+    "freq_dist",
 ]
 
 hybrid_experiments = [
     # "target",
     # "target_freq",
     # "n_osc",
-    "z_ops",
+    # "z_ops",
     # "duration",
     # "resistor",
     # "weight",
     # "offset",
     # "phase",
     # "gain_dist",
+    "freq_dist",
 ]
 
 @dataclass
@@ -110,13 +112,17 @@ class Job:
             self.time = "02:00:00"
         if "gain_dist" in self.name:
             self.time = "00:30:00"
+        if "freq_dist" in self.name:
+            self.time = "00:30:00"
         
     def assign_special_memory(self):
         if not args.production:
             return
         if "spipy-duration" in self.name:
             self.memory = "8GB"
-        if "spipy-gain_dist" in self.name:
+        if "gain_dist" in self.name:
+            self.memory = "8GB"
+        if "freq_dist" in self.name:
             self.memory = "8GB"
         if "n_osc" in self.name:
             self.memory = "3GB"
@@ -130,12 +136,12 @@ def build_job_commands(time: str, memory: str, partition: str, mail: str) -> Lis
         base_call.append("--algo all")
 
     jobs = []
-    # for e in python_experiments:
-    #     extension_args = ["--signal_generator", "python", f"--experiment {e}", "--target", "magpie"]
-    #     job = Job(f"python-{e}", " ".join(base_call + extension_args), time, memory, partition, mail)
-    #     job.assign_special_time()
-    #     job.assign_special_memory()
-    #     jobs.append(job)
+    for e in python_experiments:
+        extension_args = ["--signal_generator", "python", f"--experiment {e}", "--target", "magpie"]
+        job = Job(f"python-{e}", " ".join(base_call + extension_args), time, memory, partition, mail)
+        job.assign_special_time()
+        job.assign_special_memory()
+        jobs.append(job)
 
     for e in hybrid_experiments:
         extension_args = ["--signal_generator", "spipy", f"--experiment {e}", "--target", "sine"]
