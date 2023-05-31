@@ -277,12 +277,15 @@ class Experimenteur:
     selector: str,
     target_selector: str = None,
     algo_selector: str = None,
+    load_results: str = "",
     ) -> None:
         """run all experiments and plot results
         
         args:
             selector: experiment to run
             target_selector: target to use for experiments that require initializing a target
+            algo_selector: algorithms to use for experiments
+            load_results: load results from a previous run, pass the name of the sweep to load
         """
 
         def invoke_target_sweep():
@@ -313,8 +316,12 @@ class Experimenteur:
         def invoke_z_ops_sweep():
             """run an experiment where the number of perturbations (Z) to an oscillator ensemble is varied"""
             self.set_sweep_name_and_dir("z_ops_vs_rmse")
-            results = self.run_z_ops_sweep(sweep_bundle, base_rand_args, algo_selector)
-            df = expan.conv_results_to_pd(results)
+            if load_results != "z_ops":
+                results = self.run_z_ops_sweep(sweep_bundle, base_rand_args, algo_selector)
+                df = expan.conv_results_to_pd(results)
+            else:
+                results = None
+                df = data_io.load_experiment_results("z_ops")
             expan.plot_z_vs_rmse(df, target_samples, self.sweep_name, self.sweep_dir, show=self.show_plots)
             expan.plot_masks(sweep_bundle.algo_sweep.algo_masks, expan.plot_z_vs_rmse, df, target_samples, self.sweep_name, self.sweep_dir, show=self.show_plots)
             data_io.hoard_experiment_results(self.sweep_name, results, df, self.sweep_dir)

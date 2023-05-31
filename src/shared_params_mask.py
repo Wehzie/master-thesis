@@ -6,28 +6,49 @@ Each instance describes which algorithms are compared against each other.
 import mask_type
 
 m1 = mask_type.ExperimentMask(
-    "full_vs_weight_all",
+    "full_vs_weight",
     "full optimization vs. weight optimization",
     "full optimization vs. weight optimization by example of algorithms with both implementations",
     [
         [
+            "LinearRegression"
+        ],
+        [
             "MCExploit",
+        ],
+        [
             "MCOneShot",
+        ],
+        [
             "MCOscillatorAnneal",
+        ],
+        [
             "MCOscillatorAnnealLog",
+        ],
+        [
             "LasVegas",
+        ],
+        [
             "MCExploitAnneal",
         ],
+        ### weight only
         [
             "MCExploitWeight",
-            "MCOneShotWeight",
-            "MCOscillatorAnnealWeight",
-            "MCOscillatorAnnealLogWeight",
-            "LasVegasWeight",
-            "MCExploitAnnealWeight",
         ],
         [
-            "LinearRegression"
+            "MCOneShotWeight",
+        ],
+        [
+            "MCOscillatorAnnealWeight",
+        ],
+        [
+            "MCOscillatorAnnealLogWeight",
+        ],
+        [
+            "LasVegasWeight",
+        ],
+        [
+            "MCExploitAnnealWeight",
         ],
     ],
 )
@@ -37,6 +58,9 @@ m2 = mask_type.ExperimentMask(
     "implementations of sim. annealing",
     "comparison of simulated annealing inspired algorithms",
     [
+        [
+            "LinearRegression",
+        ],
         [
             "MCOscillatorAnneal",
         ],
@@ -70,6 +94,9 @@ m3 = mask_type.ExperimentMask(
     "comparison of best full and weight-only optimizing algorithms",
     [   # comparison of best in each family
         [
+            "LinearRegression", # best gradient based algorithm
+        ],
+        [
             "MCExploit", # best monte carlo in oscillator replacement
         ],
         [
@@ -87,9 +114,6 @@ m3 = mask_type.ExperimentMask(
         [
             "BasinHopping", # best monte carlo in weight optimization
         ],
-        [
-            "LinearRegression", # best gradient based algorithm
-        ],
     ],
 )
 
@@ -98,6 +122,9 @@ m4 = mask_type.ExperimentMask(
     "best weight-only optimizing algorithms by algorithm family",
     "comparison of weight-only optimizing algorithms by algorithm family",
     [
+        [
+            "LinearRegression", # best gradient based algorithm
+        ],
         [
             "MCExploitWeight", # best Gibbs sampler
         ],
@@ -110,9 +137,6 @@ m4 = mask_type.ExperimentMask(
         [
             "DifferentialEvolution", # best population based algorithm
         ],
-        [
-            "LinearRegression", # best gradient based algorithm
-        ],
     ],
 )
 
@@ -121,6 +145,9 @@ m5 = mask_type.ExperimentMask(
     "MCExploit, j=1 vs. j=10 vs. MCExploitErgodic",
     "comparison of MCExploit with j=1 and j=10 and MCExploitErgodic",
     [
+        [
+            "LinearRegression",
+        ],
         [
             "MCExploit",
         ],
@@ -136,9 +163,6 @@ m5 = mask_type.ExperimentMask(
         [
             "MCExploitWeight",
         ],
-        [
-            "LinearRegression",
-        ]
     ],
 )
 
@@ -147,6 +171,9 @@ m6 = mask_type.ExperimentMask(
     "weird algorithms",
     "comparison of weird algorithms against MCExploit and linear regression",
     [
+        [
+            "LinearRegression",
+        ],
         [
             "MCExploit",
         ],
@@ -165,9 +192,6 @@ m6 = mask_type.ExperimentMask(
         [
             "MCPurge",
         ],
-        [
-            "LinearRegression",
-        ]
     ],
 )
 
@@ -177,14 +201,14 @@ m7 = mask_type.ExperimentMask(
     "comparison of best 3 algorithms",
     [
         [
+            "LinearRegression",
+        ],
+        [
             "MCExploitWeight",
         ],
         [
             "LasVegas",
         ],
-        [
-            "LinearRegression",
-        ]
     ]
 )
 
@@ -194,7 +218,7 @@ m8 = mask_type.ExperimentMask(
     "comparison of similar algorithms with varying numbers of simultaneously replaced oscillators",
     [
         [
-            "Linear Regression",
+            "LinearRegression",
         ],
         [
             "MCOneShot",
@@ -210,10 +234,63 @@ m8 = mask_type.ExperimentMask(
         ],
         [
             "MCOscillatorAnnealLog",
-        ]
+        ],
+        # [ # include ergodic here to reduce number of figures
+        #     "MCExploitErgodic",
+        # ],
     ]
 )
 
-# Linear Regression + OneShot + Exploit + Exploit J=10 + Oscillator Annealing in z-ops 0, 1e3, 1e4
+m9 = mask_type.ExperimentMask(
+    "full_vs_weight_focus",
+    "focus on full optimization vs. weight optimization",
+    "full optimization vs. weight optimization with some algorithms",
+    [
+        ### benchmark
+        [
+            "LinearRegression"
+        ],
+        [
+            "MCOneShot",
+        ],
+        [
+            "MCExploit",
+        ],
+        [
+            "LasVegas",
+        ],
+        ### weight only
+        [
+            "MCExploitWeight",
+        ],
+        [
+            "MCOneShotWeight",
+        ],
+        [
+            "LasVegasWeight",
+        ],
+    ],
+)
 
-algo_masks = [m1, m2, m3, m4, m5, m6, m7, m8]
+m10 = mask_type.ExperimentMask(
+    "focus_exploits",
+    "normal vs ergodic vs decoupled",
+    "comparison of MCExploit with j=1 and j=10 and MCExploitErgodic",
+    [
+        [
+            "LinearRegression",
+        ],
+        [
+            "MCExploit",
+        ],
+        [
+            "MCExploitErgodic",
+        ],
+        [
+            "MCExploitDecoupled",
+        ],
+    ],
+)
+
+
+algo_masks = [m2, m8, m9, m10]

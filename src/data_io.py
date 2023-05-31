@@ -184,6 +184,12 @@ def save_object_to_string(obj: object, path: Path) -> None:
     with open(path, "w") as f:
         f.write(str(obj))
 
+def load_experiment_results(file_name: str) -> pd.DataFrame:
+    """load an experiments dataframe from file"""
+    path = const.WRITE_DIR / (file_name + ".csv")
+    df = pd.read_csv(path)
+    return df
+
 def main():
     sampling_rate, data, dtype = load_data()
     save_signal_to_wav(data, sampling_rate, dtype)

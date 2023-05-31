@@ -22,6 +22,7 @@ parser.add_argument("--target", type=str, help="Select the default target to app
     "smooth_gauss", "smooth_uniform", "gauss_noise", "uniform_noise",
     "magpie", "human_yes", "bellbird", "human_okay",
     ])
+parser.add_argument("--load_results", type=str, help="Load results of experiment from previous simulation. Pass experiment name.", default="", required=False)
 parser.add_argument("--target_freq", type=float, help="Select the default target frequency. Default: from config file", default=-1, required=False)
 parser.add_argument("--algo", type=str, help="Select the algorithms to run. Default: best", default="best", required=False,
 choices=["all", "best", "test"])
@@ -128,7 +129,7 @@ def main():
             exp.run_qualitative_algo_sweep(sweep_bundle, m_target)
 
         if args.experiment != "none":
-            exp.run_all_experiments(sweep_bundle, m_target.samples, generator_args, args.experiment, args.target, args.algo)
+            exp.run_all_experiments(sweep_bundle, m_target.samples, generator_args, args.experiment, args.target, args.algo, args.load_results)
 
 if __name__ == "__main__":
     main()
