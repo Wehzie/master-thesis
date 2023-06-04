@@ -1,25 +1,45 @@
 cff-version: 1.2.0
-message: If you use this software, please cite it using these metadata.
 title: Function generation from a Sum of Oscillator Signals
+message: >-
+  If you use this software, please cite it using these
+  metadata.
+type: software
 authors:
   - family-names: Tappe Maestro
     given-names: Rafael
-    orcid: https://orcid.org/0000-0002-7789-3527
-version: 1.0.0
-date-released: 2023-07-01
+    orcid: 'https://orcid.org/0000-0002-7789-3527'
+repository-code: 'https://github.com/Wehzie/master-thesis'
+abstract: >-
+  Energy demand in data-intensive applications is an
+  ever-growing concern. Training a recent large language
+  model consumes energy in the order of hundreds of US
+  households per year. Remarkably, the human brain is orders
+  of magnitudes more energy efficient than modern day
+  digital computers. Taking inspiration from the brain, the
+  neuromorphic paradigm aims to build more efficient
+  computing systems using analog devices. 
+
+  In this work, an ensemble of oscillators is designed and
+  simulated with the goal of arbitrary time-series
+  approximation. Each oscillator-neuron is formed by a
+  vanadium dioxide memristor in series with a
+  resistor-capacitor (RC) circuit. Multiple gradient-free
+  optimization algorithms are explored to perturb the
+  oscillator ensemble, in order to change their frequency,
+  gain, phase and offset. A range of real-world and
+  synthetic target functions are tested against the system.
+
+  We show that the vanadium-dioxide oscillator ensemble is
+  suitable for function generation across a range of
+  algorithms when the target's frequencies lie within the
+  frequency band of the oscillator-neurons. The system
+  benefits from broad phase and frequency diversity, in
+  particular from the addition of slower oscillators. In
+  contrast, a wide dynamic range leads to exponential loss
+  growth for a majority of algorithms. Furthermore, an
+  increase in the number of oscillators tends to increase
+  loss linearly.
 license: Apache-2.0
-repository-code: "https://github.com/Wehzie/master-thesis"
 commit: ed1650e163da8aafd7e6e4ba5b8da7b76b589a19
-abstract: "Energy demand in data-intensive applications is an ever-growing concern.
-Training a recent large language model consumes energy in the order of hundreds of US households per year.
-Remarkably, the human brain is orders of magnitudes more energy efficient than modern day digital computers.
-Taking inspiration from the brain, the neuromorphic paradigm aims to build more efficient computing systems using analog devices. 
-
-In this work, an ensemble of oscillators is designed and simulated with the goal of arbitrary time-series approximation.
-Each oscillator-neuron is formed by a vanadium dioxide memristor in series with a resistor-capacitor (RC) circuit.
-Multiple gradient-free optimization algorithms are explored to perturb the oscillator ensemble, in order to change their frequency, gain, phase and offset.
-A range of real-world and synthetic target functions are tested against the system.
-
-We show that the vanadium-dioxide oscillator ensemble is suitable for function generation across a range of algorithms when the target's frequencies lie within the frequency band of the oscillator-neurons.
-The system benefits from broad phase and frequency diversity, in particular from the addition of slower oscillators.
-In contrast, a wide dynamic range leads to exponential loss growth for a majority of algorithms. Furthermore, an increase in the number of oscillators tends to increase loss linearly."
+version: 1.0.0
+date-released: '2023-07-01'
