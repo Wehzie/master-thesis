@@ -9,7 +9,7 @@ version: 1.0.0
 date-released: 2023-07-01
 license: Apache-2.0
 repository-code: "https://github.com/Wehzie/master-thesis"
-commit: 82a04c54cccefd737a6fbf9193af5ce607866acb
+commit: ed1650e163da8aafd7e6e4ba5b8da7b76b589a19
 abstract: "Energy demand in data-intensive applications is an ever-growing concern.
 Training a recent large language model consumes energy in the order of hundreds of US households per year.
 Remarkably, the human brain is orders of magnitudes more energy efficient than modern day digital computers.
