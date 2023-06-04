@@ -1,71 +1,26 @@
-# Circuit Generator
+# Function generation from a Sum of Oscillator Signals
 
-## DevOps
+## Abstract
 
-- Before running a full sweep run a test sweep with m-averages=1 with the final parameters
-- Before running a full sweep run a test sweep with the test parameters on the target hardware
+Energy demand in data-intensive applications is an ever-growing concern.
+Training a recent large language model consumes energy in the order of hundreds of US households per year.
+Remarkably, the human brain is orders of magnitudes more energy efficient than modern day digital computers.
+Taking inspiration from the brain, the neuromorphic paradigm aims to build more efficient computing systems using analog devices. 
 
-### Testing
+In this work, an ensemble of oscillators is designed and simulated with the goal of arbitrary time-series approximation.
+Each oscillator-neuron is formed by a vanadium dioxide memristor in series with a resistor-capacitor (RC) circuit.
+Multiple gradient-free optimization algorithms are explored to perturb the oscillator ensemble, in order to change their frequency, gain, phase and offset.
+A range of real-world and synthetic target functions are tested against the system.
 
-Unit tests are executed with
-
-    pytest src/tests
-
-## In order of Priority: IDEAS and TODOS
-
-In order of priority:
-
-### High priority
-
-- Set legend false on algo ranking bar chart
-
-- Do target sweep with linear regression only or 1 or 2 more good algorithms.
-
-### Medium priority
-
-- Implement Las Vegas initialization options, in particular one with a full set of oscillators.
-
-- Plot Improvement: custom legend for mask with multiple members in a group. Such that a group shares a color and one entry in the legend (individual algorithm names shouldn't be visible).
-
-- Plot Improvement: save mean, mode, stddev to frequency diversity plot title.
-
-- Add magpie to target sweep.
-
-- Plot improvement: Reuse algorithm bar chart with z-ops sweep.
-
-- Python: increase sampling rate to avoid aliasing. Verify with individual oscillator plots.
-
-- Map R to Freq in analysis for Hybrid signal generator
-
-- Plot Improvement: For oscillators vs. rmse. Show up to 1k oscillators, but draw a dotted line into the plot at around 300 oscillators to indicate what's technologically feasible.
-
-- Reproducibility issue: Maffezzoni et al. report different oscillator frequencies than I have.
-
-### Low priority
-
-- Profile Python's memory usage.
-
-- SPICE: Add phase via delayed voltage delivery.
-
-- Plot: Frequency diversity (band) (y-axis) vs. number of oscillators (x-axis) for n algorithms. Hypothesis: As the number of oscillators increases, the frequency diversity increases.
-
-- Algorithm: Algorithm finds the best combination of parameters iteratively.
-
-- Implement different signal generation function for Python, more similar to spice (instead of sawtooth).
-
-- Renaming:
-    - algo_monte_carlo -> algo_monte_carlo_greedy
-    - algo_mcmc -> algo_monte_carlo_ergodic
-    - param_util -> param_funcs
-    - param_test_py -> param_py_test
-    - param_test_spipy -> param_hybrid_test
-    - param -> param_py, param_hybrid
-
-- Make phase a separate vector of an ensample similar to weights and allow separate phase tuning without replacing the underlying time series
-
-- solve non-linear transformation (NLT) tasks. for example sinus to square wave.
+We show that the vanadium-dioxide oscillator ensemble is suitable for function generation across a range of algorithms when the target's frequencies lie within the frequency band of the oscillator-neurons.
+The system benefits from broad phase and frequency diversity, in particular from the addition of slower oscillators.
+In contrast, a wide dynamic range leads to exponential loss growth for a majority of algorithms. Furthermore, an increase in the number of oscillators tends to increase loss linearly.
 
 ## Requirements
+
+Install required libraries.
+
+    pip install -r requirements.txt
 
 Pydot is used with NetworkX for drawing graphs.
 Pydot requires GraphViz to be installed.
@@ -79,6 +34,10 @@ Installation instructions are found [here](https://graphviz.org/download/).
 To start the simulation execute
 
     python src/main.py
+
+For advice on parameters run.
+
+    python src/main.py -h
 
 ### Detaching a terminal
 
@@ -116,9 +75,9 @@ Multiple sessions can be run by detaching with
     # press $
     # enter session name
 
-### Deployment on Slurm (Peregrine HPC)
+### Deployment on Slurm (High Performance Computing cluster)
 
-First prepare a job according to <https://wiki.hpc.rug.nl/peregrine/job_management/start>.
+First prepare a job according to <https://wiki.hpc.rug.nl/habrok/job_management/running_jobs>.
 Complete job files are in the `scripts` directory.
 
 Start a job; make sure the script is executed from the same directory as done during testing.
@@ -133,34 +92,6 @@ List active jobs.
 Get information about a running job.
 
     jobinfo JobID
-
-#### Notes on Runtime
-
-Results except target sweep
-    - hardware = Peregrine
-    - multiprocessor = False
-    - m_averages=7
-    - z_ops=1e4
-    - n_osc = 100
-    - samples = 300
-    - wall time: 6 h 30 m
-    - max memory: 1.2 GB
-
-Target sweep
-    - hardware = Peregrine
-    - multiprocessor = False
-    - generator=Python
-    - z_ops = 5e4
-    - n_osc = 100
-    - samples = 300
-    - wall time. 6 h 18 m
-    - max memory: 133.29 MB
-
-Test Sweep with
-    - hardware = Laptop
-    - multiprocessor = False
-    - generator=Hybrid
-    - test parameters
 
 ## Testing
 
@@ -178,3 +109,7 @@ Static code analysis.
 Formatting.
 
     black src/
+
+Unit tests.
+
+    pytest src/tests

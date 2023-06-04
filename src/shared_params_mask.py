@@ -84,6 +84,9 @@ m2 = mask_type.ExperimentMask(
         ],
         [
             "ScipyDualAnneal",
+        ],
+        [
+            "BasinHopping",
         ]
     ],
 )
@@ -269,6 +272,10 @@ m9 = mask_type.ExperimentMask(
         [
             "LasVegasWeight",
         ],
+        ### mixed
+        [
+            "MCExploitDecoupled",
+        ],
     ],
 )
 
@@ -281,13 +288,16 @@ m10 = mask_type.ExperimentMask(
             "LinearRegression",
         ],
         [
-            "MCExploit",
+            "MCExploit"
+        ],
+        [
+            "MCExploitWeight",
         ],
         [
             "MCExploitErgodic",
         ],
         [
-            "MCExploitDecoupled",
+            "MCExploitNeighborWeight",
         ],
     ],
 )
