@@ -364,13 +364,10 @@ class UniformNoiseTarget(SyntheticTarget):
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
-    t = DampChirpTarget(1e-4, 5000000, stop_freq=5e5)
+    t = SineTarget(duration=2e-5, sampling_rate=2e7, freq=300000)
     _ = plt.figure()
-    plt.plot(t.time, t.signal, label=t.name)
+    plt.plot(t.time, t.signal, label=t.name, linewidth=3)
     plt.xlabel("time [s]")
     plt.ylabel("amplitude [a.u.]")
     plt.savefig("damp_chirp.png", dpi=300)
     plt.show()
-
-    import data_analysis
-    data_analysis.plot_fourier(t.signal, title=f"", save_path="damp_chirp_fft.png")

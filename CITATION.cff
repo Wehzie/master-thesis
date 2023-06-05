@@ -40,6 +40,6 @@ abstract: >-
   increase in the number of oscillators tends to increase
   loss linearly.
 license: Apache-2.0
-commit: ed1650e163da8aafd7e6e4ba5b8da7b76b589a19
+commit: cb3f23b2b12ffbec9c53ac684698c62d296e8ef1
 version: 1.0.0
 date-released: '2023-06-01'

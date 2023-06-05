@@ -59,7 +59,7 @@ class Classifier:
         comp_rmse = data_analysis.compute_rmse
         rmse_list = [comp_rmse(ens.weighted_sum, target) for ens in self.ensembles]
         
-        def norm(rmse_list): # norm_list sums to 1 -> cross entropy?
+        def norm(rmse_list): # norm_list sums to 1
             s = sum(rmse_list)
             norm_list = [val/s for val in rmse_list]
             return norm_list
