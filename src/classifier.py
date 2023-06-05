@@ -1,6 +1,6 @@
 """an oscillator classifier is a set of independently trained oscillator ensembles
 
-given a set of oscillator ensembles trained on various target functions,
+given a forest of ensembles trained on various target functions,
 the ensembles are compared to an unknown target function by RMSE,
 this generates a probability distribution over the ensembles
 """
@@ -30,6 +30,7 @@ from typing import List
 from multiprocessing import Pool, cpu_count
 
 class Classifier:
+    """A classifier from a forest of ensembles that classifies an unknown target function"""
 
     def __init__(self,
         train_targets: List[meta_target.MetaTarget],
@@ -42,7 +43,7 @@ class Classifier:
         self.ensembles: List[sample.Sample] = []
 
     def train(self):
-        """train the classifier"""
+        """train the classifier by training each ensemble in the forest on a different function"""
         if self.mp:
             with Pool(cpu_count()) as p:
                 NotImplemented
@@ -53,6 +54,7 @@ class Classifier:
                 self.ensembles.append(best_sample)
 
     def predict(self, target: np.ndarray, verbose: bool = False) -> int:
+        """predict the target function by comparing it to the ensembles in the forest"""
         # note these RMSE's are not from training but for inference
         comp_rmse = data_analysis.compute_rmse
         rmse_list = [comp_rmse(ens.weighted_sum, target) for ens in self.ensembles]
@@ -72,6 +74,7 @@ class Classifier:
         return self.train_targets[argmin].name
 
 if __name__ == "__main__":
+    """example usage of the classifier"""
 
     sig_gen = gen_signal_spipy.SpipySignalGenerator()
     generator_args = hybrid_parameters.spice_rand_args_uniform
