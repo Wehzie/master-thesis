@@ -404,16 +404,24 @@ class Experimenteur:
         def invoke_gain_dist_sweep():
             """run an experiment where the distribution of gains (weights) of oscillators in an ensemble is plotted across multiple algorithms"""
             self.set_sweep_name_and_dir("gain_dist")
-            results = self.run_osc_attribute_dist_sweep(sweep_bundle, base_rand_args, "weights")
-            expan.plot_multi_weight_hist(results, self.sweep_dir, show=self.show_plots)
-            data_io.hoard_experiment_results(self.sweep_name, results, None, self.sweep_dir)
+            if load_results != "gain_dist":
+                results = self.run_osc_attribute_dist_sweep(sweep_bundle, base_rand_args, "weights")
+                expan.plot_multi_weight_hist(results, self.sweep_dir, show=self.show_plots)
+                data_io.hoard_experiment_results(self.sweep_name, results, None, self.sweep_dir)
+            else:
+                results = data_io.load_experiment_results("gain_dist_results.pickle")
+                expan.plot_multi_weight_hist_2x2(results, self.sweep_dir, show=self.show_plots)
 
         def invoke_freq_dist_sweep():
             """run an experiment where the distribution of frequencies of oscillators in an ensemble is plotted across multiple algorithms"""
             self.set_sweep_name_and_dir("freq_dist")
-            results = self.run_osc_attribute_dist_sweep(sweep_bundle, base_rand_args, "freq")
-            expan.plot_multi_freq_hist(results, self.sweep_dir, show=self.show_plots)
-            data_io.hoard_experiment_results(self.sweep_name, results, None, self.sweep_dir)
+            if load_results != "freq_dist":
+                results = self.run_osc_attribute_dist_sweep(sweep_bundle, base_rand_args, "freq")
+                expan.plot_multi_freq_hist(results, self.sweep_dir, show=self.show_plots)
+                data_io.hoard_experiment_results(self.sweep_name, results, None, self.sweep_dir)
+            else:
+                results = data_io.load_experiment_results("freq_dist_results.pickle")
+                expan.plot_multi_freq_hist_2x2(results, self.sweep_dir, show=self.show_plots)
 
         @data_analysis.print_time
         def invoke_python_generator_sweeps():

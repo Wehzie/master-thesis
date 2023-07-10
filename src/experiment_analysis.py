@@ -690,6 +690,31 @@ def plot_multi_weight_hist(results: dict, save_path: Path, show: bool = False) -
 
         if show: plt.show()
 
+
+def plot_multi_weight_hist_2x2(results: dict, save_path: Path, show: bool = False) -> None:
+    """exp13: combine histograms into one figure for readability"""
+    fig, ax = plt.subplots(nrows=2, ncols=2, sharex=True, sharey=True)
+    algos_of_interest = ["LasVegas", "LinearRegression", "MCExploitNeighborWeight", "MCExploitWeight"]
+    algo_it = 0
+    for row in ax:
+        for col in row:
+            key = algos_of_interest[algo_it]
+            val = results[key]
+            col.hist(val["data"]["weights"], density=True, log=True, bins=1000)
+            col.set_title(key)
+            col.label_outer()
+            algo_it += 1
+    
+    # Set common labels for the shared axes
+    fig.text(0.5, 0.04, 'gain', ha='center')
+    fig.text(0.04, 0.5, 'probability density', va='center', rotation='vertical')
+
+    temp_path = save_path / f"multi_weight_hist_2x2.png"
+    plt.savefig(temp_path, dpi=300)
+
+    if show: plt.show()
+
+
 def plot_multi_freq_hist(results: dict, save_path: Path, show: bool = False) -> None:
     """exp14: plot a histogram to visualize the distribution of frequencies in an oscillator ensemble over multiple runs for multiple algorithms
     """
@@ -710,3 +735,26 @@ def plot_multi_freq_hist(results: dict, save_path: Path, show: bool = False) -> 
         plt.savefig(temp_path, dpi=300)
 
         if show: plt.show()
+
+def plot_multi_freq_hist_2x2(results: dict, save_path: Path, show: bool = False) -> None:
+    """exp14: combine histograms into one figure for readability of axis labels"""
+    fig, ax = plt.subplots(nrows=2, ncols=2, sharex=True, sharey=True)
+    algos_of_interest = ["LasVegas", "LinearRegression", "DifferentialEvolution", "MCExploitWeight"]
+    algo_it = 0
+    for row in ax:
+        for col in row:
+            key = algos_of_interest[algo_it]
+            val = results[key]
+            col.hist(val["data"]["freq"], density=True, bins="auto")
+            col.set_title(key)
+            col.label_outer()
+            algo_it += 1
+    
+    # Set common labels for the shared axes
+    fig.text(0.5, 0.01, 'fundamental frequency [Hz]', ha='center')
+    fig.text(0.04, 0.5, 'probability density', va='center', rotation='vertical')
+
+    temp_path = save_path / f"multi_frequency_hist_2x2.png"
+    plt.savefig(temp_path, dpi=300)
+
+    if show: plt.show()

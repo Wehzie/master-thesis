@@ -178,8 +178,20 @@ def plot_rmse_hist(rmse_li: list, show: bool = False, title: str = None, save_pa
 
 
 def plot_pred_target(pred: np.ndarray, target: np.ndarray, time: Union[np.ndarray, None] = None,
-    show: bool = False, save_path: Path = None, title: str = None, ylabel = "amplitude [a.u.]") -> None:
-    """plot a 2 dimensional time series signal"""
+    show: bool = False, save_path: Path = None, title: str = None, ylabel = "amplitude [a.u.]",
+    large_font: bool = True) -> None:
+    """plot a 2 dimensional time series signal
+    
+    args:
+        pred: the approximation (prediction) to the target signal
+        target: the target signal to be approximated
+        time: the time axis shared by both signals
+        show: show the plot
+        save_path: save the plot to the provided path
+        title: title of the plot
+        ylabel: label of the y axis
+        large_font: if True, increase font size
+    """
     fig, ax1 = plt.subplots() # ax1 is on the bottom
 
     if time is not None: # time axis
@@ -194,6 +206,19 @@ def plot_pred_target(pred: np.ndarray, target: np.ndarray, time: Union[np.ndarra
         ax_time.plot(time, pred, label="prediction", linestyle="dashdot", alpha=0.9)
         ax_time.set_xlabel("time [s]")
         ax_time.set_ylabel(ylabel)
+        
+        # force scientific notation for tick labels, useful for low freq targets
+        # ax_time.ticklabel_format(axis="y", style="sci", scilimits=(0,0))
+
+        if large_font:
+            ax_time.set_xlabel("time [s]", fontsize=18)
+            ax_time.set_ylabel(ylabel, fontsize=18)
+            ax_time.tick_params(axis='both', which="major", labelsize=18)
+            ax_time.tick_params(axis='both', which="minor", labelsize=18)
+            exponent_x = ax_time.xaxis.get_offset_text()
+            exponent_x.set_size(18)
+            exponent_y = ax_time.yaxis.get_offset_text()
+            exponent_y.set_size(18)
     else:
         ax_samples = ax1
 
@@ -212,7 +237,11 @@ def plot_pred_target(pred: np.ndarray, target: np.ndarray, time: Union[np.ndarra
         sampling_rate = int(1 / (duration/samples))
         title += r"; $f_s$=" + f"{sampling_rate} [Hz]"
     plt.legend()
+    if large_font:
+        plt.legend(fontsize=18)
     if title: plt.title(title)
+
+    fig.tight_layout()
 
     if show:
         plt.show()

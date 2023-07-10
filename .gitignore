@@ -5,6 +5,8 @@ results
 cache
 ansible_hosts.ini
 job.sh
+.bkp
+.dtmp
 
 # data directories
 circuit_lib/temp.cir

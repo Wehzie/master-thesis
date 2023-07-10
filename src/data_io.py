@@ -186,8 +186,14 @@ def save_object_to_string(obj: object, path: Path) -> None:
 
 def load_experiment_results(file_name: str) -> pd.DataFrame:
     """load an experiments dataframe from file"""
-    path = const.WRITE_DIR / (file_name + ".csv")
-    df = pd.read_csv(path)
+    if ".pickle" in file_name:
+        path = const.WRITE_DIR / file_name
+        with open(path, "rb") as f:
+            results = pickle.load(f)
+        return results
+    else:
+        path = const.WRITE_DIR / (file_name + ".csv")
+        df = pd.read_csv(path)
     return df
 
 def main():
