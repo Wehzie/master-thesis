@@ -12,11 +12,13 @@ import dist
 
 @dataclass
 class PythonSignalRandArgs:
-    """define the distribution from which deterministic parameters are drawn
+    """
+    define the distribution from which deterministic parameters are drawn
     
     produces a signal matrix as a result
     a signal matrix is a circuit of n oscillators
     """
+    
     description: str # description of the parameter configuration
 
     duration: float # signal duration in seconds
@@ -46,11 +48,13 @@ class PythonSignalRandArgs:
 
 @dataclass
 class PythonSignalDetArgs:
-    """define a python signal with deterministic parameters
-    the signal is not weighted and has zero offset
+    """
+    define a python signal with deterministic parameters
     
+    the signal is not weighted and has zero offset
     produces a single oscillator as result
     """
+
     duration: float # specify either duration OR samples, let other be None
     samples: int # length of the signal in number of samples
     freq: float # frequency
@@ -63,6 +67,8 @@ class PythonSignalDetArgs:
 
 # class syntax
 class SpipyGeneratorMode(Enum):
+    """define the mode in which the signal generator operates"""
+    
     SPICE = 1 # fully generate signals in SPICE
     EXTRAPOLATE = 2 # generate a short signal in SPICE and extrapolate it to the full duration in Python
     CACHE = 3 # use cached SPICE signals and extrapolate them to the full duration in Python
@@ -71,6 +77,7 @@ class SpipyGeneratorMode(Enum):
 class SpiceSumRandArgs:
     # TODO: rename SpipySumRandArgs
     """define distributions from which electric components are initialized"""
+
     description: str    # description of the parameter configuration
     
     n_osc: int          # number of oscillators
@@ -134,6 +141,7 @@ class SpiceSumRandArgs:
 @dataclass
 class SpiceSingleDetArgs:
     """define deterministic electric components for a single oscillator circuit"""
+
     n_osc: int          # number of oscillators
     v_in: float         # input voltage, influences frequency, and offset
     r: float            # resistor controls frequency, doesn't affect amplitude
@@ -152,6 +160,7 @@ class SpiceSingleDetArgs:
 @dataclass
 class SpiceSumDetArgs:
     """define deterministic electric components for a circuit of parallel oscillators"""
+
     n_osc: int
     v_in: float
     r_list: List[float]

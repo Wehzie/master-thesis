@@ -1,5 +1,6 @@
 """
 This module implements an experiment that evaluates oscillation frequency of a single RC oscillator as a function of R.
+
 A single netlist is constructed that varies resistances inside a SPICE loop.
 """
 

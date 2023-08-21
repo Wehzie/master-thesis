@@ -1,5 +1,6 @@
 """
 This module implements multiple instances of the ExperimentMask class.
+
 Each instance describes which algorithms are compared against each other.
 """
 

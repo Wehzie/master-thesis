@@ -7,3 +7,9 @@ networkx
 scikit-learn
 tqdm
 pydot
+
+# dev
+pyflakes
+pydocstyle
+black
+mypy

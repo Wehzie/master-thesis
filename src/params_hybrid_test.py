@@ -1,6 +1,4 @@
-"""
-This module defines production parameters for the SpiPy (Spice+Python, Hybrid) signal generator.
-"""
+"""This module defines production parameters for the SpiPy (Spice+Python, Hybrid) signal generator."""
 
 import gen_signal_args_types as party
 import dist

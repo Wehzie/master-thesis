@@ -1,5 +1,6 @@
 """
 This module implements functions for plotting and analyzing the results of experiments.
+
 The focus is on comparing multiple algorithms.
 """
 
@@ -66,9 +67,11 @@ def compute_dist_ranges(results: List[resty.ResultSweep]) -> List[resty.ResultSw
     return results
 
 def rename_algos_by_args(name_df: pd.DataFrame, algo_args_df: pd.DataFrame) -> pd.DataFrame:
-    """rename identical algorithms in the dataframe by the distinguishing arguments they were called with.
-    for example, MCExploitJ1, when j_replacements=1 and MCExploitJ5, when j_replacements=5"""
-
+    """
+    rename identical algorithms in the dataframe by the distinguishing arguments they were called with.
+    
+    for example, MCExploitJ1, when j_replacements=1 and MCExploitJ5, when j_replacements=5
+    """
     # filter for j_replace, keep index intact to merge back into name_df
     temp_df = pd.concat([name_df["algo_name"], algo_args_df["j_replace"]], axis=1)
     temp_df.dropna(inplace=True)
@@ -92,8 +95,10 @@ def get_rand_args_dist_names(rand_args: party.UnionRandArgs) -> List[str]:
     return rand_args_dist_names
 
 def select_frequency_controller_dist_range(rand_args: List[party.UnionRandArgs]) -> pd.DataFrame:
-    """This function selects the frequency controller based on the type of rand_args.
+    """
+    Select the frequency controller based on the type of rand_args.
     
+    Finds the range of a uniform distribution, meaning upper - lower; also known as attribute diversity.
     The implementation is hacky in the sense that r_dist corresponds the resistor values,
     not the frequency of the signal. This is because the frequency is not a random variable.
     However the solution could be improved by mapping R to a frequency distribution.
@@ -107,8 +112,10 @@ def select_frequency_controller_dist_range(rand_args: List[party.UnionRandArgs])
     return freq_dist_range
 
 def select_frequency_controller_bounds(rand_args: List[party.UnionRandArgs]) -> pd.DataFrame:
-    """This function selects the frequency controller based on the type of rand_args.
+    """
+    Select the frequency controller based on the type of rand_args.
     
+    Finds the upper and lower bound of a distribution.
     The implementation is hacky in the sense that r_dist corresponds the resistor values,
     not the frequency of the signal. This is because the frequency is not a random variable.
     However the solution could be improved by mapping R to a frequency distribution.
@@ -181,7 +188,7 @@ def get_plot_title(df: pd.DataFrame, target_samples: int, z_ops: bool = True) ->
 
     duration_txt = f", t={duration} s" if duration is not None else ""
     sampling_rate_txt = f", fs={sampling_rate} Hz" if sampling_rate is not None else ""
-    time_vars = duration_txt+sampling_rate_txt if duration_txt is not "" or sampling_rate_txt is not "" else f"#s={target_samples}"
+    time_vars = duration_txt+sampling_rate_txt if duration_txt != "" or sampling_rate_txt != "" else f"#s={target_samples}"
     
     target_name = df["target_name"].values[0]
     title = f"{target_name}, m={m_averages}, n={n_osc}{time_vars}{str_max_z_ops}" 
@@ -206,8 +213,11 @@ def filter_df_by_dist_name(df: pd.DataFrame, attr_name: str, dist_name: str) -> 
 
 # TODO: the better approach here is to pass the unmodified algorithm name in the df
 def clean_algo_name_from_args(algo_name: str) -> str:
-    """remove the arguments that are part of an algorithm's name.
-    for example 'MCExploit, j=1' -> 'MCExploit'."""
+    """
+    remove the arguments that are part of an algorithm's name.
+
+    for example 'MCExploit, j=1' -> 'MCExploit'.
+    """
     return algo_name.split(",", 1)[0]
 
 
@@ -458,7 +468,7 @@ mask: param_mask.ExperimentMask = None, show: bool = False):
     ax.set_ylabel("target")
     plt.yticks(rotation=30, ha="right")
     plt.tight_layout()
-    save_fig_n_legend(ax.get_figure(), None, sweep_name + f"_averaged_targets", save_dir, mask, show)
+    save_fig_n_legend(ax.get_figure(), None, sweep_name + "_averaged_targets", save_dir, mask, show)
 
 def plot_average_algo_vs_rmse(target_df: pd.DataFrame, num_targets: int, sweep_name: str, save_dir: Path, title: str,
 mask: param_mask.ExperimentMask = None, show: bool = False):
@@ -472,7 +482,7 @@ mask: param_mask.ExperimentMask = None, show: bool = False):
     ax.set_ylabel("algorithm")
     ax.legend().set_visible(False)
     plt.tight_layout()
-    save_fig_n_legend(ax.get_figure(), None, sweep_name + f"_averaged_algorithms", save_dir, mask, show)
+    save_fig_n_legend(ax.get_figure(), None, sweep_name + "_averaged_algorithms", save_dir, mask, show)
 
 def analyze_targets_vs_rmse(df: pd.DataFrame, sweep_name: str, save_dir: Path,
 mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
@@ -586,8 +596,7 @@ mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
     """exp7: plot weight range against rmse for multiple algorithms with rand_args and target fixed"""
     for dist_name in find_dists_in_df(df):
         fig, legend_as_fig = plot_range_vs_rmse(df, target_samples, "weight", dist_name, mask)
-        inv_amplitude = select_generator_inverse_amplitude(df)
-        fig.gca().set_xlabel(f"dynamic range") # width of weight band
+        fig.gca().set_xlabel("dynamic range") # width of weight band
         # dynamic range would be given with amplitude=1
         fig.gca().set_xscale("log")
         save_fig_n_legend(fig, legend_as_fig, f"weight_range_{dist_name}_vs_rmse", save_dir, mask, show)
@@ -617,7 +626,7 @@ mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
 
 def plot_amplitude_vs_rmse(df: pd.DataFrame, target_samples: int, sweep_name: str, save_dir: Path,
 mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
-    "exp10: plot amplitude against rmse for multiple algorithms with rand_args and target fixed"
+    """exp10: plot amplitude against rmse for multiple algorithms with rand_args and target fixed"""
     title = get_plot_title(df, target_samples) # before filtering df
     weight_range = df["weight_range"].iloc[0]
     title += f", dynamic range={weight_range:.0f}"
@@ -667,8 +676,7 @@ mask: param_mask.ExperimentMask = None, show: bool = False) -> None:
 
 
 def plot_multi_weight_hist(results: dict, save_path: Path, show: bool = False) -> None:
-    """exp13: plot a histogram to visualize the distribution of weights in an oscillator ensemble over multiple runs for multiple algorithms
-    """
+    """exp13: plot a histogram to visualize the distribution of weights in an oscillator ensemble over multiple runs for multiple algorithms"""
     for key, val in results.items(): # for each algorithm
         plt.figure()
         log = False
@@ -709,15 +717,14 @@ def plot_multi_weight_hist_2x2(results: dict, save_path: Path, show: bool = Fals
     fig.text(0.5, 0.04, 'gain', ha='center')
     fig.text(0.04, 0.5, 'probability density', va='center', rotation='vertical')
 
-    temp_path = save_path / f"multi_weight_hist_2x2.png"
+    temp_path = save_path / "multi_weight_hist_2x2.png"
     plt.savefig(temp_path, dpi=300)
 
     if show: plt.show()
 
 
 def plot_multi_freq_hist(results: dict, save_path: Path, show: bool = False) -> None:
-    """exp14: plot a histogram to visualize the distribution of frequencies in an oscillator ensemble over multiple runs for multiple algorithms
-    """
+    """exp14: plot a histogram to visualize the distribution of frequencies in an oscillator ensemble over multiple runs for multiple algorithms"""
     for key, val in results.items(): # for each algorithm
         plt.figure()
         plt.hist(val["data"]["freq"], bins="auto", density=True, log=False)
@@ -754,7 +761,7 @@ def plot_multi_freq_hist_2x2(results: dict, save_path: Path, show: bool = False)
     fig.text(0.5, 0.01, 'fundamental frequency [Hz]', ha='center')
     fig.text(0.04, 0.5, 'probability density', va='center', rotation='vertical')
 
-    temp_path = save_path / f"multi_frequency_hist_2x2.png"
+    temp_path = save_path / "multi_frequency_hist_2x2.png"
     plt.savefig(temp_path, dpi=300)
 
     if show: plt.show()

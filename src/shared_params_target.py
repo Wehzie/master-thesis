@@ -1,5 +1,6 @@
 """
-This module initializes Synthetic target signals with here-defined parameters.
+This module initializes synthetic target signals with here-defined parameters.
+
 Furthermore, it provides paths for loading real world signals from file.
 """
 
@@ -14,11 +15,13 @@ import gen_signal_args_types as party
 
 class DevSet(Enum): # used for development of the pipeline
     """development set of targets that can be loaded from file"""
+
     MAGPIE = Path("resources/magpie. 35k, mono, 8-bit, 11025 Hz, 3.3 seconds.wav")
     YES = Path("resources/yes-5.wav")
 
 class TestSet(Enum): # held out until the end of development
     """test set of targets that can be loaded from file"""
+
     BELLBIRD = Path("resources/white_bellbird.wav")
     OKAY = Path("resources/okay-7.wav")
     # HIGH-RES IDEA https://www.mitsue.co.jp/english/service/audio_and_video/audio_production/high_resolution_narration.html
@@ -26,7 +29,7 @@ class TestSet(Enum): # held out until the end of development
 #### #### #### #### PRODUCTION SYNTHETIC TARGETS #### #### #### #### 
 
 def build_production_targets(duration: float, sampling_rate: Union[int, None] = None, samples: Union[int, None] = None) -> List[meta_target.MetaTarget]:
-    """builds a list of targets for production"""
+    """build a list of targets for production"""
     assert None in [sampling_rate, samples], "either sampling rate or number of samples should be specified, but not both"
 
     single_frequency_arg_targets = []
@@ -74,7 +77,7 @@ def build_target_freq_sweep(duration: float, sampling_rate: Union[int, None] = N
 #### #### #### #### TEST SYNTHETIC TARGETS #### #### #### #### 
 
 def build_test_targets(duration: float, sampling_rate: Union[int, None] = None, samples: Union[int, None] = None, synth_freq: float = 1e4) -> List[meta_target.MetaTarget]:
-    """builds a list of targets for testing the pipeline"""
+    """build a list of targets for testing the pipeline"""
     assert None in [sampling_rate, samples], "either sampling rate or number of samples should be specified, but not both"
     
     single_frequency_arg_targets_test = []
@@ -98,6 +101,8 @@ def build_test_targets(duration: float, sampling_rate: Union[int, None] = None, 
 
 def select_target_by_string(selector: str, generator_args: party.UnionRandArgs, synth_freq: float, duration: float = None) -> meta_target.MetaTargetSample:
     """
+    Select a target function by its name.
+
     args:
         generator_args: (rand args) the arguments required by the signal generator
         synth_freq: the frequency of the synthesized signal

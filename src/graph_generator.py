@@ -1,5 +1,6 @@
 """
 This module creates trees and graphs.
+
 The structures are mapped to SPICE netlists to simulate circuits.
 """
 

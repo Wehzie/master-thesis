@@ -1,7 +1,6 @@
-"""
-This module is designated to handling data input and output from and to the filesystem.
-"""
+"""This module is designated to handling data input and output from and to the filesystem."""
 
+from typing import Tuple
 import functools
 import glob
 import json
@@ -24,12 +23,8 @@ import pandas as pd
 
 
 
-def load_data(data_path: Path, verbose: bool = True) -> tuple:
-    """
-    load a wav file with scipy
-    
-    return: sampling rate, data, dtype
-    """
+def load_data(data_path: Path, verbose: bool = True) -> Tuple:
+    """load a wav file with scipy"""
     sampling_rate, data = read(data_path)
     
     msg_convert_to_mono = False
@@ -53,11 +48,8 @@ def load_data(data_path: Path, verbose: bool = True) -> tuple:
 
     return sampling_rate, data, data.dtype
     
-def load_data_numpy(data_path: Path) -> np.ndarray:
-    """load a wav file with stdlib's wave module and numpy
-    
-    return sampling_rate, audio_normalised, dtype"""
-    
+def load_data_numpy(data_path: Path) -> Tuple:
+    """load a wav file with stdlib's wave module and numpy"""
     # Read file to get buffer                                                                                               
     ifile = wave.open(str(data_path)) # BUG with pathlib
     samples = ifile.getnframes()

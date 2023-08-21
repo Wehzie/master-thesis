@@ -1,20 +1,35 @@
 # Function generation from a Sum of Oscillator Signals
 
+This code accompanies a [master thesis](https://fse.studenttheses.ub.rug.nl/id/eprint/31138).
+
 ## Abstract
 
 Energy demand in data-intensive applications is an ever-growing concern.
 Training a recent large language model consumes energy in the order of hundreds of US households per year.
-Remarkably, the human brain is orders of magnitudes more energy efficient than modern day digital computers.
+Remarkably, the human brain is orders of magnitude more energy efficient than modern day digital computers.
 Taking inspiration from the brain, the neuromorphic paradigm aims to build more efficient computing systems using analog devices. 
 
 In this work, an ensemble of oscillators is designed and simulated with the goal of arbitrary time-series approximation.
 Each oscillator-neuron is formed by a vanadium dioxide memristor in series with a resistor-capacitor (RC) circuit.
-Multiple gradient-free optimization algorithms are explored to perturb the oscillator ensemble, in order to change their frequency, gain, phase and offset.
-A range of real-world and synthetic target functions are tested against the system.
+Three approaches to simulate an ensemble are developed using the SPICE circuit simulator.
+Because the propagation of gradient information through electric circuits is a hard problem, multiple gradient-free optimization algorithms are explored which perturb oscillators' frequency, gain, phase and offset.
+We fit a range of real-world and synthetic target functions with varying frequency bands and durations.
+Root Mean Squared Error (RMSE) between a target and ensemble signal is used to evaluate fit.
+As a benchmark algorithm we rely on linear regression which produces an analytical solution for the choice of circuit parameters.
 
-We show that the vanadium-dioxide oscillator ensemble is suitable for function generation across a range of algorithms when the target's frequencies lie within the frequency band of the oscillator-neurons.
-The system benefits from broad phase and frequency diversity, in particular from the addition of slower oscillators.
-In contrast, a wide dynamic range leads to exponential loss growth for a majority of algorithms. Furthermore, an increase in the number of oscillators tends to increase loss linearly.
+We show that a vanadium-dioxide oscillator ensemble is suitable for function generation when the target's frequency band lies within the frequency band of the oscillator-neurons.
+The approximation of chirp signals is difficult, none of the real-world targets can be fit.
+The system benefits from broad phase and frequency diversity.
+In contrast, a wide dynamic range leads to exponential loss growth for most algorithms.
+Surprisingly, an increase in the number of oscillators tends to increase loss.
+Of the gradient-free algorithms, a Las Vegas and a random walk algorithm perform best; they outperform advanced algorithms such as Simulated Annealing, Basin Hopping and Differential Evolution.
+We achieve a RMSE of 0.02 with the Las Vegas algorithm, fitting a sine target function of amplitude 1; this is our best result.
+Linear regression finds a RMSE that is 13 orders of magnitude smaller.
+
+We identify plateaus and steep steps in oscillators' frequency band as one of two hinderances to better fit.
+The strongest argument for this are the diminishing returns in adding oscillators to an ensemble while solving analytically.
+Therefore, vanadium-dioxide oscillators alone seem insufficient for realizing an arbitrary function approximator in the frequency domain.
+Second, we find that gradient-free algorithms would benefit from negative oscillator gains, as this is where the distribution of circuit parameters between gradient-free algorithms and linear regression primarily differs.
 
 ## Requirements
 
@@ -95,10 +110,6 @@ Get information about a running job.
 
 ## Testing
 
-Static type checking.
-
-    mypy src/
-
 Static code analysis.
 
     # easy-going
@@ -106,9 +117,20 @@ Static code analysis.
     # pedantic
     pylint --errors-only src/
 
+Docstrings.
+
+    # easy-going
+    pydocstyle src/ --add-ignore=D103,D104,D105,D106,D107,D202,D400,D403
+    # pedantic
+    pydocstyle src/
+
 Formatting.
 
     black src/
+
+Static type checking.
+
+    mypy src/
 
 Unit tests.
 

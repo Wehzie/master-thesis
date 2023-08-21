@@ -1,6 +1,4 @@
-"""
-This module bundles sweep parameters into a set of algorithm sweeps accessible through an enum.
-"""
+"""This module bundles sweep parameters into a set of algorithm sweeps accessible through an enum."""
 
 from typing import Union
 import const

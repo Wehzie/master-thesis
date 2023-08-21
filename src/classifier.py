@@ -8,11 +8,9 @@ import const
 
 if const.TEST_PARAMS:
     print("Import test parameters.")
-    import params_python_test as python_parameters
     import params_hybrid_test as hybrid_parameters
 else:
     print("Import production parameters.")
-    import params_python as python_parameters
     import params_hybrid as hybrid_parameters
 
 import meta_target
@@ -27,7 +25,6 @@ import algo_args_type
 import numpy as np
 
 from typing import List
-from multiprocessing import Pool, cpu_count
 
 class Classifier:
     """A classifier from a forest of ensembles that classifies an unknown target function"""
@@ -45,8 +42,7 @@ class Classifier:
     def train(self):
         """train the classifier by training each ensemble in the forest on a different function"""
         if self.mp:
-            with Pool(cpu_count()) as p:
-                NotImplemented
+            NotImplemented
         else:
             for awa in self.awa_list:
                 search_alg = awa.Algo(awa.algo_args)

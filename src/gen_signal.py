@@ -1,6 +1,4 @@
-"""
-This module implements an abstract base class for signal generators.
-"""
+"""This module implements an abstract base class for signal generators."""
 
 import numpy as np
 
@@ -171,7 +169,9 @@ class SignalGenerator(ABC):
     osc_to_replace: List[int], weight_mode: bool,
     target: Union[None, np.ndarray] = None, store_det_args: bool = False,
     ) -> sample.Sample:
-        """take a base sample and replace j oscillators and weights.
+        """
+        take a base sample and replace j oscillators and weights.
+
         this function generalizes over draw_sample;
         draw_sample is kept because it's more readable
         

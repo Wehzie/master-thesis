@@ -1,5 +1,6 @@
 """
 This module implements the Experimenteur class.
+
 The Experimenteur class runs experiments.
 """
 
@@ -18,7 +19,6 @@ import algo
 import meta_target
 import const
 import data_io
-import const
 import shared_params_target
 import sample
 import gen_signal_python
@@ -28,18 +28,20 @@ import algo_args_bundle
 import algo_args_type
 if const.TEST_PARAMS:
     print("Import test parameters.")
-    import params_python_test as python_parameters
     import params_hybrid_test as hybrid_parameters
 else:
     print("Import production parameters.")
-    import params_python as python_parameters
     import params_hybrid as hybrid_parameters
 
 import numpy as np
 
 class Experimenteur:
+    """Controls the execution of experiments and aggregates results."""
+
     def __init__(self, experiment_name: str = "", mp: bool = const.MULTIPROCESSING, clean_work_dir: bool = False, show_plots: bool = False) -> None:
         """
+        Initialize the Experimenteur class.
+
         args:
             mp: if true use multiple CPUs for processing
             clean_work_dir: if true delete all files in the work directory
@@ -58,6 +60,7 @@ class Experimenteur:
     def run_qualitative_algo_sweep(sweep_bundle: sweety.SweepBundle, m_target: meta_target.MetaTarget) -> None:
         """
         Perform an experiment to compare multiple algorithms but don't collect results over multiple runs or average.
+        
         Plots the best sample for each algorithm against the target.
         """
         local_target = copy.deepcopy(m_target)
@@ -101,6 +104,12 @@ class Experimenteur:
         return meta_dict
 
     def init_dict(self):
+        """
+        initialize a dictionary to store experiment results
+        
+        data contains the optimized oscillator ensemble and its parameters
+        meta contains the search parameters and additional meta data such as names
+        """
         return {"data": dict(), "meta": dict()}
     
     def run_osc_attribute_dist_sweep(self, sweep_bundle: sweety.SweepBundle, base_args: party.UnionRandArgs, attr_selector: str) -> List[Tuple[np.ndarray, np.ndarray]]:
@@ -135,10 +144,6 @@ class Experimenteur:
         """set the name and directory of the sweep for the next experiment"""
         self.sweep_name = sweep_name
         self.sweep_dir = data_io.find_dir_name(self.work_dir, sweep_name)
-
-    @staticmethod
-    def mean_std():
-        return np.mean, np.std
 
     def invoke_search(self, search_alg: algo.SearchAlgo, algo_sweep: sweety.AlgoSweep) -> Iterable:
         """call an algorithm's search function for a given number of times"""
@@ -177,9 +182,14 @@ class Experimenteur:
     sweep_args: Union[sweety.ConstTimeSweep, sweety.ExpoTimeSweep],
     base_args: party.UnionRandArgs) -> resty.ResultSweep:
         """
+        run an experiment across algorithms and a dependent variable
+
+        results are averaged over multiple runs
+
         args:
             algo_sweep: a list of algorithms and algorithm arguments, the algorithm arguments will be modified
-            sweep_args: an attribute within a rand_args type, for each attribute a list of values is tested"""
+            sweep_args: an attribute within a rand_args type, for each attribute a list of values is tested
+        """
         print("sweeping with", sweep_args.__class__.__name__)
         results = []
         for val_schedule in fields(sweep_args): # for example frequency distribution
@@ -200,6 +210,7 @@ class Experimenteur:
         # TODO: flush and pickle results
         return results
 
+    # TODO: refactor
     # def alternative_run_rand_args_sweep():
     #     for val in algo_sweep.dv_values:
     #         for awa in algo_sweep.algo_with_args:
@@ -487,6 +498,7 @@ class Experimenteur:
 
     def run_hyperparameter_optimization():
         """run experiments to determine the best experimental parameters"""
+        raise NotImplementedError("TODO")
         # take best algorithm
         # then also increase the z_ops to see if the weight-range-to-rmse curve flattens
         # same for rmse vs n_osc

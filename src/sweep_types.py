@@ -1,6 +1,4 @@
-"""
-This module defines valid dependent variables for an experiment (sweep).
-"""
+"""This module defines valid dependent variables for an experiment (sweep)."""
 
 from abc import ABC
 from dataclasses import dataclass
@@ -22,6 +20,7 @@ class AlgoSweep:
         m_averages: number of averages for each experimental configuration
         algo_masks: masks to subset the algorithms for analysis; doesn't affect the experiment
     """
+
     algo_with_args: List[algo_args_bundle.AlgoWithArgs]
     m_averages: int
     algo_masks: Union[List[mask_type.ExperimentMask], None] = None
@@ -29,6 +28,8 @@ class AlgoSweep:
 # TODO: maybe use this instead of AlgoSweep
 @dataclass
 class AlgoSweepBundle:
+    """Bundle an AlgoSweep with additional information."""
+
     name: str
     description: str
     dep_var: None
@@ -42,42 +43,52 @@ class AlgoSweepBundle:
 
 @dataclass
 class ConstTimeSweep(ABC):
-    """Experiments where the time complexity between experiments is constant.
+    """
+    Abstract class for experiments where the time complexity between experiments is constant.
+
     For example, increasing the frequency doesn't increase the time complexity of the experiment.
     """
+    
     pass
 
 @dataclass
 class FreqSweep(ConstTimeSweep):
     """A list of frequency distributions from which to sample the frequency of the oscillators."""
+    
     freq_dist: List[dist.Dist]
 
 @dataclass
 class ResistorSweep(ConstTimeSweep):
     """
     A list of resistor distributions from which to sample the resistance of the RC-circuit.
+    
     Resistance controls the frequency of the oscillators.
     """
+    
     r_dist: List[dist.Dist]
 
 @dataclass
 class AmplitudeSweep(ConstTimeSweep):
     """A list of amplitude distributions from which to sample the amplitude of the oscillator signals."""
+    
     amplitude: List[float]
 
 @dataclass
 class WeightSweep(ConstTimeSweep):
     """A list of weight distributions from which to sample the weighting or gain of the oscillator signals."""
+    
     weight_dist: List[dist.WeightDist]
 
 @dataclass
 class PhaseSweep(ConstTimeSweep):
     """A list of phase distributions from which to sample the phase of the oscillator signals."""
+    
     phase_dist: List[dist.Dist]
 
 @dataclass
 class OffsetSweep(ConstTimeSweep):
     """A list of offset distributions from which to sample the offset of the oscillator signals."""
+
     offset_dist: List[dist.Dist]
 
 
@@ -86,6 +97,7 @@ class OffsetSweep(ConstTimeSweep):
 class ExpoTimeSweep(ABC):
     """
     This abstract class specifies experiments where time complexity between experiments is worse then constant.
+    
     For example, increasing the number of oscillators increases the duration and memory requirements of the experiment.
     
     args:
@@ -95,6 +107,7 @@ class ExpoTimeSweep(ABC):
         val_schedule: values of the independent variable
         dv_identifier: dependent variable identifier; not yet implemented; must match a corresponding field in a dataframe returned by the Experimenteur class
     """
+
     NotImplemented
     # TODO: using fixed field names I can replace
     #   for val_schedule in fields(sweep_args)
@@ -115,31 +128,35 @@ class ExpoTimeSweep(ABC):
 @dataclass
 class NOscSweep(ExpoTimeSweep):
     """Specify varying numbers of oscillators to compare in an experiment."""
+
     n_osc: List[int]
 
 @dataclass
 class ZOpsSweep(ExpoTimeSweep):
     """Specify varying numbers of maximum perturbations (max-z-ops) to use in an experiment."""
+
     max_z_ops: List[int]
 
 @dataclass
 class NumSamplesSweep(ExpoTimeSweep):
     """
     Specify varying numbers of target samples to use in an experiment.
+    
     This approximates the idea of varying the duration of the target signal.
     """
+
     samples: List[float]
 
 @dataclass
 class DurationSweep(ExpoTimeSweep):
-    """
-    Specify varying durations of target samples to use in an experiment.
-    """
+    """Specify varying durations of target samples to use in an experiment."""
+
     duration: List[float]
 
 @dataclass
 class TargetSweep(ExpoTimeSweep):
-    """Specify varying target signals to use in an experiment.
+    """
+    Specify varying target signals to use in an experiment.
     
     args:
         description: text description of the experiment
@@ -149,6 +166,7 @@ class TargetSweep(ExpoTimeSweep):
         max_z_ops: maximum number of perturbations to use in the experiment
         m_averages: number of averages for each experimental configuration
     """
+
     description: str
     targets: List[meta_target.MetaTarget]
     rand_args: party.UnionRandArgs
@@ -161,6 +179,7 @@ class TargetSweep(ExpoTimeSweep):
 @dataclass
 class SweepBundle:
     """Bundle an algorithm sweep with sweeps of secondary independent variables"""
+
     # metadata, mainly for convenience
     # the values of these fields should not change between experiments
     # for example, max_z_ops reflects the default values
@@ -188,7 +207,7 @@ class SweepBundle:
 
 @dataclass
 class PythonSweepBundle(SweepBundle):
-    """Bundle an AlgoSweep with a sweep of secondary independent variables"""
+    """Bundle an AlgoSweep with a sweep of secondary independent variables for the Python signal generator."""
 
     # constant time sweeps
     freq_sweep_from_zero: Final[FreqSweep]
@@ -199,6 +218,7 @@ class PythonSweepBundle(SweepBundle):
 
 @dataclass
 class HybridSweepBundle(SweepBundle):
+    """Bundle an AlgoSweep with a set of secondary independent variables for the Hybrid/Spipy signal generator."""
 
     # constant time sweeps
     resistor_sweep: Final[FreqSweep] # manipulate netlist generation, R value

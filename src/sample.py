@@ -1,6 +1,6 @@
 """
-This module implements the sample class.
-A sample is an ensemble of n-oscillators.
+This module implements the sample class which is equivalent to an oscillator ensemble.
+
 The sum of n-oscillators approximates a target signal.
 A sample is tuned by an algorithm to minimize the rmse between the sum and the target.
 """
@@ -26,9 +26,13 @@ import const
 
 class Sample():
     """
-    -> Oscillator ensemble
-    a sample consists of n-oscillators with constant parameters
-    the sum of oscillators approximates a target signal"""
+    A sample is an oscillator ensemble.
+
+    The term sample is used to indicate that we draw from a random variable.
+    Thus, a sample consists of n-oscillators with constant parameters.
+    The sum of oscillators approximates a target signal.
+    """
+
     def __init__(self, signal_matrix: np.ndarray, weights: Union[None, np.ndarray], weighted_sum: np.ndarray,
         offset: Union[None, float], rmse: float, signal_args: Union[List[None], List[party.PythonSignalDetArgs]]) -> Sample:
         """

@@ -1,5 +1,6 @@
 """
 This module implements Las Vegas algorithms for optimization.
+
 Las vegas algorithms have non-deterministic runtime and draw from randomness to find the best solution to optimization.
 """
 
@@ -54,17 +55,21 @@ class LasVegas(algo.SearchAlgo):
         return self.draw_partial_sample(base_sample, osc_to_replace)
 
     def comp_samples(self, base_sample: sample.Sample, temp_sample: sample.Sample) -> Tuple[sample.Sample, bool]:
-        """compare two samples and return the one with lower rmse
+        """
+        compare two samples and return the one with lower rmse.
         
         returns:
             sample: the sample with lower rmse
-            changed: true if the new sample is better than the old one, false if the old one is better"""
+            changed: true if the new sample is better than the old one, false if the old one is better
+        """
         if temp_sample.rmse < base_sample.rmse:
             return temp_sample, True
         return base_sample, False
         
     def search(self, *args, **kwargs) -> Tuple[sample.Sample, int]:
-        """generate k-signals which are a sum of n-oscillators
+        """
+        generate k-signals which are a sum of n-oscillators.
+
         model is constructed by aggregation
         oscillator candidates are accepted into the model when they lower RMSE
 

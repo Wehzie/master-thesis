@@ -1,5 +1,6 @@
 """
 This module defines constants used throughout the project.
+
 Some constants need to be frequently changed during development and testing and would be better replaced by command line interface.
 """
 

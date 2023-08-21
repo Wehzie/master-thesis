@@ -16,6 +16,7 @@ class AlgoArgs:
     a single sample is an optimized signal matrix and array of weights
     z_ops measures z initialized, drawn, discarded - oscillators or weights
     """
+    
     sig_generator: gen_signal.SignalGenerator # method of generating signals
     rand_args: party.UnionRandArgs          # arguments to init a signal matrix
     meta_target: meta_target.MetaTarget     # the target signal to optimize for (and its meta data)

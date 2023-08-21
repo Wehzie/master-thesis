@@ -1,24 +1,18 @@
-"""
-This module provides functions to bundle parameters for experiments.
-"""
+"""This module provides functions to bundle parameters for experiments."""
 
 from pathlib import Path
 from typing import List, Final, Tuple
 
 import gen_signal_args_types as party
-import gen_signal as gen_signal
 
 import dist
 import data_preprocessor
 import data_io
 import const
-import gen_signal_args_types as party
 
 
 def estimate_summed_offset(v_in: float, n_osc: int, weight_dist_low: float, weight_dist_high: float) -> float:
-    """
-    Estimate the offset resulting from summing the voltages of n oscillators.
-    """
+    """Estimate the offset resulting from summing the voltages of n oscillators."""
     weight_dist_mean = (weight_dist_low + weight_dist_high) / 2
     one_sided_offset = v_in * n_osc * weight_dist_mean * 1.14 # roughly the offset needed to get mean=0
     return one_sided_offset

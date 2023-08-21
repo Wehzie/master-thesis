@@ -1,5 +1,6 @@
 """
 This module implements the abstract MetaTarget class and subclasses.
+
 The MetaTarget class bundles a signal with its time axis and other metadata.
 The subclasses implement different ways to load a signal from file or generate a signal.
 """
@@ -34,19 +35,9 @@ class MetaTarget(ABC):
     
     def __repr__(self) -> str:
         return f"MetaTarget({self.name}, sampling_rate={self.sampling_rate}, dtype={self.dtype}, duration={self.duration})"
-    
-    def sinc_interpolate(self, new_sampling_rate: int):
-        new_signal = data_preprocessor.interpolate_sinc_sampling_rate(self.signal, self.sampling_rate, new_sampling_rate)
-        new_samples = np.round(self.duration * new_sampling_rate).astype(int)
-        new_time = np.linspace(0, self.duration, new_samples, endpoint=False)
-
-        self.signal = new_signal
-        self.time = new_time
-        self.sampling_rate = new_sampling_rate
-        self.samples = new_samples
 
     def get_max_freq(self) -> float:
-        """returns the maximum frequency in the signal"""
+        """return the maximum frequency in the signal"""
         if hasattr(self, "max_freq"):
             return self.max_freq
         else:
@@ -151,6 +142,7 @@ class MetaTargetTime(MetaTarget):
 #### #### #### #### SYNTHETIC TARGETS #### #### #### ####
 
 class SyntheticTarget(MetaTarget):
+    """abstract class for synthetic target signals"""
     
     def __init__(self, duration: float,
     sampling_rate: Union[int, None] = None,
@@ -227,6 +219,7 @@ class SyntheticTarget(MetaTarget):
 
 
 class SineTarget(SyntheticTarget):
+    """a sine wave time-series"""
 
     def __init__(self, duration: float, sampling_rate: Union[int, None] = None, samples: Union[int, None] = None, freq: float = 1, amplitude: float = 1, phase: float = 0, offset: float = 0, name: str = "sine") -> None:
         super().__init__(duration, sampling_rate, samples, freq)
@@ -234,6 +227,7 @@ class SineTarget(SyntheticTarget):
         self.signal = np.sin(2 * np.pi * freq * self.time + phase*np.pi) * amplitude + offset
 
 class TriangleTarget(SyntheticTarget):
+    """a triangle wave signal"""
 
     def __init__(self, duration: float, sampling_rate: Union[int, None] = None, samples: Union[int, None] = None, freq: float = 1, amplitude: float = 1, phase: float = 0, offset: float = 0) -> None:
         super().__init__(duration, sampling_rate, samples, freq)
@@ -241,6 +235,7 @@ class TriangleTarget(SyntheticTarget):
         self.signal = signal.sawtooth(2 * np.pi * freq * self.time + phase*np.pi, width=0.5) * amplitude + offset
 
 class SquareTarget(SyntheticTarget):
+    """a square wave signal"""
     
     def __init__(self, duration: float, sampling_rate: Union[int, None] = None, samples: Union[int, None] = None, freq: float = 1, amplitude: float = 1, phase: float = 0, offset: float = 0) -> None:
         super().__init__(duration, sampling_rate, samples, freq)
@@ -248,6 +243,7 @@ class SquareTarget(SyntheticTarget):
         self.signal = np.sign(np.sin(2 * np.pi * freq * self.time + phase*np.pi)) * amplitude + offset
 
 class SawtoothTarget(SyntheticTarget):
+    """a sawtooth signal"""
     
     def __init__(self, duration: float, sampling_rate: Union[int, None] = None, samples: Union[int, None] = None, freq: float = 1, amplitude: float = 1, phase: float = 0, offset: float = 0) -> None:
         super().__init__(duration, sampling_rate, samples, freq)
@@ -255,6 +251,7 @@ class SawtoothTarget(SyntheticTarget):
         self.signal = signal.sawtooth(2 * np.pi * freq * self.time + phase*np.pi) * amplitude + offset
 
 class InverseSawtoothTarget(SyntheticTarget):
+    """a time-series of the inverse sawtooth signal"""
 
     def __init__(self, duration: float, sampling_rate: Union[int, None] = None, samples: Union[int, None] = None, freq: float = 1, amplitude: float = 1, phase: float = 0, offset: float = 0) -> None:
         super().__init__(duration, sampling_rate, samples, freq)
@@ -262,6 +259,7 @@ class InverseSawtoothTarget(SyntheticTarget):
         self.signal = -signal.sawtooth(2 * np.pi * freq * self.time + phase*np.pi) * amplitude + offset
 
 class ChirpTarget(SyntheticTarget):
+    """a chirp signal is a signal whose frequency increases or decreases over time"""
 
     def __init__(self, duration: float, sampling_rate: Union[int, None] = None, samples: Union[int, None] = None, start_freq: float = 0.1, stop_freq: Union[float, None] = None, amplitude: float = 1, offset: float = 0, name: str = "chirp") -> None:
         """
@@ -286,12 +284,13 @@ class ChirpTarget(SyntheticTarget):
         self.stop_freq = stop_freq
 
 class BeatTarget(SyntheticTarget):
+    """a beat target is the sum of two sinusoids with different frequencies"""
 
     def __init__(self, duration: float, sampling_rate: Union[int, None] = None, samples: Union[int, None] = None,
     base_freq: float = 1, base_freq_factor: float = 1/10,
     amplitude: float = 1, phase: float = 0, offset: float = 0) -> None:
         """
-        generate a beat note signal that is the product of two sinusoids with different frequencies
+        generate a beat note signal that is the sum of two sinusoids with different frequencies
         
         args:
             base_freq: the first of two frequency components of the beat note
@@ -300,9 +299,10 @@ class BeatTarget(SyntheticTarget):
         super().__init__(duration, sampling_rate, samples, base_freq)
         self.name = "beat"
         derived_freq = base_freq * base_freq_factor
-        self.signal = np.sin(2 * np.pi * base_freq * self.time + phase*np.pi) * np.sin(2 * np.pi * derived_freq * self.time + phase*np.pi) * amplitude + offset
+        self.signal = (np.sin(2 * np.pi * base_freq * self.time + phase*np.pi) + np.sin(2 * np.pi * derived_freq * self.time + phase*np.pi)) * amplitude + offset
 
 class DampChirpTarget(SyntheticTarget):
+    """a damped chirp signal"""
 
     def __init__(self, duration: float, sampling_rate: Union[int, None] = None, samples: Union[int, None] = None, start_freq: float = 0.1, stop_freq: Union[float, None] = None, amplitude: float = 1, offset: float = 0, name: str = "d. chirp") -> None:
         """
@@ -328,6 +328,7 @@ class DampChirpTarget(SyntheticTarget):
         self.stop_freq = stop_freq
 
 class SmoothGaussianNoiseTarget(SyntheticTarget):
+    """a time-series of noise drawn from a gaussian distribution to which a moving average is applied"""
 
     def __init__(self, duration: float, sampling_rate: Union[int, None] = None, samples: Union[int, None] = None,
     amplitude: float = 1, offset: float = 0, avg_window: int = 10) -> None:
@@ -337,6 +338,7 @@ class SmoothGaussianNoiseTarget(SyntheticTarget):
         self.signal = self.moving_average(self.signal, avg_window)
 
 class SmoothUniformNoiseTarget(SyntheticTarget):
+    """a time-series of noise drawn from a uniform distribution to which a moving average is applied"""
 
     def __init__(self, duration: float, sampling_rate: Union[int, None] = None, samples: Union[int, None] = None,
     amplitude: float = 1, offset: float = 0, avg_window: int = 10) -> None:
@@ -346,6 +348,7 @@ class SmoothUniformNoiseTarget(SyntheticTarget):
         self.signal = self.moving_average(self.signal, avg_window)
 
 class GaussianNoiseTarget(SyntheticTarget):
+    """a time-series of noise drawn from a Gaussian distribution"""
 
     def __init__(self, duration: float, sampling_rate: Union[int, None] = None, samples: Union[int, None] = None,
     amplitude: float = 1, offset: float = 0) -> None:
@@ -354,6 +357,7 @@ class GaussianNoiseTarget(SyntheticTarget):
         self.signal = const.RNG.normal(0, 1, self.samples) * amplitude + offset
 
 class UniformNoiseTarget(SyntheticTarget):
+    """a time-series of noise drawn from a uniform distribution"""
 
     def __init__(self, duration: float, sampling_rate: Union[int, None] = None, samples: Union[int, None] = None,
     amplitude: float = 1, offset: float = 0) -> None:

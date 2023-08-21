@@ -1,5 +1,6 @@
 """
 This module implements the Hybrid or SpiPy (SPICE+Python) signal generator class.
+
 The oscillation of a single oscillator circuit is generated within SPICE.
 The resulting signal is loaded into Python.
 The processes is repeated to obtain an ensemble of signals.
@@ -24,7 +25,9 @@ import const
 DF_CACHE = None
 
 class SpipySignalGenerator(gen_signal.SignalGenerator):
-    """spice netlists generate single signals and Python sums them up
+    """
+    spice netlists generate single signals and Python sums them up
+
     this approach scales better than pure spice signal generation
     but worse than pure Python signal generation
     
@@ -161,16 +164,20 @@ class SpipySignalGenerator(gen_signal.SignalGenerator):
 
     @staticmethod
     def simulation_successful(single_signal: np.ndarray, samples: int) -> bool:
-        """check if SPICE run was successful
+        """
+        check if a SPICE run was successful
         
-        returns True if the simulation was successful, False otherwise"""
+        returns True if the simulation was successful, False otherwise
+        """
         return False if single_signal is None or len(single_signal) < samples else True
 
     @staticmethod
     def draw_n_oscillators(rand_args: party.SpiceSumRandArgs, store_det_args: bool = False) -> Tuple[np.ndarray, List[party.SpiceSingleDetArgs]]:
-        """draw a matrix of n oscillators.
+        """
+        draw a matrix of n oscillators.
         
-        handles SPICE simulation failures."""
+        handles SPICE simulation failures.
+        """
         det_arg_li = list()
         # allocate more memory than necessary
         # exact number of samples is non-deterministic

@@ -13,17 +13,18 @@ import data_analysis
 import const
 
 class DifferentialEvolution(algo.SearchAlgo):
-
-    def draw_temp_sample(self) -> sample.Sample:
-        return super().draw_temp_sample()
+    """implement differential evolution algorithm using scipy.optimize.differential_evolution"""
     
     def infer_k_from_z(self) -> int:
+        """infer the number of loops/iterations k from the maximum number of perturbations z"""
         return None
 
     def init_best_sample(self) -> sample.Sample:
+        """initialize the best sample with random oscillators"""
         return self.draw_sample()
         
     def search(self, *args, **kwargs):
+        """search for the best ensemble of oscillators"""
         print(f"searching with {self.__class__.__name__}")
 
         def eval_func(weights, *args):

@@ -1,6 +1,4 @@
-"""
-This module applies meta-programming to generate SPICE netlists.
-"""
+"""This module applies meta-programming to generate SPICE netlists."""
 
 import subprocess
 from pathlib import Path

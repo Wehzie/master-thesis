@@ -1,6 +1,4 @@
-"""
-Production parameters required by the Python signal generator.
-"""
+"""Production parameters required by the Python signal generator."""
 
 import gen_signal_args_types as party
 import sweep_types as sweety

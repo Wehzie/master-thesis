@@ -1,5 +1,6 @@
 """
 This module implements the distribution class.
+
 A distribution is a random variable that can be sampled.
 """
 
@@ -11,9 +12,9 @@ from typing import Tuple, Union, Callable
 # TODO: replace with something more readable
 class Dist:
     """define distributions for random drawing"""
+
     def __init__(self, dist: Union[int, float, Callable, None], n: int = None, *args, **kwargs):
         if isinstance(dist, Callable):
-            rng = np.random.default_rng() # no seed needed since not used to draw
             # rng1.uniform != rng2.uniform, therefore must use name
             assert dist.__name__ in const.LEGAL_DISTS, "unsupported distribution"
             
@@ -57,15 +58,19 @@ class Dist:
         return self.dist(*self.args, **self.kwargs, size=self.n)
 
     def is_uniform(self) -> bool:
+        """return True if the distribution is a uniform distribution"""
         return self.dist.__name__ == "uniform"
     
     def is_normal(self) -> bool:
+        """return True if the distribution is a normal distribution"""
         return self.dist.__name__ == "normal"
 
     def is_const(self) -> bool:
+        """return True if the distribution is a constant value"""
         return self.dist.__name__ == "callable_const"
 
     def get_low_high(self) -> Tuple[float, float]:
+        """return the parameters of the distribution"""
         if self.is_uniform():
             return self.kwargs["low"], self.kwargs["high"]
         if self.is_normal():
@@ -76,8 +81,11 @@ class Dist:
             raise NotImplementedError
 
     def compute_range(self) -> None:
-        """compute the numerical range covered by a distribution.
-        for example, a uniform distribution between 0 and 10 has a range of 10."""
+        """
+        compute the numerical range covered by a distribution.
+        
+        for example, a uniform distribution between 0 and 10 has a range of 10.
+        """
         if self.is_uniform():
             self.range = self.kwargs["high"] - self.kwargs["low"]
         elif self.is_normal():
@@ -88,6 +96,8 @@ class Dist:
             raise NotImplementedError
     
 class WeightDist(Dist):
+    """a distribution for drawing weights"""
+    
     def __init__(self, dist: Union[int, float, Callable], n: int, *args, **kwargs):
         if isinstance(dist, Callable):
             rng = np.random.default_rng()

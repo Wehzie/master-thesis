@@ -12,6 +12,7 @@ import algo_args_type as algarty
 import numpy as np
 
 class SearchAlgo(ABC):
+    """abstract base class for all search algorithms"""
 
     def __init__(self, algo_args: algarty.AlgoArgs):
         if algo_args is None: return # empty instance to get the class name
@@ -78,6 +79,7 @@ class SearchAlgo(ABC):
 
     @staticmethod
     def gen_empty_sample() -> sample.Sample:
+        """generate an empty oscillator ensemble"""
         return sample.Sample(None, None, None, 0, np.inf, list())
 
     def gen_zero_sample(self) -> sample.Sample:
@@ -106,10 +108,13 @@ class SearchAlgo(ABC):
                 self.samples = list() # clear list
 
     def clear_state(self) -> None:
-        """reset state
+        """
+        reset state
+        
         1. delete file to which samples are written if it exists
         2. reset z_ops
-        3. reset samples list"""
+        3. reset samples list
+        """
         self.z_ops = 0
         self.samples = list()
         if self.history and self.args_path:
@@ -130,16 +135,18 @@ class SearchAlgo(ABC):
         if self.history and self.args_path: self.pickle_samples(k) # TODO: could use len(self.samples)
 
     def set_first_point_to_zero(self) -> None:
-        """set the first point in each sample to 0 and recompute rmse
+        """
+        set the first point in each sample to 0 and recompute rmse
+
         this may be desireable because signals will overlap at the first point
-        this can also be prevented by using fully random phase-shifts"""
+        this can also be prevented by using fully random phase-shifts
+        """
         for s in self.samples:
             s.signal_sum[0] = 0 # set first point to 0
             s.rmse = data_analysis.compute_rmse(s.signal_sum, self.target)
     
     def gather_samples(self) -> tuple[sample.Sample, list]:
-        """find the sample with the lowest root mean square error
-        and return a list of all rmse"""
+        """find the sample with the lowest root mean square error and return a list of all rmse"""
         best_sample = self.samples[0]
         rmse_li, rmse_norm_li = list(), list()
 
@@ -174,7 +181,8 @@ class SearchAlgo(ABC):
         return base_sample
 
     def draw_random_indices(self, j_replace: int) -> List[int]:
-        """draw random indices pointing to an oscillator and weight for drawing a partial sample
+        """
+        draw random indices pointing to an oscillator and weight for drawing a partial sample
         
         the index n points to the offset, where n is the number of oscillators
         """
@@ -189,7 +197,8 @@ class SearchAlgo(ABC):
     def draw_weight_indices_or_offset(self, j_replace: int) -> Tuple[List[int], bool]:
         """draw random indices pointing to an oscillator and weight for drawing a partial sample
         
-        compared to draw_random_indices, whether the offset is to be changed is passed as as bool instead of as index i=number_of_oscillators"""
+        compared to draw_random_indices, whether the offset is to be changed is passed as as bool instead of as index i=number_of_oscillators
+        """
         # TODO: merge with separate_oscillators_from_offset in gen_signal.py 
         osc_to_replace = self.draw_random_indices(j_replace)
         replace_offset = True if max(osc_to_replace) == self.rand_args.n_osc else False
@@ -219,12 +228,15 @@ class SearchAlgo(ABC):
 
     def draw_weight_neighbor(self, base_sample: sample.Sample, osc_to_replace: List[int]) -> sample.Sample:
         """given a sample replace j weights, update z_ops, recompute metrics
-        weights are drawn from a neighborhood gaussian of the base sample instead of being drawn from the initial distribution"""
+
+        weights are drawn from a neighborhood gaussian of the base sample instead of being drawn from the initial distribution
+        """
         self.z_ops += len(osc_to_replace)
         return self.sig_generator.draw_weight_neighbor(base_sample, self.rand_args, osc_to_replace, self.target)
 
     def handle_mp(self, sup_func_kwargs: dict) -> None:
         """handle multi processing by modifying numpy the random number generator
+
         args:
             sup_func_kwargs: the kwargs of the calling function
         """

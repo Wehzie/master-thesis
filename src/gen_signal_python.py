@@ -1,5 +1,8 @@
-"""This module implements the Python signal generator class.
-Signals are generated fully within the Python environment."""
+"""
+This module implements the Python signal generator class.
+
+Signals are generated fully within the Python environment.
+"""
 
 from typing import List, Tuple, Union
 import data_analysis
@@ -18,6 +21,7 @@ class PythonSigGen(gen_signal.SignalGenerator):
 
     @staticmethod
     def draw_params_random(args: party.PythonSignalRandArgs) -> party.PythonSignalDetArgs:
+        """draw parameters from the provided distributions"""
         duration = args.duration
         samples = args.samples
         freq = args.freq_dist.draw() # frequency
@@ -69,6 +73,7 @@ class PythonSigGen(gen_signal.SignalGenerator):
     @staticmethod
     def draw_single_oscillator(rand_args: party.PythonSignalRandArgs, store_det_args: bool = False
     ) -> Tuple[np.ndarray, np.ndarray, Union[None, party.PythonSignalDetArgs]]:
+        """generate a time-series for a single oscillator, with a random frequency and phase"""
         # determine a set of parameters for a single oscillator
         det_args = PythonSigGen.draw_params_random(rand_args)
         # generate single oscillator signal, discard x-range
@@ -80,6 +85,7 @@ class PythonSigGen(gen_signal.SignalGenerator):
     @staticmethod
     def draw_n_oscillators(rand_args: party.PythonSignalRandArgs, store_det_args: bool = False
     ) -> Tuple[np.ndarray, List[Union[None, party.PythonSignalDetArgs]]]:
+        """draw a matrix of n oscillator signals, each with a random frequency and phase"""
         signal_matrix = np.empty((rand_args.n_osc, rand_args.samples))
         det_arg_li = list()
 
@@ -97,7 +103,7 @@ def gen_custom_inv_sawtooth(
     offset: float,
     sampling_rate: int,
     ) -> np.ndarray:
-    """formula to compute the inverse sawtooth without scipy"""
+    """compute the inverse sawtooth without scipy"""
     x = np.linspace(1, duration, sampling_rate*duration, endpoint=False)
     T = 1 / freq # period
     y = offset + (2*amplitude) / np.pi * np.arctan(1 / np.tan(np.pi*phase + np.pi*x / T))

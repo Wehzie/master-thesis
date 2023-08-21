@@ -1,5 +1,8 @@
-"""This module applies preprocessing to signals.
-In particular it implements resampling, peak detection and padding functions."""
+"""
+This module applies preprocessing to signals.
+
+In particular it implements resampling, peak detection and padding functions.
+"""
 
 from typing import Union, Tuple
 
@@ -50,10 +53,8 @@ def scale_up(short: np.ndarray, len_long: int) -> np.ndarray:
     short = pd.Series(short)
     short = short.repeat(len_long//len(short))
     # pad with zeros at the end
-    to_pad = len_long - len(short)
     padded = pad_zero(short, len_long)
     return padded
-
 
 def interpolate_sinc_time(signal: np.ndarray, time: np.ndarray, time_new: np.ndarray) -> np.ndarray:
     """interpolate a signal using sinc (sinus cardinalis, Whittaker-Shannon) interpolation
@@ -147,14 +148,16 @@ def norm2d(matrix: np.ndarray) -> np.ndarray:
     return np.apply_along_axis(norm1d, 0, matrix)
 
 def add_phase_to_oscillator(s: np.ndarray, phase: float, period: float, sample_spacing: float, mode: str="delay") -> np.ndarray:
-    """add phase to an oscillator signal by rolling over the signal
+    """
+    add phase to an oscillator signal by rolling over the signal
     
     args:
         s: the oscillator signal
         phase: the phase to add in radians
         period: the period of the signal
         sample_spacing: the time between samples in the signal
-        mode: the mode to use for rolling the signal"""
+        mode: the mode to use for rolling the signal
+    """
     samples_per_period = period / sample_spacing
     normalized_phase = 0.5 * phase # normalize phase from 0, 2 to [0, 1)
     samples_to_shift = int(samples_per_period * normalized_phase)

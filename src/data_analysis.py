@@ -1,5 +1,6 @@
 """
 This module defines metrics and plots for the analysis of signals.
+
 The focus is on plotting one or two signals at a time. 
 """
 
@@ -323,9 +324,7 @@ def plot_fourier(data: np.ndarray, title: str = None, show: bool = False, save_p
 
         
 def compute_rmse(p: np.ndarray, t: np.ndarray, verbose: bool = False, pad: bool = False) -> float:
-    """
-    Compute root mean square error (RMSE) between prediction and target signal.
-    """
+    """Compute root mean square error (RMSE) between prediction and target signal."""
     if pad: p, t = data_preprocessor.align_signals(p, t)
     rmse = np.sqrt(((p-t)**2).mean())
     if verbose:
@@ -362,8 +361,11 @@ def get_freq_from_fft(s: np.ndarray, sample_spacing: float) -> float:
 
 
 def get_freq_from_fft_v2(s: np.ndarray, sample_spacing: float) -> float:
-    """compute fundamental frequency of an oscillator using FFT,
-    compared to v1, this version seems more numerically stable"""
+    """
+    compute fundamental frequency of an oscillator using FFT.
+    
+    compared to v1, this version seems more numerically stable
+    """
     # apply fourier transform to signal
     spectrum = np.fft.fft(s)
     abs_spec = abs(spectrum)

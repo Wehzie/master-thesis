@@ -11,19 +11,14 @@ import sample
 import algo
 
 class LinearRegression(algo.SearchAlgo):
-
-    def init_best_sample(self) -> sample.Sample:
-        return super().init_best_sample()
-
-    def draw_temp_sample(self) -> sample.Sample:
-        return super().draw_temp_sample()
+    """implement ordinary least squares regression"""
 
     def infer_k_from_z(self) -> None:
         """it's not feasible to infer k from z using the scipy implementation of linear regression"""
         return None
 
     def search(self, *args, **kwargs) -> Tuple[sample.Sample, int]:
-        """randomly draw n-oscillators, then apply gradient based linear regression to fit against the target"""
+        """randomly draw n-oscillators, then apply ordinary least squares linear regression to fit against the target"""
         print(f"searching with {self.__class__.__name__}")
         self.clear_state()
         self.handle_mp(kwargs)

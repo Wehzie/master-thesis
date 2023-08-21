@@ -1,4 +1,5 @@
-"""This module implements Markov Chain Monte Carlo optimization algorithms.
+"""
+This module implements Markov Chain Monte Carlo optimization algorithms.
 
 All algorithms have a non-zero probability of accepting worse candidate solutions.
 """
@@ -13,13 +14,16 @@ import numpy as np
 from scipy.optimize import basinhopping, dual_annealing
 
 class MCExploitErgodic(algo_monte_carlo.MCExploit):
-    """An ergodic version of the MCExploit algorithm.
+    """
+    An ergodic version of the MCExploit algorithm.
     
     Compared to MCExploit, this algorithm accepts worse samples with a small probability.
-    The probability remains constant throughout runtime, opposed to MCExploitAnneal."""
+    The probability remains constant throughout runtime, opposed to MCExploitAnneal.
+    """
 
     def accept_candidate_sample(self, rmse_base: float, rmse_temp: float, temperature: float = 0.1) -> bool:
-        """Accept a new sample when according to some rules.
+        """
+        Accept a new sample following some rules.
 
         Acceptance rules are as follows:
             rmse_temp < rmse_base --> 100% acceptance
@@ -33,7 +37,8 @@ class MCExploitErgodic(algo_monte_carlo.MCExploit):
         return const.RNG.uniform(0, 1) <= acceptance_ratio
 
 class MCExploitAnneal(algo_monte_carlo.MCExploit):
-    """An ergodic version of the MCExploit algorithm.
+    """
+    An ergodic version of the MCExploit algorithm.
 
     Compared to MCExploit, this algorithm accepts worse samples with a small probability
     The probability to accept worse candidates decreases over time, as the temperature decreases.
@@ -51,6 +56,7 @@ class MCExploitAnneal(algo_monte_carlo.MCExploit):
         return const.RNG.uniform(0, 1) <= acceptance_ratio
 
     def comp_samples(self, base_sample: sample.Sample, temp_sample: sample.Sample, iteration_k: int) -> sample.Sample:
+        """compare two oscillator ensembles and return a winner based on the acceptance function"""
         temperature = self.get_temp(iteration_k)
         if self.accept_candidate_sample(base_sample.rmse, temp_sample.rmse, temperature):
             return temp_sample
@@ -60,6 +66,7 @@ class MCExploitAnnealWeight(MCExploitAnneal):
     """Weight only optimizing version of MCExploitErgodicAnneal."""
 
     def infer_k_from_z(self) -> int:
+        """infer the number of iterations k from a maximum number of perturbations z"""
         z_init = self.rand_args.n_osc * 3 + 1 # draw a new sample with n weighted oscillators (phase+frequency+gain --> 3) on each loop and an offset --> 1
         z_loop = self.j_replace # j weights are updated on each loop
         return int((self.max_z_ops - z_init) // z_loop)
@@ -72,22 +79,25 @@ class MCExploitAnnealWeight(MCExploitAnneal):
 
 
 class BasinHopping(algo.SearchAlgo):
-    """NOTE: this algorithm uses gradient information when used with 
+    """implement the Basin Hopping algorithm in scipy.optimize.basinhopping.
+    
+    NOTE: this algorithm uses gradient information when used with 
         scipy.optimize.minimize("method": "BFGS") and some other methods,
         these are not interesting for our neuromorphic context,
-        we use gradient free COBYLA (Constrained Optimization BY Linear Approximation)"""
+        we use gradient free COBYLA (Constrained Optimization BY Linear Approximation)
+    """
 
-    def draw_temp_sample(self) -> sample.Sample:
-        return super().draw_temp_sample()
-    
     def infer_k_from_z(self) -> int:
+        """ignore iterations k and use `maxiter` instead, see search()"""
         return None
 
     def init_best_sample(self) -> sample.Sample:
+        """initialize the best sample by drawing a random sample"""
         return self.draw_sample()
         
     def search(self, *args, **kwargs):
         """
+        optimize the oscillator ensemble by basin hopping.
         
         params:
             minimizer_kwargs: dict of arguments to pass to scipy.optimize.minimize
@@ -144,25 +154,27 @@ class BasinHopping(algo.SearchAlgo):
         return best_sample, self.z_ops
 
 class ScipyAnneal(algo.SearchAlgo):
-    """Generalized Simulated Annealing combines Classical Simulated Annealing (CSA) with Fast Simulated Annealing (FSA).
+    """
+    Generalized Simulated Annealing combines Classical Simulated Annealing (CSA) with Fast Simulated Annealing (FSA).
     
-    https://journal.r-project.org/archive/2013/RJ-2013-002/RJ-2013-002.pdf
+    reference:
+        https://journal.r-project.org/archive/2013/RJ-2013-002/RJ-2013-002.pdf
     """
 
     def __init__(self, algo_args: algarty.AlgoArgs):
         super().__init__(algo_args)
         self.no_local_search = True
-
-    def draw_temp_sample(self) -> sample.Sample:
-        return super().draw_temp_sample()
     
     def infer_k_from_z(self) -> int:
+        """ignore iterations k and use `maxfun` instead, see search()"""
         return None
 
     def init_best_sample(self) -> sample.Sample:
+        """initialize the best oscillator ensemble with a random sample"""
         return self.draw_sample()
 
     def search(self, *args, **kwargs):
+        """find the best oscillator ensemble by simulated annealing"""
         print(f"searching with {self.__class__.__name__}")
         self.clear_state()
         self.handle_mp(kwargs)

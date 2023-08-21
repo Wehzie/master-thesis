@@ -1,5 +1,6 @@
 """
 Parameters for the Python signal generator.
+
 Compared to params_python, the parameters in this file aim at low computational requirements.
 
 Parameters are defined for both quantitative and qualitative experiments.

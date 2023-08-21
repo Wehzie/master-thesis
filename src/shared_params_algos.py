@@ -1,5 +1,6 @@
 """
 This module bundles all algorithms into a single module.
+
 A function is provided to produce a list of algorithms with partially shared arguments. 
 """
 
@@ -24,9 +25,7 @@ def bundle_algos_with_args(
     max_z_ops: Union[int, None] = None,
     selector: str = "all",
 ) -> List[algabun.AlgoWithArgs]:
-    """
-    returns a list of algorithms and their arguments
-    """
+    """return a list of algorithms and their arguments"""
     one_shot_algos = [
         algabun.AlgoWithArgs(
             almoca.MCOneShot,

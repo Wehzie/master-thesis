@@ -1,6 +1,4 @@
-"""
-The main module serves as the entry point to load parameters and start a simulation.
-"""
+"""The main module serves as the entry point to load parameters and start a simulation."""
 
 import argparse
 
