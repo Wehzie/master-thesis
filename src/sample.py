@@ -24,7 +24,8 @@ import meta_target
 import data_io
 import const
 
-class Sample():
+
+class Sample:
     """
     A sample is an oscillator ensemble.
 
@@ -33,8 +34,15 @@ class Sample():
     The sum of oscillators approximates a target signal.
     """
 
-    def __init__(self, signal_matrix: np.ndarray, weights: Union[None, np.ndarray], weighted_sum: np.ndarray,
-        offset: Union[None, float], rmse: float, signal_args: Union[List[None], List[party.PythonSignalDetArgs]]) -> Sample:
+    def __init__(
+        self,
+        signal_matrix: np.ndarray,
+        weights: Union[None, np.ndarray],
+        weighted_sum: np.ndarray,
+        offset: Union[None, float],
+        rmse: float,
+        signal_args: Union[List[None], List[party.PythonSignalDetArgs]],
+    ) -> Sample:
         """
         initialize a sample
 
@@ -43,7 +51,7 @@ class Sample():
             weights:        array of weights over signal_matrix
             weighted_sum:     apply weights to signal_matrix then sum and add offset
             offset:         offset over matrix
-            rmse:           rmse(signal_sum, target)     
+            rmse:           rmse(signal_sum, target)
             signal_args:    list of parameters generating the signal matrix
                                 one set of parameters corresponds to a single oscillator
 
@@ -57,7 +65,6 @@ class Sample():
         self.rmse = rmse
         self.signal_args = signal_args
         # time axis is stored in the target or signal generation args (rand_args)
-                                        
 
     def __str__(self) -> str:
         signal_matrix = f"signal_matrix:\n{self.signal_matrix}\n"
@@ -72,7 +79,8 @@ class Sample():
 
     def save_signal_args(self, path: Path = "data/best_sample.csv") -> None:
         """save the determined parameters of a sample to a CSV"""
-        if len(self.signal_args) < 1: return
+        if len(self.signal_args) < 1:
+            return
         with open(path, "w") as f:
             writer = csv.writer(f)
             # write header
@@ -86,19 +94,21 @@ class Sample():
         with open(data_path, "wb") as f:
             pickle.dump(self, f)
 
-    def update(self, target: np.ndarray) -> None: # TODO: marked for removal
+    def update(self, target: np.ndarray) -> None:  # TODO: marked for removal
         """recompute sum and rmse"""
         if self.weights is None:
             self.weighted_sum = np.sum(self.signal_matrix, axis=1) + self.offset
         else:
-            self.weighted_sum = self.compute_weighted_sum(self.signal_matrix, self.weights, self.offset)
+            self.weighted_sum = self.compute_weighted_sum(
+                self.signal_matrix, self.weights, self.offset
+            )
         self.rmse = data_analysis.compute_rmse(self.weighted_sum, target)
 
     @staticmethod
     def regress1d(p: np.ndarray, t: np.ndarray, verbose: bool = False):
         """apply linear regression"""
         # matrix_y refers to the y-values of a generated signal
-        # the individual signals are used as regressors 
+        # the individual signals are used as regressors
 
         r = p.T
 
@@ -108,7 +118,7 @@ class Sample():
             print(f"r.shape {r.shape}")
             print(f"t {t}")
             print(f"t.shape {t.shape}")
-        
+
         reg = LinearRegression().fit(r, t)
 
         if verbose:
@@ -136,12 +146,14 @@ class Sample():
         norm_offset = 0
         norm_rmse = data_analysis.compute_rmse(norm_signal_sum, target)
         norm_signal_args = sample.signal_args
-        norm_sample = Sample(norm_signal_matrix,
-                            norm_weights,
-                            norm_signal_sum,
-                            norm_offset,
-                            norm_rmse,
-                            norm_signal_args)
+        norm_sample = Sample(
+            norm_signal_matrix,
+            norm_weights,
+            norm_signal_sum,
+            norm_offset,
+            norm_rmse,
+            norm_signal_args,
+        )
         return norm_sample
 
     @staticmethod
@@ -155,13 +167,26 @@ class Sample():
         rmse = data_analysis.compute_rmse(weighted_sum, target)
         return Sample(signal_matrix, weights, weighted_sum, offset, rmse, sample.signal_args)
 
-def evaluate_prediction(best_sample: Sample, m_target: meta_target.MetaTarget,
-    z_ops: int, alg_name: str, generator_name: str,
-    plot_time: bool = True, plot_freq: bool = True, decompose_sample: bool = True, interpolate: bool = True,
-    write_dir: Path = const.WRITE_DIR) -> None:
+
+def evaluate_prediction(
+    best_sample: Sample,
+    m_target: meta_target.MetaTarget,
+    z_ops: int,
+    alg_name: str,
+    generator_name: str,
+    plot_time: bool = True,
+    plot_freq: bool = True,
+    decompose_sample: bool = True,
+    interpolate: bool = True,
+    write_dir: Path = const.WRITE_DIR,
+) -> None:
     """evaluate a generated signal (sample) against the target by qualitative (plots) and quantitative (RMSE) means"""
-    m_target = copy.deepcopy(m_target) # local copy to avoid side effects when running multiple times
-    save_path = data_io.find_dir_name(write_dir, f"qualitative_{generator_name}_{m_target.__class__.__name__}_{alg_name}")
+    m_target = copy.deepcopy(
+        m_target
+    )  # local copy to avoid side effects when running multiple times
+    save_path = data_io.find_dir_name(
+        write_dir, f"qualitative_{generator_name}_{m_target.__class__.__name__}_{alg_name}"
+    )
 
     n_osc = best_sample.signal_matrix.shape[0]
 
@@ -171,47 +196,115 @@ def evaluate_prediction(best_sample: Sample, m_target: meta_target.MetaTarget,
     # find best sample and save
     print(f"signal_sum mean: {np.mean(best_sample.weighted_sum)}")
     best_sample.save_sample()
-    data_io.save_signal_to_wav(best_sample.weighted_sum, m_target.sampling_rate, m_target.dtype, Path("data/best_sample.wav"))
+    data_io.save_signal_to_wav(
+        best_sample.weighted_sum,
+        m_target.sampling_rate,
+        m_target.dtype,
+        Path("data/best_sample.wav"),
+    )
 
     norm_sample = Sample.norm_sample(best_sample, target_norm)
 
     # compute regression against target
     reg_sample = Sample.regress_sample(best_sample, m_target.signal)
-    data_io.save_signal_to_wav(reg_sample.weighted_sum, m_target.sampling_rate, m_target.dtype, Path("data/fit.wav"))
+    data_io.save_signal_to_wav(
+        reg_sample.weighted_sum, m_target.sampling_rate, m_target.dtype, Path("data/fit.wav")
+    )
 
     # norm regression after fit (good enough)
     norm_reg_sample = Sample.norm_sample(reg_sample, target_norm)
 
     # plots
-    if plot_time: # time-domain
+    if plot_time:  # time-domain
         time_dir = save_path / "time_domain"
         time_dir.mkdir(parents=True, exist_ok=True)
-        data_analysis.plot_signal(m_target.signal, m_target.time, title=f"{alg_name}, n={n_osc}, z={z_ops}", save_path=time_dir / "target_alone")
-        data_analysis.plot_signal(best_sample.weighted_sum, m_target.time, title=f"{alg_name}, n={n_osc}, z={z_ops}", save_path=time_dir / "base_algorithm_without_target")
-        data_analysis.plot_pred_target(best_sample.weighted_sum, m_target.signal, time=m_target.time, title=f"{alg_name}, n={n_osc}, z={z_ops}", save_path=time_dir / "base_algorithm")
-        data_analysis.plot_pred_target(reg_sample.weighted_sum, m_target.signal, time=m_target.time, title=f"regression after {alg_name}, n={n_osc}, z={z_ops}", save_path=time_dir / "regression")
-        data_analysis.plot_pred_target(norm_sample.weighted_sum, target_norm, time=m_target.time, title=f"{alg_name}, normalized, n={n_osc}, z={z_ops}", save_path=time_dir / "normalized_base_algorithm")
-        data_analysis.plot_pred_target(norm_reg_sample.weighted_sum, target_norm, time=m_target.time, title=f"normalized after regression, n={n_osc}, z={z_ops}", save_path=time_dir / "normalized_regression")
+        data_analysis.plot_signal(
+            m_target.signal,
+            m_target.time,
+            title=f"{alg_name}, n={n_osc}, z={z_ops}",
+            save_path=time_dir / "target_alone",
+        )
+        data_analysis.plot_signal(
+            best_sample.weighted_sum,
+            m_target.time,
+            title=f"{alg_name}, n={n_osc}, z={z_ops}",
+            save_path=time_dir / "base_algorithm_without_target",
+        )
+        data_analysis.plot_pred_target(
+            best_sample.weighted_sum,
+            m_target.signal,
+            time=m_target.time,
+            title=f"{alg_name}, n={n_osc}, z={z_ops}",
+            save_path=time_dir / "base_algorithm",
+        )
+        data_analysis.plot_pred_target(
+            reg_sample.weighted_sum,
+            m_target.signal,
+            time=m_target.time,
+            title=f"regression after {alg_name}, n={n_osc}, z={z_ops}",
+            save_path=time_dir / "regression",
+        )
+        data_analysis.plot_pred_target(
+            norm_sample.weighted_sum,
+            target_norm,
+            time=m_target.time,
+            title=f"{alg_name}, normalized, n={n_osc}, z={z_ops}",
+            save_path=time_dir / "normalized_base_algorithm",
+        )
+        data_analysis.plot_pred_target(
+            norm_reg_sample.weighted_sum,
+            target_norm,
+            time=m_target.time,
+            title=f"normalized after regression, n={n_osc}, z={z_ops}",
+            save_path=time_dir / "normalized_regression",
+        )
         plt.close("all")
-    if plot_freq: # frequency-domain
+    if plot_freq:  # frequency-domain
         freq_dir = save_path / "frequency_domain"
         freq_dir.mkdir(parents=True, exist_ok=True)
-        data_analysis.plot_fourier(m_target.signal, title=f"{alg_name}, target, n={n_osc}, z={z_ops}", save_path=freq_dir / "target")
-        data_analysis.plot_fourier(best_sample.weighted_sum, title=f"{alg_name}, sum, n={n_osc}, z={z_ops}", save_path=freq_dir / "sum")
-        data_analysis.plot_fourier(reg_sample.weighted_sum, title=f"{alg_name}, regression, n={n_osc}, z={z_ops}", save_path=freq_dir / "regression")
+        data_analysis.plot_fourier(
+            m_target.signal,
+            title=f"{alg_name}, target, n={n_osc}, z={z_ops}",
+            save_path=freq_dir / "target",
+        )
+        data_analysis.plot_fourier(
+            best_sample.weighted_sum,
+            title=f"{alg_name}, sum, n={n_osc}, z={z_ops}",
+            save_path=freq_dir / "sum",
+        )
+        data_analysis.plot_fourier(
+            reg_sample.weighted_sum,
+            title=f"{alg_name}, regression, n={n_osc}, z={z_ops}",
+            save_path=freq_dir / "regression",
+        )
         plt.close("all")
-    if decompose_sample: # show individual signals in best sample
-        data_analysis.plot_individual_oscillators(best_sample.signal_matrix, m_target.time, save_path=time_dir / "individual_signals")
-        data_analysis.plot_f0_hist(best_sample.signal_matrix, 1/m_target.sampling_rate, title=f"fundamental frequency distribution, n={n_osc}, z={z_ops}", save_path=time_dir / "frequency_distribution")
-        data_analysis.plot_weight_hist(best_sample.weights, title=f"weight distribution, n={n_osc}, z={z_ops}", save_path=time_dir / "weight_distribution")
+    if decompose_sample:  # show individual signals in best sample
+        data_analysis.plot_individual_oscillators(
+            best_sample.signal_matrix, m_target.time, save_path=time_dir / "individual_signals"
+        )
+        data_analysis.plot_f0_hist(
+            best_sample.signal_matrix,
+            1 / m_target.sampling_rate,
+            title=f"fundamental frequency distribution, n={n_osc}, z={z_ops}",
+            save_path=time_dir / "frequency_distribution",
+        )
+        data_analysis.plot_weight_hist(
+            best_sample.weights,
+            title=f"weight distribution, n={n_osc}, z={z_ops}",
+            save_path=time_dir / "weight_distribution",
+        )
         plt.close("all")
-    
+
     max_freq = ""
-    if isinstance(m_target, meta_target.ChirpTarget) or isinstance(m_target, meta_target.DampChirpTarget):
-        max_freq = f"target start freq: {m_target.start_freq}\ntarget stop freq: {m_target.stop_freq}"
+    if isinstance(m_target, meta_target.ChirpTarget) or isinstance(
+        m_target, meta_target.DampChirpTarget
+    ):
+        max_freq = (
+            f"target start freq: {m_target.start_freq}\ntarget stop freq: {m_target.stop_freq}"
+        )
     elif isinstance(m_target, meta_target.SyntheticTarget):
         max_freq = f"target max freq: {m_target.max_freq}"
-    
+
     out = f"""
 {alg_name}
 n_osc: {n_osc}
@@ -228,19 +321,37 @@ target sampling rate: {m_target.sampling_rate}
     """
     data_io.save_object_to_string(out, save_path / "results.txt")
     print(out)
-    
-    if interpolate: # apply sinc interpolation on time domain signals
+
+    if interpolate:  # apply sinc interpolation on time domain signals
         new_sampling_rate = np.round(m_target.sampling_rate * const.OVERSAMPLING_FACTOR).astype(int)
-        interpol_sum = data_preprocessor.interpolate_sinc_sampling_rate(best_sample.weighted_sum, m_target.sampling_rate, new_sampling_rate)
-        interpol_reg = data_preprocessor.interpolate_sinc_sampling_rate(reg_sample.weighted_sum, m_target.sampling_rate, new_sampling_rate)
-        m_target.signal = data_preprocessor.interpolate_sinc_sampling_rate(m_target.signal, m_target.sampling_rate, new_sampling_rate)
+        interpol_sum = data_preprocessor.interpolate_sinc_sampling_rate(
+            best_sample.weighted_sum, m_target.sampling_rate, new_sampling_rate
+        )
+        interpol_reg = data_preprocessor.interpolate_sinc_sampling_rate(
+            reg_sample.weighted_sum, m_target.sampling_rate, new_sampling_rate
+        )
+        m_target.signal = data_preprocessor.interpolate_sinc_sampling_rate(
+            m_target.signal, m_target.sampling_rate, new_sampling_rate
+        )
 
         new_samples = np.round(m_target.duration * new_sampling_rate).astype(int)
         new_time = np.linspace(0, m_target.duration, new_samples, endpoint=False)
         if len(new_time) > len(m_target.signal):
-            new_time = new_time[0:len(m_target.signal)]
-            
-        data_analysis.plot_pred_target(interpol_sum, m_target.signal, time=new_time, title=f"{alg_name}, interpolated, n={n_osc}, z={z_ops}", save_path=time_dir / "interpolated_sum")
-        data_analysis.plot_pred_target(interpol_reg, m_target.signal, time=new_time, title=f"regression after {alg_name}, interpolated, n={n_osc}, z={z_ops}", save_path=time_dir / "interpolated_regression")
+            new_time = new_time[0 : len(m_target.signal)]
+
+        data_analysis.plot_pred_target(
+            interpol_sum,
+            m_target.signal,
+            time=new_time,
+            title=f"{alg_name}, interpolated, n={n_osc}, z={z_ops}",
+            save_path=time_dir / "interpolated_sum",
+        )
+        data_analysis.plot_pred_target(
+            interpol_reg,
+            m_target.signal,
+            time=new_time,
+            title=f"regression after {alg_name}, interpolated, n={n_osc}, z={z_ops}",
+            save_path=time_dir / "interpolated_regression",
+        )
 
     plt.close("all")

@@ -126,7 +126,7 @@ Docstrings.
 
 Formatting.
 
-    black src/
+    black src/ -l 100
 
 Static type checking.
 

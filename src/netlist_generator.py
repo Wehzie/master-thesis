@@ -65,31 +65,34 @@ quit
 .endc
 """
 
+
 def build_control(path: Path, PARAM: dict) -> str:
     return CONTROL_TEMPLATE.format(
         time_step=PARAM["time_step"],
         time_stop=PARAM["time_stop"],
         time_start=PARAM["time_start"],
         dependent_component=PARAM["dependent_component"],
-        file_path=Path(str(path) + ".dat"))
+        file_path=Path(str(path) + ".dat"),
+    )
+
 
 def build_tree_netlist(path: Path, PARAM: dict, visual: bool = False) -> dict:
     """
     Write a netlist to file where oscillators signals are summed into one node.
-    
+
     Return dictionary of deterministic parameters.
     """
     assert PARAM["c_max"] <= 1, "Randomly generating capacitors with >1 Farad is not implemented!"
-    
+
     # build graph
     G = nx.balanced_tree(PARAM["branching"], PARAM["height"], create_using=nx.DiGraph())
     if visual:
         nx.draw(G, with_labels=True)
         plt.show()
 
-    det_param = PARAM # probabilistic to deterministic parameters
+    det_param = PARAM  # probabilistic to deterministic parameters
 
-    netlist = [] # netlist as list of lines
+    netlist = []  # netlist as list of lines
     # add includes and power supply to netlist
     netlist.append(INCLUDE)
 
@@ -105,22 +108,24 @@ def build_tree_netlist(path: Path, PARAM: dict, visual: bool = False) -> dict:
 
         # base case: no children
         if len(edges) == 0:
-            r = np.random.randint(PARAM["r_min"], 1+PARAM["r_max"])
+            r = np.random.randint(PARAM["r_min"], 1 + PARAM["r_max"])
             c = np.random.uniform(PARAM["c_min"], PARAM["c_max"])
             r_control = PARAM["r_control"]
             det_param[f"r{root}"] = r
             det_param[f"c{root}"] = c
-            netlist.append(LEAF_OSC_TEMPLATE.format(i=root, j=parent, r=r, c=c, r_control=r_control))
+            netlist.append(
+                LEAF_OSC_TEMPLATE.format(i=root, j=parent, r=r, c=c, r_control=r_control)
+            )
             netlist.append(TREE_POWER.format(i=root, v=PARAM["v_in"]))
             return
-        
+
         # recursive case: node has children
 
         det_param[f"r{root}"] = PARAM["r_tree"]
         netlist.append(RESISTOR.format(i=root, j=parent, r=PARAM["r_tree"]))
         for child in children:
             add_children(root=child, parent=root)
-      
+
     # we have already added the root node as a special case
     # so build tree starting with its children
     for edge in nx.edges(G, [root]):
@@ -135,23 +140,24 @@ def build_tree_netlist(path: Path, PARAM: dict, visual: bool = False) -> dict:
 
     return det_param
 
+
 def build_sum_netlist(path: Path, PARAM: dict) -> dict:
     """
     Write netlist to file where oscillators are summed into one node.
-    
+
     Return dictionary of deterministic parameters.
     """
     assert PARAM["c_max"] <= 1, "Randomly generating capacitors with >1 Farad is not implemented!"
-   
+
     # from probabilistic to deterministic parameters
     det_param = PARAM
 
     netlist = INCLUDE
     netlist += POWER.format(v=PARAM["v_in"])
-    for i in range(1, 1+PARAM["n_osc"]):
+    for i in range(1, 1 + PARAM["n_osc"]):
         # TODO: generalize for >0 and <0 values
         # so over randint vs uniform
-        r = np.random.randint(PARAM["r_min"], 1+PARAM["r_max"])
+        r = np.random.randint(PARAM["r_min"], 1 + PARAM["r_max"])
         c = np.random.uniform(PARAM["c_min"], PARAM["c_max"])
         r_control = PARAM["r_control"]
         netlist += SUM_OSC_TEMPLATE.format(i=i, r=r, c=c, r_control=r_control)
@@ -167,17 +173,23 @@ def build_sum_netlist(path: Path, PARAM: dict) -> dict:
     return det_param
 
 
-def build_single_netlist(path: Path, det_args: party.SpiceSingleDetArgs, debug: bool = False) -> None:
+def build_single_netlist(
+    path: Path, det_args: party.SpiceSingleDetArgs, debug: bool = False
+) -> None:
     """Write netlist to file with a single oscillator."""
     netlist = INCLUDE
     netlist += POWER.format(v=det_args.v_in)
-    netlist += SUM_OSC_TEMPLATE.format(i=1, r=det_args.r, c=det_args.c, r_control=det_args.r_control)
+    netlist += SUM_OSC_TEMPLATE.format(
+        i=1, r=det_args.r, c=det_args.c, r_control=det_args.r_control
+    )
     netlist += POST_SUM.format(r_last=det_args.r_last)
     netlist += build_control(path, det_args.__dict__)
 
-    if debug: print(f"writing netlist to path {path}")
+    if debug:
+        print(f"writing netlist to path {path}")
     with open(path, "w") as f:
         f.write(netlist)
+
 
 def select_netlist_generator(builder: str) -> Callable:
     """
@@ -185,9 +197,12 @@ def select_netlist_generator(builder: str) -> Callable:
 
     selection: "tree", "sum"
     """
-    if builder == "tree": return build_tree_netlist
-    if builder == "sum": return build_sum_netlist
+    if builder == "tree":
+        return build_tree_netlist
+    if builder == "sum":
+        return build_sum_netlist
     raise ValueError()
+
 
 def run_ngspice(netlist: Path) -> None:
     """start an ngspice simulation from python"""

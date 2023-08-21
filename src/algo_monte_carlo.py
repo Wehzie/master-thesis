@@ -42,13 +42,14 @@ def debug(sample: sample.Sample):
     print(f"max_weighted_sum: {maximum_weighted_sum}, min_weighted_sum: {minimum_weighted_sum}")
     exit()
 
+
 class MonteCarlo(algo.SearchAlgo):
     """abstract class for Monte Carlo algorithms"""
 
     def search(self, *args, **kwargs) -> Tuple[sample.Sample, int]:
         """
         generate k-signals which are a sum of n-oscillators
-        
+
         on each iteration draw a new full model (matrix of n-oscillators)
         """
         self.clear_state()
@@ -63,11 +64,10 @@ class MonteCarlo(algo.SearchAlgo):
         return best_sample, self.z_ops
 
 
-
 class MCOneShot(MonteCarlo):
     """
     This algorithms most closely resembles brute-force search.
-    
+
     Compared to brute-force search, this algorithm remembers it's best solution to date.
     The to-date best solution is returned when allocated resources (z-ops) are exhausted.
     """
@@ -75,7 +75,9 @@ class MCOneShot(MonteCarlo):
     def infer_k_from_z(self) -> int:
         """infer the number of iterations (k) from the maximum number of perturbations (z)"""
         # cost of initializing best_sample is zero
-        z_loop = self.rand_args.n_osc * 3 + 1 # draw a new sample with n weighted oscillators (phase+frequency+gain --> 3) on each loop and an offset --> 1
+        z_loop = (
+            self.rand_args.n_osc * 3 + 1
+        )  # draw a new sample with n weighted oscillators (phase+frequency+gain --> 3) on each loop and an offset --> 1
         return int(self.max_z_ops // z_loop)
 
     def init_best_sample(self) -> sample.Sample:
@@ -86,13 +88,18 @@ class MCOneShot(MonteCarlo):
         """draw a random oscillator ensemble"""
         return self.draw_sample()
 
+
 class MCOneShotWeight(MCOneShot):
     """Use the MCOneShot algorithm but only draw new weights for each sample"""
 
     def infer_k_from_z(self) -> int:
         """infer the number of iterations (k) from the maximum number of perturbations (z)"""
-        z_init = self.rand_args.n_osc * 3 + 1   # draw a new sample with n weighted oscillators (phase+frequency+gain --> 3) on each loop and an offset --> 1
-        z_loop = self.rand_args.n_osc + 1       # draw a sample with n new weights and one offset each loop
+        z_init = (
+            self.rand_args.n_osc * 3 + 1
+        )  # draw a new sample with n weighted oscillators (phase+frequency+gain --> 3) on each loop and an offset --> 1
+        z_loop = (
+            self.rand_args.n_osc + 1
+        )  # draw a sample with n new weights and one offset each loop
         return int((self.max_z_ops - z_init) // z_loop)
 
     def init_best_sample(self) -> sample.Sample:
@@ -104,11 +111,10 @@ class MCOneShotWeight(MCOneShot):
         return self.draw_sample_weights(base_sample)
 
 
-
 class MCExploit(MonteCarlo):
     """
     This algorithm most closely resembles a strictly guided random-walk with random step size.
-    
+
     The walk is in n-dimensional space where n is the number of oscillators.
     A step is only taken if the loss decreases, hence strictly guided.
     Heuristic is not an appropriate term as selection (which weight or amount) is random, not guided by a heuristic.
@@ -120,8 +126,12 @@ class MCExploit(MonteCarlo):
 
     def infer_k_from_z(self) -> int:
         """infer the number of iterations (k) from the maximum number of perturbations (z)"""
-        z_init = self.rand_args.n_osc * 3 + 1 # draw a new sample with n weighted oscillators (phase + frequency + gain (weight) --> 3) on each loop and an offset (bias) --> 1
-        z_loop = self.j_replace * 3 # j weights (gain) and oscillators (phase+frequency) or the offset updated on each loop
+        z_init = (
+            self.rand_args.n_osc * 3 + 1
+        )  # draw a new sample with n weighted oscillators (phase + frequency + gain (weight) --> 3) on each loop and an offset (bias) --> 1
+        z_loop = (
+            self.j_replace * 3
+        )  # j weights (gain) and oscillators (phase+frequency) or the offset updated on each loop
         return int((self.max_z_ops - z_init) // z_loop)
 
     def init_best_sample(self) -> sample.Sample:
@@ -133,10 +143,12 @@ class MCExploit(MonteCarlo):
         osc_to_replace = self.draw_random_indices(self.j_replace)
         return self.draw_partial_sample(base_sample, osc_to_replace)
 
+
 class MCExploitJ10(MCExploit):
     """Use the MCExploit algorithm but replace 10 oscillators per sample"""
-    
+
     pass
+
 
 class MCExploitDecoupled(MCExploit):
     """
@@ -147,37 +159,46 @@ class MCExploitDecoupled(MCExploit):
 
     def infer_k_from_z(self) -> int:
         """compute the number of iterations (k) that can be performed with the allocated resources (z-ops)"""
-        z_init = self.rand_args.n_osc * 3 + 1 # draw a new sample with n weighted oscillators (phase + frequency + gain (weight) --> 3) on each loop and an offset (bias) --> 1
-        z_loop = self.j_replace * 1.5 # j weights (gain) [1] and oscillators (phase+frequency [2]) or the offset [1] updated on each loop
-                                      # on average that's 1.5 operations per loop
+        z_init = (
+            self.rand_args.n_osc * 3 + 1
+        )  # draw a new sample with n weighted oscillators (phase + frequency + gain (weight) --> 3) on each loop and an offset (bias) --> 1
+        z_loop = (
+            self.j_replace * 1.5
+        )  # j weights (gain) [1] and oscillators (phase+frequency [2]) or the offset [1] updated on each loop
+        # on average that's 1.5 operations per loop
         return int((self.max_z_ops - z_init) // z_loop)
 
     def draw_temp_sample(self, base_sample: sample.Sample, *args, **kwargs) -> sample.Sample:
         """perturb the base oscillator ensemble and return the perturbed ensemble"""
         osc_to_replace = self.draw_random_indices(self.j_replace)
         temp_sample = self.draw_partial_sample(base_sample, osc_to_replace)
-        
+
         # offset is passed as number_of_oscillators+1, can be removed once the sample has been drawn
-        osc_to_replace, _ = gen_signal.SignalGenerator.separate_oscillators_from_offset(osc_to_replace, self.rand_args.n_osc)
-        
+        osc_to_replace, _ = gen_signal.SignalGenerator.separate_oscillators_from_offset(
+            osc_to_replace, self.rand_args.n_osc
+        )
+
         # throw coin to decide whether to replace oscillators or weights and offset
         replace_oscillator = const.RNG.uniform() < 0.5
         replace_weight_offset = not replace_oscillator
 
-        if replace_oscillator: # set weights and offset back to their original state
+        if replace_oscillator:  # set weights and offset back to their original state
             temp_sample.weights[osc_to_replace] = base_sample.weights[osc_to_replace]
             temp_sample.offset = base_sample.offset
-        elif replace_weight_offset: # set the oscillator back to its original state
+        elif replace_weight_offset:  # set the oscillator back to its original state
             temp_sample.signal_matrix[osc_to_replace,] = base_sample.signal_matrix[osc_to_replace,]
         return temp_sample
+
 
 class MCExploitWeight(MCExploit):
     """Use the MCExploit algorithm but only draw new weights for each sample"""
 
     def infer_k_from_z(self) -> int:
         """compute the number of iterations k from the number of operations z"""
-        z_init = self.rand_args.n_osc * 3 + 1 # draw a new sample with n weighted oscillators (phase+frequency+gain --> 3) on each loop and an offset --> 1
-        z_loop = self.j_replace # j weights are updated on each loop
+        z_init = (
+            self.rand_args.n_osc * 3 + 1
+        )  # draw a new sample with n weighted oscillators (phase+frequency+gain --> 3) on each loop and an offset --> 1
+        z_loop = self.j_replace  # j weights are updated on each loop
         return int((self.max_z_ops - z_init) // z_loop)
 
     def draw_temp_sample(self, base_sample: sample.Sample, *args, **kwargs) -> sample.Sample:
@@ -185,31 +206,36 @@ class MCExploitWeight(MCExploit):
         osc_to_replace = self.draw_random_indices(self.j_replace)
         return self.draw_partial_sample_weights(base_sample, osc_to_replace)
 
+
 class MCExploitNeighborWeight(MCExploitWeight):
     """Draws candidate weights from a Gaussian around a weight and its neighbors"""
-    
+
     def draw_temp_sample(self, base_sample: sample.Sample, *args, **kwargs) -> sample.Sample:
         """draw a temporary sample, a neighbor of the base sample"""
         osc_to_replace = self.draw_random_indices(self.j_replace)
         return self.draw_weight_neighbor(base_sample, osc_to_replace)
 
+
 class MCExploitFast(MCExploit):
     """
     algorithm is equivalent to MCExploit after an initialization phase.
-    
+
     the duration of the initialization phase is non deterministic and inspired by las vegas algorithms.
     the algorithm combines fast convergence speed of las vegas algorithms with the exploitation of MCExploit.
     the MCExploitFast algorithm continues to be deterministic in runtime.
-    
+
     loop over oscillators from top to bottom,
     once an oscillator has been replaced on each row,
     proceed to replace oscillators in random positions
     """
 
     def __init__(self, algo_args: algarty.AlgoArgs):
-        if algo_args is None: return
+        if algo_args is None:
+            return
         super().__init__(algo_args)
-        self.changed_once: List[bool] = [False for _ in range(self.rand_args.n_osc + 1)] # + 1 for offset
+        self.changed_once: List[bool] = [
+            False for _ in range(self.rand_args.n_osc + 1)
+        ]  # + 1 for offset
 
     def get_osc_to_replace(self) -> List[int]:
         """select which oscillators should be perturbed"""
@@ -219,7 +245,9 @@ class MCExploitFast(MCExploit):
             # find first False and get index
             first_false = next(i for (i, val) in enumerate(self.changed_once) if val == False)
             # wrap around max index
-            osc_to_replace = [i % len(self.changed_once) for i in range(first_false, first_false+self.j_replace)]
+            osc_to_replace = [
+                i % len(self.changed_once) for i in range(first_false, first_false + self.j_replace)
+            ]
             return np.array(osc_to_replace)
 
     def draw_temp_sample(self, base_sample: sample.Sample, *args, **kwargs) -> sample.Sample:
@@ -227,7 +255,9 @@ class MCExploitFast(MCExploit):
         osc_to_replace = self.get_osc_to_replace()
         return self.draw_partial_sample(base_sample, osc_to_replace)
 
-    def comp_samples(self, base_sample: sample.Sample, temp_sample: sample.Sample, *args, **kwargs) -> sample.Sample:
+    def comp_samples(
+        self, base_sample: sample.Sample, temp_sample: sample.Sample, *args, **kwargs
+    ) -> sample.Sample:
         """compare base and temp sample and return the better one"""
         if temp_sample.rmse < base_sample.rmse:
             if not all(self.changed_once):
@@ -240,82 +270,93 @@ class MCExploitFast(MCExploit):
         return base_sample
 
 
-
 class MCOscillatorAnneal(MonteCarlo):
     """
     use a schedule to reduce the number of oscillators across iterations.
-    
+
     akin to simulated annealing
     """
 
     def infer_k_from_z(self) -> int:
         """return the number of iterations to run the algorithm for"""
-        z_init = self.rand_args.n_osc * 3 + 1 # draw a new sample with n weighted oscillators (phase+frequency+gain --> 3) on each loop and an offset --> 1
-        z_loop = self.rand_args.n_osc * 1.5 + 1 # n oscillators (phase+frequency+gain) and the offset updated on first loop
+        z_init = (
+            self.rand_args.n_osc * 3 + 1
+        )  # draw a new sample with n weighted oscillators (phase+frequency+gain --> 3) on each loop and an offset --> 1
+        z_loop = (
+            self.rand_args.n_osc * 1.5 + 1
+        )  # n oscillators (phase+frequency+gain) and the offset updated on first loop
         # however we have a linear schedule with the replaced number of oscillator decreasing over time
         # therefore on average we count 3 * n_osc / 2 + 1 -> 1.5 * n_osc +1
         return int((self.max_z_ops - z_init) // z_loop)
-    
+
     def read_j_from_schedule(self, k: int) -> int:
         """
         return the number of oscillator or weights to draw according to a linear schedule
-        
+
         params:
             k: iteration number
-            
+
         returns:
             j: number of oscillators or weights to draw
         """
-        temperature = (1 - k / self.k_samples)
-        return np.ceil(self.rand_args.n_osc*temperature).astype(int)
+        temperature = 1 - k / self.k_samples
+        return np.ceil(self.rand_args.n_osc * temperature).astype(int)
 
     def init_best_sample(self) -> sample.Sample:
         """draw a random oscillator ensemble"""
         return self.draw_sample()
 
-    def draw_temp_sample(self, base_sample: sample.Sample, k: int, *args, **kwargs) -> sample.Sample:
+    def draw_temp_sample(
+        self, base_sample: sample.Sample, k: int, *args, **kwargs
+    ) -> sample.Sample:
         """return a perturbed version of the base ensemble"""
         j_replace = self.read_j_from_schedule(k)
         osc_to_replace = self.draw_random_indices(j_replace)
         return self.draw_partial_sample(base_sample, osc_to_replace)
+
 
 class MCOscillatorAnnealWeight(MCOscillatorAnneal):
     """use the MCAnneal algorithm but only draw new weights for each sample"""
 
     def infer_k_from_z(self) -> int:
         """return the number of iterations to run the algorithm for"""
-        z_init = self.rand_args.n_osc * 3 + 1 # initialize a best sample with n oscillators (freq [n*1] and phase [n*1]), n weights [n*1] and an offset (bias) [1]
-        z_loop = self.rand_args.n_osc * 0.5 # we only draw new weights and omit * 2 for oscillators
+        z_init = (
+            self.rand_args.n_osc * 3 + 1
+        )  # initialize a best sample with n oscillators (freq [n*1] and phase [n*1]), n weights [n*1] and an offset (bias) [1]
+        z_loop = self.rand_args.n_osc * 0.5  # we only draw new weights and omit * 2 for oscillators
         return int((self.max_z_ops - z_init) // z_loop)
 
-    def draw_temp_sample(self, base_sample: sample.Sample, k: int, *args, **kwargs) -> sample.Sample:
+    def draw_temp_sample(
+        self, base_sample: sample.Sample, k: int, *args, **kwargs
+    ) -> sample.Sample:
         """perturb the base oscillator ensemble"""
         j_replace = self.read_j_from_schedule(k)
         osc_to_replace = self.draw_random_indices(j_replace)
         return self.draw_partial_sample_weights(base_sample, osc_to_replace)
+
 
 class MCOscillatorAnnealLog(MCOscillatorAnneal):
     """use logarithmic schedule to reduce the number of oscillators across iterations."""
 
     def read_j_from_schedule(self, k: int) -> int:
         """logarithmic schedule"""
-        temperature = (1 - k / self.k_samples)**np.e
-        return np.ceil(self.rand_args.n_osc*temperature).astype(int)
+        temperature = (1 - k / self.k_samples) ** np.e
+        return np.ceil(self.rand_args.n_osc * temperature).astype(int)
+
 
 class MCOscillatorAnnealLogWeight(MCOscillatorAnnealWeight):
     """use logarithmic schedule and optimize only weights"""
 
     def read_j_from_schedule(self, k: int) -> int:
         """logarithmic schedule"""
-        temperature = (1 - k / self.k_samples)**np.e
-        return np.ceil(self.rand_args.n_osc*temperature).astype(int)
-
+        temperature = (1 - k / self.k_samples) ** np.e
+        return np.ceil(self.rand_args.n_osc * temperature).astype(int)
 
 
 class MCGrowShrink(MonteCarlo):
     """
     generalization over MCDampen
-    
+
     where we have l-the probability to dampen vs 1-l the probability to grow
     and then we have j, the number of weights to adapt
     and lastly we have h the factor by which to dampen or grow weights
@@ -323,8 +364,10 @@ class MCGrowShrink(MonteCarlo):
 
     def infer_k_from_z(self) -> int:
         """compute the number of iterations to run the algorithm for"""
-        z_init = self.rand_args.n_osc * 3 + 1 # initialize a best sample with n oscillators, n weights and an offset (bias)
-        z_loop = self.j_replace # j weights (or bias) are updated on each loop
+        z_init = (
+            self.rand_args.n_osc * 3 + 1
+        )  # initialize a best sample with n oscillators, n weights and an offset (bias)
+        z_loop = self.j_replace  # j weights (or bias) are updated on each loop
         return int((self.max_z_ops - z_init) // z_loop)
 
     def init_best_sample(self) -> sample.Sample:
@@ -334,23 +377,26 @@ class MCGrowShrink(MonteCarlo):
     def draw_temp_sample(self, base_sample: sample.Sample, *args, **kwargs) -> sample.Sample:
         """perturb the base ensemble by growing or shrinking j weights with factor h"""
         temp_sample = copy.deepcopy(base_sample)
-        rng = np.random.default_rng() if self.mp else const.RNG # each rng needs to be seeded differently for multiprocessing
+        rng = (
+            np.random.default_rng() if self.mp else const.RNG
+        )  # each rng needs to be seeded differently for multiprocessing
         # for example, if l_dampen = 0.9 then we dampen 90% of the time
         if self.l_damp_prob > rng.uniform():
             multiplier = self.h_damp_fac
         else:
-            multiplier = 1 / self.h_damp_fac # growth factor is inverse of dampening factor
+            multiplier = 1 / self.h_damp_fac  # growth factor is inverse of dampening factor
         osc_to_replace, change_offset = self.draw_weight_indices_or_offset(self.j_replace)
-        
+
         if change_offset:
             temp_sample.offset *= multiplier
         temp_sample.weights[osc_to_replace] *= multiplier
         return temp_sample
 
+
 class MCDampen(MCGrowShrink):
     """
     generalization over MCPurge
-    
+
     initialize pool of n oscillators and weights
     take j weights, multiply weights by dampening-factor h, and evaluate the sample
     where h >= 0 and <= 1
@@ -369,10 +415,11 @@ class MCDampen(MCGrowShrink):
         temp_sample.weights[osc_to_replace] *= self.h_damp_fac
         return temp_sample
 
+
 class MCPurge(MCDampen):
     """
     initialize pool of n oscillators and weights
-    
+
     set j weights to 0 and evaluate the sample
     accept change if rmse is lower
     stop after looping over each oscillator or when z_ops is exhausted
@@ -380,6 +427,7 @@ class MCPurge(MCDampen):
     """
 
     def __init__(self, algo_args: algarty.AlgoArgs):
-        if algo_args is None: return
+        if algo_args is None:
+            return
         super().__init__(algo_args)
         assert self.h_damp_fac == 0, "h_damp_fac must be 0 for MCPurge"

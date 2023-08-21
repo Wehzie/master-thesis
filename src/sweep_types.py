@@ -10,6 +10,7 @@ import meta_target
 import gen_signal_args_types as party
 import gen_signal
 
+
 @dataclass
 class AlgoSweep:
     """
@@ -24,6 +25,7 @@ class AlgoSweep:
     algo_with_args: List[algo_args_bundle.AlgoWithArgs]
     m_averages: int
     algo_masks: Union[List[mask_type.ExperimentMask], None] = None
+
 
 # TODO: maybe use this instead of AlgoSweep
 @dataclass
@@ -41,6 +43,7 @@ class AlgoSweepBundle:
     m_averages: int
     algo_masks: None
 
+
 @dataclass
 class ConstTimeSweep(ABC):
     """
@@ -48,42 +51,48 @@ class ConstTimeSweep(ABC):
 
     For example, increasing the frequency doesn't increase the time complexity of the experiment.
     """
-    
+
     pass
+
 
 @dataclass
 class FreqSweep(ConstTimeSweep):
     """A list of frequency distributions from which to sample the frequency of the oscillators."""
-    
+
     freq_dist: List[dist.Dist]
+
 
 @dataclass
 class ResistorSweep(ConstTimeSweep):
     """
     A list of resistor distributions from which to sample the resistance of the RC-circuit.
-    
+
     Resistance controls the frequency of the oscillators.
     """
-    
+
     r_dist: List[dist.Dist]
+
 
 @dataclass
 class AmplitudeSweep(ConstTimeSweep):
     """A list of amplitude distributions from which to sample the amplitude of the oscillator signals."""
-    
+
     amplitude: List[float]
+
 
 @dataclass
 class WeightSweep(ConstTimeSweep):
     """A list of weight distributions from which to sample the weighting or gain of the oscillator signals."""
-    
+
     weight_dist: List[dist.WeightDist]
+
 
 @dataclass
 class PhaseSweep(ConstTimeSweep):
     """A list of phase distributions from which to sample the phase of the oscillator signals."""
-    
+
     phase_dist: List[dist.Dist]
+
 
 @dataclass
 class OffsetSweep(ConstTimeSweep):
@@ -92,14 +101,13 @@ class OffsetSweep(ConstTimeSweep):
     offset_dist: List[dist.Dist]
 
 
-
 @dataclass
 class ExpoTimeSweep(ABC):
     """
     This abstract class specifies experiments where time complexity between experiments is worse then constant.
-    
+
     For example, increasing the number of oscillators increases the duration and memory requirements of the experiment.
-    
+
     args:
         filename: filename for saving the results
         iv_identifier: independent variable identifier, must match a corresponding field in the RandSignalArgs class
@@ -125,11 +133,13 @@ class ExpoTimeSweep(ABC):
     # val_schedule: List                  # values of the independent variable
     # dv_identifier: str                        # type of the dependent variable
 
+
 @dataclass
 class NOscSweep(ExpoTimeSweep):
     """Specify varying numbers of oscillators to compare in an experiment."""
 
     n_osc: List[int]
+
 
 @dataclass
 class ZOpsSweep(ExpoTimeSweep):
@@ -137,15 +147,17 @@ class ZOpsSweep(ExpoTimeSweep):
 
     max_z_ops: List[int]
 
+
 @dataclass
 class NumSamplesSweep(ExpoTimeSweep):
     """
     Specify varying numbers of target samples to use in an experiment.
-    
+
     This approximates the idea of varying the duration of the target signal.
     """
 
     samples: List[float]
+
 
 @dataclass
 class DurationSweep(ExpoTimeSweep):
@@ -153,11 +165,12 @@ class DurationSweep(ExpoTimeSweep):
 
     duration: List[float]
 
+
 @dataclass
 class TargetSweep(ExpoTimeSweep):
     """
     Specify varying target signals to use in an experiment.
-    
+
     args:
         description: text description of the experiment
         targets: list of target signals against which to compare the algorithms
@@ -173,7 +186,6 @@ class TargetSweep(ExpoTimeSweep):
     signal_generator: gen_signal.SignalGenerator
     max_z_ops: int
     m_averages: int
-
 
 
 @dataclass
@@ -198,12 +210,13 @@ class SweepBundle:
     target_sweep: Final[TargetSweep]
     n_osc_sweep: Final[NOscSweep]
     z_ops_sweep: Final[ZOpsSweep]
-    duration_sweep: Union[DurationSweep, None] # extrapolation to longer duration
+    duration_sweep: Union[DurationSweep, None]  # extrapolation to longer duration
 
     # constant time sweeps
     weight_sweep: Final[WeightSweep]
     phase_sweep: Final[PhaseSweep]
     offset_sweep: Final[OffsetSweep]
+
 
 @dataclass
 class PythonSweepBundle(SweepBundle):
@@ -221,7 +234,8 @@ class HybridSweepBundle(SweepBundle):
     """Bundle an AlgoSweep with a set of secondary independent variables for the Hybrid/Spipy signal generator."""
 
     # constant time sweeps
-    resistor_sweep: Final[FreqSweep] # manipulate netlist generation, R value
+    resistor_sweep: Final[FreqSweep]  # manipulate netlist generation, R value
     target_freq_sweep: Final[TargetSweep]
+
 
 UnionSweepBundle = Union[PythonSweepBundle, HybridSweepBundle]

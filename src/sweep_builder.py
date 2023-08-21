@@ -9,6 +9,7 @@ import gen_signal_python
 import gen_signal_spipy
 import shared_params_mask
 import shared_params_algos
+
 if const.TEST_PARAMS:
     print("Import test parameters.")
     import params_python_test as python_parameters
@@ -20,12 +21,12 @@ else:
 
 
 def build_algo_sweep(
-sig_generator: gen_signal_python.PythonSigGen,
-generator_args: party.UnionRandArgs,
-meta_target: meta_target.MetaTarget,
-max_z_ops: Union[int, None],
-m_averages: int,
-algo_selector: str = "all",
+    sig_generator: gen_signal_python.PythonSigGen,
+    generator_args: party.UnionRandArgs,
+    meta_target: meta_target.MetaTarget,
+    max_z_ops: Union[int, None],
+    m_averages: int,
+    algo_selector: str = "all",
 ) -> sweety.AlgoSweep:
     """Build an AlgoSweep with a set of algorithms."""
 
@@ -43,11 +44,12 @@ algo_selector: str = "all",
     )
     return algo_sweep
 
+
 def bundle_python_sweep(
-sig_generator: gen_signal_python.PythonSigGen,
-generator_args: party.UnionRandArgs,
-meta_target: meta_target.MetaTarget,
-algo_selector: str = "all",
+    sig_generator: gen_signal_python.PythonSigGen,
+    generator_args: party.UnionRandArgs,
+    meta_target: meta_target.MetaTarget,
+    algo_selector: str = "all",
 ) -> sweety.PythonSweepBundle:
     """Bundle an AlgoSweep with a set of secondary independent variables to be used with the Python signal generator."""
 
@@ -66,9 +68,7 @@ algo_selector: str = "all",
         generator_args=generator_args,
         max_z_ops=python_parameters.MAX_Z_OPS,
         m_averages=python_parameters.M_AVERAGES,
-        
         algo_sweep=algo_sweep,
-
         target_sweep=python_parameters.target_sweep_samples,
         # TODO:
         # target_sweep_time = python_parameters.target_sweep_time,
@@ -85,11 +85,12 @@ algo_selector: str = "all",
     )
     return python_sweep_bundle
 
+
 def bundle_hybrid_sweep(
-sig_generator: gen_signal_spipy.SpipySignalGenerator,
-generator_args: party.UnionRandArgs,
-meta_target: meta_target.MetaTarget,
-algo_selector: str = "all",
+    sig_generator: gen_signal_spipy.SpipySignalGenerator,
+    generator_args: party.UnionRandArgs,
+    meta_target: meta_target.MetaTarget,
+    algo_selector: str = "all",
 ) -> sweety.HybridSweepBundle:
     """Bundle an AlgoSweep with a set of secondary independent variables to be used with the hybrid signal generator."""
 
@@ -108,9 +109,7 @@ algo_selector: str = "all",
         generator_args=generator_args,
         max_z_ops=hybrid_parameters.MAX_Z_OPS,
         m_averages=hybrid_parameters.M_AVERAGES,
-
         algo_sweep=algo_sweep,
-
         target_sweep=hybrid_parameters.target_sweep,
         target_freq_sweep=hybrid_parameters.target_freq_sweep,
         n_osc_sweep=hybrid_parameters.n_osc_sweep,

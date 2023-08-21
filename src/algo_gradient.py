@@ -10,6 +10,7 @@ from typing import Tuple
 import sample
 import algo
 
+
 class LinearRegression(algo.SearchAlgo):
     """implement ordinary least squares regression"""
 
@@ -26,6 +27,3 @@ class LinearRegression(algo.SearchAlgo):
         reg_sample = sample.Sample.regress_sample(best_sample, self.target)
 
         return reg_sample, self.z_ops
-
-
-

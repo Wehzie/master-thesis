@@ -18,6 +18,7 @@ import gen_signal_args_types as party
 import meta_target
 import gen_signal
 
+
 def bundle_algos_with_args(
     sig_generator: gen_signal.SignalGenerator,
     generator_args: party.UnionRandArgs,
@@ -65,15 +66,27 @@ def bundle_algos_with_args(
     grow_shrink_algos = [
         algabun.AlgoWithArgs(
             almoca.MCGrowShrink,
-            algarty.AlgoArgs(sig_generator, generator_args, meta_target, max_z_ops, j_replace=1, l_damp_prob=0.5, h_damp_fac=0.5),
+            algarty.AlgoArgs(
+                sig_generator,
+                generator_args,
+                meta_target,
+                max_z_ops,
+                j_replace=1,
+                l_damp_prob=0.5,
+                h_damp_fac=0.5,
+            ),
         ),
         algabun.AlgoWithArgs(
             almoca.MCDampen,
-            algarty.AlgoArgs(sig_generator, generator_args, meta_target, max_z_ops, j_replace=1, h_damp_fac=0.5),
+            algarty.AlgoArgs(
+                sig_generator, generator_args, meta_target, max_z_ops, j_replace=1, h_damp_fac=0.5
+            ),
         ),
         algabun.AlgoWithArgs(
             almoca.MCPurge,
-            algarty.AlgoArgs(sig_generator, generator_args, meta_target, max_z_ops, j_replace=1, h_damp_fac=0),
+            algarty.AlgoArgs(
+                sig_generator, generator_args, meta_target, max_z_ops, j_replace=1, h_damp_fac=0
+            ),
         ),
     ]
     oscillator_anneal_algos = [
@@ -151,16 +164,29 @@ def bundle_algos_with_args(
             ),
         ]
     elif selector == "all":
-        out_algos = one_shot_algos + gradient_algos + exploit_algos + las_vegas_algos + population_algos + mcmc_algos + oscillator_anneal_algos + grow_shrink_algos
+        out_algos = (
+            one_shot_algos
+            + gradient_algos
+            + exploit_algos
+            + las_vegas_algos
+            + population_algos
+            + mcmc_algos
+            + oscillator_anneal_algos
+            + grow_shrink_algos
+        )
     elif selector == "best":
         out_algos = [
             algabun.AlgoWithArgs(
                 almoca.MCExploitWeight,
-                algarty.AlgoArgs(sig_generator, generator_args, meta_target, max_z_ops, j_replace=1),
+                algarty.AlgoArgs(
+                    sig_generator, generator_args, meta_target, max_z_ops, j_replace=1
+                ),
             ),
             algabun.AlgoWithArgs(
                 almoca.MCExploit,
-                algarty.AlgoArgs(sig_generator, generator_args, meta_target, max_z_ops, j_replace=1),
+                algarty.AlgoArgs(
+                    sig_generator, generator_args, meta_target, max_z_ops, j_replace=1
+                ),
             ),
             algabun.AlgoWithArgs(
                 alave.LasVegas,
@@ -175,7 +201,6 @@ def bundle_algos_with_args(
         raise ValueError(f"Unknown selector: {selector}")
 
     return out_algos
-
 
 
 algo_list: List[algo.SearchAlgo] = [

@@ -10,16 +10,18 @@ from dataclasses import dataclass
 from typing import List, Union
 
 import matplotlib.colors as mcolors
-TABLEAU_COLORS: List[str] = [color for color in list(mcolors.TABLEAU_COLORS.values())] # HEX colors
+
+TABLEAU_COLORS: List[str] = [color for color in list(mcolors.TABLEAU_COLORS.values())]  # HEX colors
 
 import algo
+
 
 @dataclass
 class ExperimentMask:
     """each mask compares a subset of algorithms against another subset"""
 
     filename: str
-    title: str      # title for plots
+    title: str  # title for plots
     description: Union[str, None]
     algo_groups: List[List[algo.SearchAlgo]]
 

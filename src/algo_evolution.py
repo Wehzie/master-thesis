@@ -12,9 +12,10 @@ import sample
 import data_analysis
 import const
 
+
 class DifferentialEvolution(algo.SearchAlgo):
     """implement differential evolution algorithm using scipy.optimize.differential_evolution"""
-    
+
     def infer_k_from_z(self) -> int:
         """infer the number of loops/iterations k from the maximum number of perturbations z"""
         return None
@@ -22,7 +23,7 @@ class DifferentialEvolution(algo.SearchAlgo):
     def init_best_sample(self) -> sample.Sample:
         """initialize the best sample with random oscillators"""
         return self.draw_sample()
-        
+
     def search(self, *args, **kwargs):
         """search for the best ensemble of oscillators"""
         print(f"searching with {self.__class__.__name__}")
@@ -39,7 +40,7 @@ class DifferentialEvolution(algo.SearchAlgo):
         # pack model and data into args
         best_sample = self.init_best_sample()
         args = (best_sample.signal_matrix, self.target)
-        
+
         # search bounds
         lo, hi = self.rand_args.weight_dist.get_low_high()
         weight_bounds = [(lo, hi) for _ in range(self.rand_args.n_osc)]
@@ -48,17 +49,22 @@ class DifferentialEvolution(algo.SearchAlgo):
         weight_offset_bounds = weight_bounds + [offset_bounds]
 
         # compute number of generations from max_z_ops
-        num_populations = 15 # scipy default
+        num_populations = 15  # scipy default
         oscillators_per_generation = num_populations * self.rand_args.n_osc
         num_generations = int((self.max_z_ops - self.rand_args.n_osc) // oscillators_per_generation)
 
         # run search
-        result = differential_evolution(eval_func, weight_offset_bounds,
-            args=args, maxiter=num_generations, seed=const.GLOBAL_SEED)
+        result = differential_evolution(
+            eval_func,
+            weight_offset_bounds,
+            args=args,
+            maxiter=num_generations,
+            seed=const.GLOBAL_SEED,
+        )
 
         # update best_sample and z_ops
         best_sample.weights = result.x[:-1]
-        best_sample.offset = result.x[-1] # offset is last element
+        best_sample.offset = result.x[-1]  # offset is last element
         best_sample.update(self.target)
         self.z_ops += num_generations * oscillators_per_generation
         return best_sample, self.z_ops

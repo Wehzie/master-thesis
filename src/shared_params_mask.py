@@ -11,9 +11,7 @@ m1 = mask_type.ExperimentMask(
     "full optimization vs. weight optimization",
     "full optimization vs. weight optimization by example of algorithms with both implementations",
     [
-        [
-            "LinearRegression"
-        ],
+        ["LinearRegression"],
         [
             "MCExploit",
         ],
@@ -80,15 +78,13 @@ m2 = mask_type.ExperimentMask(
         [
             "MCExploitAnnealWeight",
         ],
-        [
-            "ScipyAnneal"
-        ],
+        ["ScipyAnneal"],
         [
             "ScipyDualAnneal",
         ],
         [
             "BasinHopping",
-        ]
+        ],
     ],
 )
 
@@ -96,27 +92,27 @@ m3 = mask_type.ExperimentMask(
     "best_by_family",
     "best algorithms by family",
     "comparison of best full and weight-only optimizing algorithms",
-    [   # comparison of best in each family
+    [  # comparison of best in each family
         [
-            "LinearRegression", # best gradient based algorithm
+            "LinearRegression",  # best gradient based algorithm
         ],
         [
-            "MCExploit", # best monte carlo in oscillator replacement
+            "MCExploit",  # best monte carlo in oscillator replacement
         ],
         [
-            "MCExploitWeight", # like above but weight only
+            "MCExploitWeight",  # like above but weight only
         ],
         [
-            "MCOneShot", # best brute force search
+            "MCOneShot",  # best brute force search
         ],
         [
-            "LasVegas", # best Las Vegas algorithm
+            "LasVegas",  # best Las Vegas algorithm
         ],
         [
-            "DifferentialEvolution", # best population based algorithm
+            "DifferentialEvolution",  # best population based algorithm
         ],
         [
-            "BasinHopping", # best monte carlo in weight optimization
+            "BasinHopping",  # best monte carlo in weight optimization
         ],
     ],
 )
@@ -127,19 +123,19 @@ m4 = mask_type.ExperimentMask(
     "comparison of weight-only optimizing algorithms by algorithm family",
     [
         [
-            "LinearRegression", # best gradient based algorithm
+            "LinearRegression",  # best gradient based algorithm
         ],
         [
-            "MCExploitWeight", # best Gibbs sampler
+            "MCExploitWeight",  # best Gibbs sampler
         ],
         [
-            "MCOneShotWeight", # brute force search
+            "MCOneShotWeight",  # brute force search
         ],
         [
-            "BasinHopping", # best global and local search algorithm
+            "BasinHopping",  # best global and local search algorithm
         ],
         [
-            "DifferentialEvolution", # best population based algorithm
+            "DifferentialEvolution",  # best population based algorithm
         ],
     ],
 )
@@ -213,7 +209,7 @@ m7 = mask_type.ExperimentMask(
         [
             "LasVegas",
         ],
-    ]
+    ],
 )
 
 m8 = mask_type.ExperimentMask(
@@ -242,7 +238,7 @@ m8 = mask_type.ExperimentMask(
         # [ # include ergodic here to reduce number of figures
         #     "MCExploitErgodic",
         # ],
-    ]
+    ],
 )
 
 m9 = mask_type.ExperimentMask(
@@ -251,9 +247,7 @@ m9 = mask_type.ExperimentMask(
     "full optimization vs. weight optimization with some algorithms",
     [
         ### benchmark
-        [
-            "LinearRegression"
-        ],
+        ["LinearRegression"],
         [
             "MCOneShot",
         ],
@@ -288,9 +282,7 @@ m10 = mask_type.ExperimentMask(
         [
             "LinearRegression",
         ],
-        [
-            "MCExploit"
-        ],
+        ["MCExploit"],
         [
             "MCExploitWeight",
         ],
