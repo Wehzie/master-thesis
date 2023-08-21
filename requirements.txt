@@ -1,4 +1,5 @@
 matplotlib
+seaborn
 cycler
 numpy
 scipy

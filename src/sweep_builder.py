@@ -5,6 +5,7 @@ import const
 import sweep_types as sweety
 import meta_target
 import gen_signal_args_types as party
+import gen_signal
 import gen_signal_python
 import gen_signal_spipy
 import shared_params_mask
@@ -21,7 +22,7 @@ else:
 
 
 def build_algo_sweep(
-    sig_generator: gen_signal_python.PythonSigGen,
+    sig_generator: gen_signal.SignalGenerator,
     generator_args: party.UnionRandArgs,
     meta_target: meta_target.MetaTarget,
     max_z_ops: Union[int, None],

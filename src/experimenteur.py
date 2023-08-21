@@ -305,9 +305,12 @@ class Experimenteur:
 
     def run_duration_sweep(
         self, sweep_bundle: sweety.SweepBundle, base_args: party.UnionRandArgs, target_selector: str
-    ) -> resty.ResultSweep:
+    ) -> List[resty.ResultSweep]:
         """run all algorithms with targets of varying durations"""
         print("sweeping with", sweep_bundle.duration_sweep.__class__.__name__)
+        
+        if sweep_bundle.duration_sweep is None:
+            return []
 
         # TODO: build external interface that allows uniform access the generator args
         # for example access to time_start and time_stop for spice and duration for python
@@ -343,7 +346,7 @@ class Experimenteur:
         sweep_bundle: sweety.UnionSweepBundle,
         base_args: party.UnionRandArgs,
         algo_selector: str,
-    ) -> resty.ResultSweep:
+    ) -> List[resty.ResultSweep]:
         """run all algorithms with different numbers of z-operations, corresponding to more extensive search"""
         print("sweeping with", sweep_bundle.z_ops_sweep.__class__.__name__)
         local_args = copy.deepcopy(base_args)
@@ -387,8 +390,8 @@ class Experimenteur:
         target_samples: int,
         base_rand_args: party.UnionRandArgs,
         selector: str,
-        target_selector: str = None,
-        algo_selector: str = None,
+        target_selector: str | None = None,
+        algo_selector: str | None = None,
         load_results: str = "",
     ) -> None:
         """run all experiments and plot results
@@ -698,7 +701,7 @@ class Experimenteur:
         else:
             raise ValueError("Unknown signal generator type")
 
-    def run_hyperparameter_optimization():
+    def run_hyperparameter_optimization(self):
         """run experiments to determine the best experimental parameters"""
         raise NotImplementedError("TODO")
         # take best algorithm

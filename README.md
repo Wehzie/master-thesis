@@ -2,6 +2,8 @@
 
 This code accompanies a [master thesis](https://fse.studenttheses.ub.rug.nl/id/eprint/31138).
 
+![a vanadium dioxide oscillator ensemble](./img/vo2_tree_circuit.png)
+
 ## Abstract
 
 Energy demand in data-intensive applications is an ever-growing concern.
@@ -33,8 +35,11 @@ Second, we find that gradient-free algorithms would benefit from negative oscill
 
 ## Requirements
 
-Install required libraries.
+Install [ngspice](https://ngspice.sourceforge.io/download.html) as a SPICE simulator.
 
+Install the required Python libraries.
+
+    # you may want to create a virtual environment first
     pip install -r requirements.txt
 
 Pydot is used with NetworkX for drawing graphs.

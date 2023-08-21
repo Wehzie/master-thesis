@@ -24,7 +24,7 @@ LEGAL_DISTS: Final = [
     RNG.uniform.__name__,
     RNG.normal.__name__,
 ]  # supported distributions to draw from
-TEST_PARAMS: Final[bool] = True
+TEST_PARAMS: bool = True
 HOARD_DATA: Final[bool] = True  # show and save legends in a separate figure
 # pickle figures and save to png, pdf, svg
 MAX_TARGET_DURATION: Final[
